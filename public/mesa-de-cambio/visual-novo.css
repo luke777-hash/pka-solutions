@@ -75,6 +75,22 @@ thead th{background:var(--head);}
 .vn-info[aria-expanded="true"]{background:var(--text);border-color:var(--text);color:var(--slab);}
 .vn-info:focus-visible{outline:2px solid var(--azure);outline-offset:2px;}
 
+/* preços e regras: bloco fixo antes dos cards, com os grupos lado a lado */
+.config-wrap.vn-cfg{margin:22px 0 0;padding:18px 20px 4px;border:1px solid var(--rule);border-radius:var(--vn-radius);background:var(--slab);}
+.vn-cfg-titulo{margin:0 0 14px;font:800 18px/1.2 var(--display);letter-spacing:-.01em;color:var(--text);}
+.vn-cfg #cfg > summary{display:none;}
+.vn-grupos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:4px 22px;align-items:start;}
+.vn-grupos > .group{margin:0 0 18px;min-width:0;}
+.vn-grupos > .group:first-child{grid-column:1/-1;}
+.vn-cfg .fields{background:var(--slab-hi);padding:13px 15px;gap:14px;}
+.vn-cfg .fields .f{width:150px;}
+.vn-cfg .fields .f.w{width:200px;}
+.vn-cfg .scroller{background:var(--slab-hi);}
+.vn-cfg thead th{white-space:normal;}
+.vn-cfg th,.vn-cfg td{padding:8px 10px;}
+.config-wrap.vn-cfg + #board{margin-top:22px;}
+details#cfg[open] > :not(summary){animation:none;}
+
 /* "Como a conta é feita" vira uma seção que abre e fecha */
 .vn-como > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px;padding:6px 0;}
 .vn-como > summary::-webkit-details-marker{display:none;}
@@ -98,6 +114,9 @@ details[open] > :not(summary){animation:vn-aparece .25s ease both;}
 .vn-entra .spread i{transform-origin:left center;animation:vn-cresce .6s .2s cubic-bezier(.2,.8,.2,1) both;}
 
 @media (max-width:620px){
+  .config-wrap.vn-cfg{padding:14px 14px 2px;}
+  .vn-grupos{grid-template-columns:minmax(0,1fr);}
+  .vn-cfg .fields .f,.vn-cfg .fields .f.w{width:calc(50% - 7px);}
   .masthead{position:relative;padding-right:48px;}
   .vn-tema{position:absolute;top:22px;right:0;padding:0;width:38px;justify-content:center;}
   .vn-tema span{display:none;}

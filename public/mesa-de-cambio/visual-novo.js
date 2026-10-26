@@ -1,5 +1,5 @@
 // Visual novo da Mesa de câmbio: botão de tema, marcador dos modos, animação ao trocar de modo,
-// explicações fixas atrás do botão "?" e "Como a conta é feita" recolhido.
+// explicações fixas atrás do botão "?", preços e regras antes dos cards e "Como a conta é feita" recolhido.
 // Não mexe em cálculo nem em dado: só em classes e elementos próprios (vn-*).
 (function(){
   "use strict";
@@ -88,6 +88,28 @@
         p.classList.toggle("vn-aberta", abrir);
       });
     })(b, p);
+  }
+
+  // ---------- preços e regras antes dos cards, sempre abertos ----------
+  // A conta depende desses números, então eles ficam visíveis antes do resultado das rotas.
+  var cfgWrap = document.querySelector(".config-wrap");
+  var cfg = document.getElementById("cfg");
+  var board = document.getElementById("board");
+  if(cfgWrap && cfg && board){
+    var resumo = cfg.querySelector(":scope > summary");
+    var titulo = document.createElement("h2");
+    titulo.className = "vn-cfg-titulo";
+    titulo.textContent = resumo ? resumo.textContent.trim() : "";
+    cfg.open = true;
+    cfg.addEventListener("toggle", function(){ if(!cfg.open) cfg.open = true; });
+    if(resumo) resumo.setAttribute("hidden", "");
+    var grade = document.createElement("div");
+    grade.className = "vn-grupos";
+    var gs = cfg.querySelectorAll(":scope > .group");
+    if(gs.length){ cfg.insertBefore(grade, gs[0]); for(var k=0;k<gs.length;k++) grade.appendChild(gs[k]); }
+    cfgWrap.classList.add("vn-cfg");
+    cfgWrap.insertBefore(titulo, cfg);
+    board.parentNode.insertBefore(cfgWrap, board);
   }
 
   // ---------- "Como a conta é feita" recolhido ----------
