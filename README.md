@@ -21,13 +21,14 @@ Site feito por fã. Não é afiliado ao Poke Alliance nem à Nintendo, Creatures
 - `index.html` e `src/`: a página inicial (o hub), feita em React.
 - `src/ferramentas.js`: a lista de cards do hub (nome, endereço, frase curta, etiquetas e o tema de cores do card).
 - `public/`: as ferramentas. Cada uma é um arquivo HTML que vai para o site exatamente como está.
+- `public/<ferramenta>/visual-novo.css` e `visual-novo.js`: o visual novo da ferramenta (aparência, tema e animações). Ficam separados do código dos cálculos; tirar as duas linhas que os carregam no `index.html` volta ao visual antigo.
 
 Na Vercel, o projeto é detectado como **Vite**: comando de build `npm run build`, pasta de saída `dist`.
 
 ## Como atualizar uma ferramenta
 
 1. Troque o arquivo da ferramenta em `public/<pasta-da-ferramenta>/index.html` pela versão nova.
-2. Se o arquivo novo veio do claude.ai, ele precisa das mesmas adaptações da versão atual: o `<head>` completo e, logo depois de `<body>`, as duas linhas do botão "← Todas as ferramentas" (`pkahub-volta`). Copie essas partes do arquivo antigo.
+2. Se o arquivo novo veio do claude.ai, ele precisa das mesmas adaptações da versão atual: o `<head>` completo e, logo depois de `<body>`, as duas linhas do botão "← Todas as ferramentas" (`pkahub-volta`) e, se a ferramenta tiver visual novo, as linhas que carregam `visual-novo.css` e `visual-novo.js`. Copie essas partes do arquivo antigo.
 3. Faça commit e push para a branch `main`. A Vercel publica sozinha em um ou dois minutos.
 
 ## Como adicionar uma ferramenta nova
