@@ -6,6 +6,13 @@
 <meta name="color-scheme" content="light dark">
 <title>PKA-HUB</title>
 <meta name="description" content="Ferramentas para jogadores de Poke Alliance.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Figtree:wght@400;600&display=swap">
+<script>
+  // Aplica o tema salvo antes de a página aparecer, para não piscar.
+  try { var t = localStorage.getItem('pkahub-tema'); if (t === 'escuro') document.documentElement.dataset.theme = 'dark'; if (t === 'claro') document.documentElement.dataset.theme = 'light'; } catch (e) {}
+</script>
 </head>
 <body>
 <div id="root"></div>
