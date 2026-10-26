@@ -1,0 +1,111 @@
+/* Visual novo da Mesa de câmbio.
+   Esta camada só muda a aparência e as animações. Os cálculos e o conteúdo continuam no index.html, sem alteração.
+   Para voltar ao visual antigo, basta tirar as linhas de visual-novo.css e visual-novo.js do index.html. */
+
+/* tema escuro: as cores originais da ferramenta */
+:root{
+  --field:#111720;
+  --head:#121821;
+  --gold-soft:rgba(232,180,76,.14);
+  --vn-radius:14px;
+  --display:"Bricolage Grotesque",Georgia,serif;
+  --ui:"Figtree","Public Sans","Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+/* tema claro: novo, com os mesmos papéis de cor */
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --ink:#eef1f5;--slab:#ffffff;--slab-hi:#f6f8fa;--rule:#dce2e9;--rule-soft:#eceff3;
+    --text:#141a24;--muted:#566274;--gold:#9a6400;--jade:#12814f;--clay:#c2412e;--azure:#2a6fd0;
+    --field:#ffffff;--head:#f3f5f8;--gold-soft:#fbefd5;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --ink:#eef1f5;--slab:#ffffff;--slab-hi:#f6f8fa;--rule:#dce2e9;--rule-soft:#eceff3;
+  --text:#141a24;--muted:#566274;--gold:#9a6400;--jade:#12814f;--clay:#c2412e;--azure:#2a6fd0;
+  --field:#ffffff;--head:#f3f5f8;--gold-soft:#fbefd5;
+  color-scheme:light;
+}
+
+body{font-size:15.5px;}
+.pkahub-volta{border-bottom:0!important;background:var(--ink)!important;padding-bottom:0!important;}
+.pkahub-botao{background:var(--slab)!important;}
+
+/* ---------- cabeçalho ---------- */
+.masthead{align-items:center;padding:28px 0 20px;}
+.masthead h1{font-weight:800;letter-spacing:-.03em;font-size:clamp(30px,4.6vw,44px);}
+.vn-tema{margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 14px 6px 10px;border:1px solid var(--rule);border-radius:999px;background:var(--slab);color:var(--text);font:600 14px/1 var(--ui);cursor:pointer;transition:border-color .2s ease,transform .15s ease;}
+.vn-tema svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.vn-tema:hover{border-color:var(--text);}
+.vn-tema:active{transform:scale(.97);}
+.vn-tema:focus-visible{outline:2px solid var(--azure);outline-offset:2px;}
+
+/* ---------- modos: dividem a largura, com marcador que desliza ---------- */
+.modes{position:relative;flex-wrap:nowrap;border-bottom:1px solid var(--rule);}
+.modes button{flex:1 1 0;min-width:0;border-bottom:0;padding:13px 10px;font-size:15px;border-radius:10px 10px 0 0;transition:color .2s ease,background-color .2s ease;}
+.modes button:hover{background:var(--slab);}
+.modes button[aria-pressed=true]{border-bottom:0;}
+.vn-ind{position:absolute;left:0;bottom:-1px;height:3px;width:0;border-radius:3px 3px 0 0;background:var(--gold);pointer-events:none;transition:transform .35s cubic-bezier(.2,.8,.2,1),width .35s cubic-bezier(.2,.8,.2,1);}
+
+/* ---------- blocos ---------- */
+.verdict{background:var(--slab);border-radius:var(--vn-radius);}
+.verdict .headline{font-weight:800;letter-spacing:-.03em;}
+.entry,.route-card,.panel,.fields,.scroller{border-radius:var(--vn-radius);}
+.route-card{transition:transform .2s ease,border-color .2s ease,background-color .2s ease;}
+@media (hover:hover){.route-card:hover{transform:translateY(-3px);border-color:var(--gold);}.route-card.win:hover{border-color:var(--jade);}}
+.route-card .rmain,.panel.pivot .big{font-weight:800;letter-spacing:-.02em;}
+.spread{height:4px;}
+.spread i{transition:width .35s ease;}
+input[type=number]{background:var(--field);border-radius:8px;transition:border-color .2s ease;}
+input[type=number]:hover{border-color:var(--muted);}
+.entry .big-field input{font-weight:700;}
+button.act{background:var(--field);border-radius:8px;transition:border-color .2s ease,transform .15s ease;}
+button.act:hover{color:var(--text);}
+button.act:active,.modes button:active{transform:scale(.98);}
+thead th{background:var(--head);}
+.io textarea{background:var(--field);border-radius:8px;}
+
+/* explicações fixas atrás do botão "?" */
+.vn-cab{display:flex;align-items:center;gap:8px;}
+.group > p.vn-fechada{display:none;}
+.group > p.vn-aberta{animation:vn-aparece .25s ease both;}
+.vn-info{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;padding:0;border:1px solid var(--rule);border-radius:50%;background:var(--slab);color:var(--muted);font:700 12px/1 var(--ui);cursor:pointer;transition:background-color .2s ease,color .2s ease,border-color .2s ease;}
+.vn-info:hover{border-color:var(--text);color:var(--text);}
+.vn-info[aria-expanded="true"]{background:var(--text);border-color:var(--text);color:var(--slab);}
+.vn-info:focus-visible{outline:2px solid var(--azure);outline-offset:2px;}
+
+/* "Como a conta é feita" vira uma seção que abre e fecha */
+.vn-como > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px;padding:6px 0;}
+.vn-como > summary::-webkit-details-marker{display:none;}
+.vn-como > summary::before{content:"▸";color:var(--gold);font-size:12px;}
+.vn-como[open] > summary::before{content:"▾";}
+.vn-como > summary h3{margin:0!important;}
+.vn-como > summary:focus-visible{outline:2px solid var(--azure);outline-offset:2px;border-radius:3px;}
+.vn-como > ul{margin-top:10px!important;}
+details[open] > :not(summary){animation:vn-aparece .25s ease both;}
+
+/* ---------- animações ---------- */
+@keyframes vn-sobe{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+@keyframes vn-aparece{from{opacity:0;}to{opacity:1;}}
+@keyframes vn-cresce{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+.vn-entra .verdict,.vn-entra .entry,.vn-entra .route-card,.vn-entra .ledger .panel{animation:vn-sobe .4s cubic-bezier(.2,.8,.2,1) both;}
+.vn-entra .entry{animation-delay:.04s;}
+.vn-entra .route-card:nth-child(1),.vn-entra .ledger .panel:nth-child(1){animation-delay:.08s;}
+.vn-entra .route-card:nth-child(2),.vn-entra .ledger .panel:nth-child(2){animation-delay:.12s;}
+.vn-entra .route-card:nth-child(3),.vn-entra .ledger .panel:nth-child(3){animation-delay:.16s;}
+.vn-entra .route-card:nth-child(4){animation-delay:.2s;}
+.vn-entra .spread i{transform-origin:left center;animation:vn-cresce .6s .2s cubic-bezier(.2,.8,.2,1) both;}
+
+@media (max-width:620px){
+  .masthead{position:relative;padding-right:48px;}
+  .vn-tema{position:absolute;top:22px;right:0;padding:0;width:38px;justify-content:center;}
+  .vn-tema span{display:none;}
+  .modes button{font-size:13.5px;padding:11px 4px;line-height:1.25;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .vn-ind,.route-card,.spread i,.vn-tema,.vn-info,button.act,.modes button,input[type=number]{transition:none!important;}
+  .vn-entra *,details[open] > *,.group > p.vn-aberta{animation:none!important;}
+  .route-card:hover,button.act:active,.modes button:active,.vn-tema:active{transform:none!important;}
+}
