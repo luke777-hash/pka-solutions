@@ -19,7 +19,7 @@ Site feito por fã. Não é afiliado ao Poke Alliance nem à Nintendo, Creatures
 ## Como o projeto é organizado
 
 - `index.html` e `src/`: a página inicial (o hub), feita em React.
-- `src/ferramentas.js`: a lista de cards do hub (nome, descrição e endereço).
+- `src/ferramentas.js`: a lista de cards do hub (nome, endereço, frase curta, etiquetas e o tema de cores do card).
 - `public/`: as ferramentas. Cada uma é um arquivo HTML que vai para o site exatamente como está.
 
 Na Vercel, o projeto é detectado como **Vite**: comando de build `npm run build`, pasta de saída `dist`.
@@ -33,7 +33,7 @@ Na Vercel, o projeto é detectado como **Vite**: comando de build `npm run build
 ## Como adicionar uma ferramenta nova
 
 1. Crie a pasta `public/<nome-da-pasta>/` com o `index.html` da ferramenta.
-2. Acrescente um item em `src/ferramentas.js`.
+2. Acrescente um item em `src/ferramentas.js`. Para ter cores e ícone próprios no card, crie também um tema novo em `src/styles.css` e em `Icone` (`src/App.jsx`).
 3. Commit e push.
 
 ## Rodar no computador (opcional)
