@@ -21,7 +21,7 @@ Site feito por fã. Não é afiliado ao Poke Alliance nem à Nintendo, Creatures
 - `index.html` e `src/`: a página inicial (o hub), feita em React.
 - `src/ferramentas.js`: a lista de cards do hub (nome, endereço, frase curta, etiquetas e o tema de cores do card).
 - `public/`: as ferramentas. Cada uma é um arquivo HTML que vai para o site exatamente como está.
-- `public/<ferramenta>/visual-novo.css` e `visual-novo.js`: o visual novo da ferramenta (aparência, tema e animações). Ficam separados do código dos cálculos; tirar as duas linhas que os carregam no `index.html` volta ao visual antigo.
+- `public/<ferramenta>/visual-novo.css` e `visual-novo.js`: o visual novo da ferramenta (aparência, tema e animações), separados do código dos cálculos. A organização das telas do Planejador e da Mesa de câmbio também mudou dentro do `index.html` de cada uma (por exemplo, os dados de melhoria no passo 1 do Planejador e as regras fixas da doação na Mesa), sem mudar as contas.
 
 Na Vercel, o projeto é detectado como **Vite**: comando de build `npm run build`, pasta de saída `dist`.
 
