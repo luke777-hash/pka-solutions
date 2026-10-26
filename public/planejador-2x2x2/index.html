@@ -1083,12 +1083,10 @@ function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0
 function feesVazias(){var o={};RAR.forEach(function(r){o[r.id]=[0,1,2,3,4].map(function(){return {d:"",g:""};});});return o;}
 function estadoPadrao(){
   var time=[];for(var i=0;i<N;i++)time.push(pokeVazio());
-  // Exemplo com os números de um caso real (Shiny Infernape)
-  time[0]={nome:"Shiny Infernape",funcao:"",dano:"237k",held:"4",boost:"10",stars:"0",rar:"",preco:"140kk",danoBoost:"1.100",treino:"35"};
   return {
-    exemplo:true,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",time:time,sel:0,tab:"time",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
+    exemplo:false,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",time:time,sel:0,tab:"time",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
     precos:{
-      xatk:["","","","","30kk","",""],
+      xatk:["","","","","","",""],
       diamante:"",fees:feesVazias(),starRar:"t1",
       ganho:"10",cenario:"mean",escala:"sim",lista:{de:"10",ate:"15"},listaCen:"mean",listaPoke:"",listaModo:"barato",
       materiais:[{nome:"Material 1",preco:""},{nome:"Material 2",preco:""},{nome:"Material 3",preco:""},{nome:"Material 4",preco:""},{nome:"Material 5",preco:""}],

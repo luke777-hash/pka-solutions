@@ -386,9 +386,9 @@
     pMktProfit: 285000,
     pKkSell: 2.60,
     mode: "reais",
-    amountReais: 120,
-    amountKk: 45,
-    capital: 300
+    amountReais: 0,
+    amountKk: 0,
+    capital: 0
   };
 
   var fMoney = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
@@ -558,7 +558,7 @@
     var v = state.mode==="reais" ? state.amountReais
           : state.mode==="kk"    ? state.amountKk
           : state.capital;
-    if(document.activeElement!==amountInput) amountInput.value=v;
+    if(document.activeElement!==amountInput) amountInput.value=v||"";
     mirror("lDd","pDdResale");
     mirror("lMkt","pMktProfit");
     mirror("lKkSell","pKkSell");
