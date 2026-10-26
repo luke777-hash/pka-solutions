@@ -1,0 +1,74 @@
+/* Visual novo do PKA Hunt Analyzer.
+   Esta camada só muda a aparência e as animações. Os cálculos e o conteúdo continuam no index.html, sem alteração.
+   Para voltar ao visual antigo, basta tirar as linhas de visual-novo.css e visual-novo.js do index.html. */
+
+:root{--r:14px;--bg:#eef1f5;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;}}
+:root[data-theme="dark"]{--bg:#0f141b;}
+
+.pkahub-volta{border-bottom:0!important;}
+
+/* ---------- faixa vermelha ---------- */
+header.dex .wrap{padding-block:22px 22px;}
+header.dex h1{font-size:clamp(24px,3.6vw,34px);letter-spacing:-.02em;}
+.vn-topo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.vn-tema{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 9px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;font:600 12px/1.2 var(--f-body);cursor:pointer;transition:background-color .2s ease,transform .15s ease;}
+.vn-tema:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.6);}
+.vn-tema:active{transform:scale(.97);}
+.vn-tema svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.vn-tema:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+
+/* ---------- blocos ---------- */
+main{gap:30px;padding-block:28px 72px;}
+.panel,.kpi,.hl div,.tbl{border-radius:var(--r);}
+.panel{padding:18px 20px;}
+.kpi{padding:14px 16px;transition:transform .2s ease,border-color .2s ease;}
+@media (hover:hover){.kpi:hover{transform:translateY(-2px);border-color:var(--muted);}.kpi.shiny:hover{border-color:var(--shiny);}}
+.kpi .v{font-weight:800;}
+h2{font-weight:800;font-size:22px;letter-spacing:-.01em;}
+.banner{border-radius:12px;}
+textarea,.drop,select,input[type=number],input[type=text],button,.btn{border-radius:10px;}
+button,.btn,select,input[type=number],input[type=text],textarea,.drop{transition:border-color .2s ease,background-color .2s ease,color .2s ease,transform .15s ease;}
+button:active{transform:scale(.97);}
+tbody tr.click{transition:background-color .15s ease;}
+.chip{transition:background-color .2s ease;}
+
+/* gráficos sem dados ocupam menos espaço */
+.chart:has(.empty){min-height:0;}
+.empty{min-height:110px;}
+
+/* explicações fixas das seções atrás do botão "?" */
+.vn-cab{display:inline-flex;align-items:center;gap:8px;}
+.h2row > .hint.vn-fechada{display:none;}
+.h2row > .hint.vn-aberta{flex-basis:100%;animation:vn-aparece .25s ease both;}
+.vn-info{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--muted);font:700 12px/1 var(--f-body);cursor:pointer;}
+.vn-info:hover{border-color:var(--fg);color:var(--fg);}
+.vn-info[aria-expanded="true"]{background:var(--fg);border-color:var(--fg);color:var(--surface);}
+
+/* ---------- animações ---------- */
+@keyframes vn-sobe{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+@keyframes vn-aparece{from{opacity:0;}to{opacity:1;}}
+@keyframes vn-cresce-y{from{transform:scaleY(0);}to{transform:scaleY(1);}}
+@keyframes vn-cresce-x{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+.vn-entra .kpi,.vn-entra .hl > div,.vn-entra .panel,.vn-entra .tbl{animation:vn-sobe .4s cubic-bezier(.2,.8,.2,1) both;}
+.vn-entra .kpi:nth-child(2){animation-delay:.03s;}
+.vn-entra .kpi:nth-child(3){animation-delay:.06s;}
+.vn-entra .kpi:nth-child(4){animation-delay:.09s;}
+.vn-entra .kpi:nth-child(5){animation-delay:.12s;}
+.vn-entra .kpi:nth-child(6){animation-delay:.15s;}
+.vn-entra .kpi:nth-child(7){animation-delay:.18s;}
+.vn-entra .kpi:nth-child(8){animation-delay:.21s;}
+.vn-entra .chart svg rect{transform-box:fill-box;transform-origin:center bottom;animation:vn-cresce-y .6s .15s cubic-bezier(.2,.8,.2,1) both;}
+.vn-entra .chart svg path,.vn-entra .chart svg circle,.vn-entra .chart svg polyline{animation:vn-aparece .6s .15s ease both;}
+.vn-entra .barcell .bar{transform-origin:left center;animation:vn-cresce-x .6s .15s cubic-bezier(.2,.8,.2,1) both;}
+
+@media (max-width:620px){
+  .vn-tema{padding:5px 8px;}
+  .vn-tema span{display:none;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .kpi,button,.btn,select,input,textarea,.drop,tbody tr.click,.chip,.vn-tema{transition:none!important;}
+  .vn-entra *,.h2row > .hint.vn-aberta{animation:none!important;}
+  .kpi:hover,button:active,.vn-tema:active{transform:none!important;}
+}
