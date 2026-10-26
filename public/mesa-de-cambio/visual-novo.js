@@ -107,13 +107,27 @@
     grade.className = "vn-grupos";
     var gs = cfg.querySelectorAll(":scope > .group");
     if(gs.length){ cfg.insertBefore(grade, gs[0]); for(var k=0;k<gs.length;k++) grade.appendChild(gs[k]); }
+    // "Revenda para outros players" só vale na aba de lucro, que já tem esses campos no topo
+    if(gs[2]) gs[2].classList.add("vn-oculto");
     cfgWrap.classList.add("vn-cfg");
     cfgWrap.insertBefore(titulo, cfg);
     board.parentNode.insertBefore(cfgWrap, board);
-    // o resultado principal vem depois do que você preenche, junto dos cards
+    // o resultado principal fica logo abaixo do valor; preços e cards das rotas vêm em sequência
     var veredito = document.getElementById("verdict");
-    if(veredito) board.parentNode.insertBefore(veredito, board);
+    var entrada = document.getElementById("entry");
+    if(veredito && entrada) entrada.parentNode.insertBefore(veredito, entrada.nextSibling);
   }
+
+  // ---------- na aba de lucro, só o resultado da operação ----------
+  // Preços e regras e os cards das rotas só valem para "Tenho um valor em reais" e "Preciso de tanto KK".
+  function aplicarModo(){
+    var sel = modos && modos.querySelector('button[aria-pressed="true"]');
+    var lucro = !!sel && sel.getAttribute("data-mode")==="lucro";
+    if(cfgWrap) cfgWrap.hidden = lucro;
+    if(wrap) wrap.classList.toggle("vn-lucro", lucro);
+  }
+  if(modos) new MutationObserver(aplicarModo).observe(modos, {subtree:true, attributes:true, attributeFilter:["aria-pressed"]});
+  aplicarModo();
 
   // ---------- "Como a conta é feita" recolhido ----------
   var notas = document.querySelector(".notes");
