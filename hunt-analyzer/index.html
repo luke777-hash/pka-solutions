@@ -1,4 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>PKA Hunt Analyzer</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,6 +143,8 @@ details summary{cursor:pointer;font-weight:600;color:var(--fg)}
 details p,details li{color:var(--muted)}
 @media (prefers-reduced-motion: no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
 </style>
+</head>
+<body>
 
 <header class="dex">
   <div class="wrap">
@@ -789,6 +796,7 @@ document.getElementById("btnBackup").addEventListener("click", async () => {
   const name=`pka-hunts-${dayKey(Date.now())}.json`;
   let dl=null; try{ dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null; }catch(_){}
   if(dl){ try{ await dl.save({filename:name, data:payload}); setStatus("footStatus","Backup salvo.","ok"); return; }catch(e){ if(e&&e.code==="declined"){ setStatus("footStatus","Download cancelado."); return; } } }
+  if(!window.claude){ try{ const url=URL.createObjectURL(new Blob([payload],{type:"application/json"})); const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); setStatus("footStatus","Backup salvo.","ok"); return; }catch(_){} }
   const ta=document.getElementById("backupText"); ta.hidden=false; ta.value=payload; ta.select();
   try{ await navigator.clipboard.writeText(payload); setStatus("footStatus","Não deu para baixar aqui, então copiei o backup. Cole num arquivo .json.","ok"); }catch(_){ setStatus("footStatus","Não deu para baixar aqui. O backup está no campo abaixo: copie e salve num arquivo .json."); }
 });
@@ -799,7 +807,6 @@ document.getElementById("btnClear").addEventListener("click", async e => {
   try{ await store.clear(); setStatus("footStatus","Todas as hunts foram apagadas.","ok"); }catch(_){ setStatus("footStatus","Não consegui apagar tudo. Tente de novo.","err"); }
 });
 
-window.__hunt = { parseText, extract, valid, derive, mval, magg, keyOf, docIdOf }; // usado só para testes
 boot();
 })();
 </script>
