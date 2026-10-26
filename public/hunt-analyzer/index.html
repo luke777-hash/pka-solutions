@@ -168,7 +168,7 @@ details p,details li{color:var(--muted)}
     <div class="h2row"><h2 id="impT">Importar hunts</h2><span class="hint">Aceita um JSON, vários JSONs colados em sequência, arquivos .json ou o backup do Critical Catch</span></div>
     <div class="import">
       <div class="panel" style="display:grid;gap:10px">
-        <textarea id="paste" spellcheck="false" placeholder='{ "meta": { "character": "Luke Drk", ... }, "summary": { ... } }'></textarea>
+        <textarea id="paste" spellcheck="false" placeholder='{ "meta": { "character": "...", ... }, "summary": { ... } }'></textarea>
         <div class="row">
           <button class="primary" id="btnImport">Importar</button>
           <span class="status" id="impStatus"></span>
@@ -181,7 +181,6 @@ details p,details li{color:var(--muted)}
     </div>
   </section>
 
-  <div class="banner" id="exampleBanner" hidden><b>Exemplo.</b> Você está vendo a hunt de Glaceon de 25/10/2026 que você colou no chat, só para mostrar o analyzer funcionando. Ela não fica salva. Importe suas hunts acima para ver os seus números.</div>
 
   <div class="banner" id="suggest" hidden></div>
 
@@ -284,7 +283,6 @@ details p,details li{color:var(--muted)}
 (() => {
 "use strict";
 // ---------- exemplo (a hunt enviada no chat) ----------
-const EXAMPLE = {"meta":{"character":"Luke Drk","sessionStart":1792978246,"exportedAt":1792982049,"durationSeconds":3662,"duration":"01:01:02"},"summary":{"totalExperience":7189491.0,"loot":3261700,"spent":63510,"balance":3198190,"totalDamage":364118212},"rates":{"xpPerHour":7067768,"lootPerHour":3206477,"spentPerHour":62435,"balancePerHour":3144043,"damagePerHour":357953458},"loot":{"totalLootGp":3261700,"itemizedValueSum":3261700,"uniqueItemTypes":6,"totalItemsDropped":2055,"items":[{"itemClientId":22354,"itemName":"solid ice cube","count":1009,"totalValue":600200,"avgValue":595,"minValue":200,"maxValue":800},{"itemClientId":48842,"itemName":"ice tail","count":575,"totalValue":870500,"avgValue":1514,"minValue":1000,"maxValue":2000},{"itemClientId":20895,"itemName":"Ice Essence","count":367,"totalValue":1500000,"avgValue":4087,"minValue":2000,"maxValue":6000},{"itemClientId":37861,"itemName":"Ice Stone","count":97,"totalValue":291000,"avgValue":3000,"minValue":3000,"maxValue":3000},{"itemClientId":48196,"itemName":"Medal Box","count":6,"totalValue":0,"avgValue":0,"minValue":0,"maxValue":0},{"itemClientId":29365,"itemName":"Kanto toy box","count":1,"totalValue":0,"avgValue":0,"minValue":0,"maxValue":0}]},"damage":{"totalDamage":364118212,"uniqueCreatureTypes":3,"totalCreaturesKilled":1010,"creatures":[{"creatureName":"Glaceon","kills":996,"totalDamage":356892210,"damagePerKill":358326,"lookType":2069},{"creatureName":"Shiny Glaceon","kills":13,"totalDamage":6542184,"damagePerKill":503245,"lookType":2191},{"creatureName":"Halloween Big Pumpkin","kills":1,"totalDamage":683818,"damagePerKill":683818,"lookType":0}]}};
 
 // ---------- formatação ----------
 const nf0 = new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0});
@@ -512,7 +510,7 @@ drop.addEventListener("drop", e => { const fs=[...(e.dataTransfer&&e.dataTransfe
 
 // ---------- seleção ----------
 function allDerived(){
-  if(state.recs.size===0){ state.example=true; return [derive({id:keyOf(EXAMPLE),docId:docIdOf(EXAMPLE),label:"",data:EXAMPLE})]; }
+  if(state.recs.size===0){ state.example=false; return []; }
   state.example=false; return buildView([...state.recs.values()]).map(derive);
 }
 function filtered(all){
@@ -592,14 +590,13 @@ function render(){
   const pill=document.getElementById("storePill");
   pill.textContent = state.mode==="db" ? "Salvo na sua conta Claude" : state.mode==="local" ? "Salvo só neste navegador" : "Conectando…";
   const all=allDerived();
-  document.getElementById("exampleBanner").hidden = !state.example;
   fillSelect("fChar", [...new Set(all.map(s=>s.char))].sort(), "Todos");
   fillSelect("fTarget", [...new Set(all.map(s=>s.target))].sort(), "Todos");
   const list=filtered(all).sort((a,b)=>a.start-b.start);
   renderSuggest(all);
   renderKpis(list); renderHighlights(list); renderCharts(list); renderSpecies(list); renderItems(list); renderGoal(list); renderSessions(list, all);
-  document.getElementById("btnBackup").disabled = state.example;
-  document.getElementById("btnClear").disabled = state.example;
+  document.getElementById("btnBackup").disabled = state.example || state.recs.size===0;
+  document.getElementById("btnClear").disabled = state.example || state.recs.size===0;
   if(state.openId){ const s=all.find(x=>x.id===state.openId); if(s) openDetail(s.id, all); else closeDetail(); }
 }
 function renderSuggest(all){

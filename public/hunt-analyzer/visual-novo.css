@@ -33,6 +33,10 @@ button:active{transform:scale(.97);}
 tbody tr.click{transition:background-color .15s ease;}
 .chip{transition:background-color .2s ease;}
 
+/* texto da meta de lucro com um destaque leve */
+#goalOut:not(:empty){padding:10px 14px;border-radius:10px;background:var(--accent-soft);color:var(--fg);font-size:14px;line-height:1.55;}
+#goalOut b{color:var(--accent);}
+
 /* gráficos sem dados ocupam menos espaço */
 .chart:has(.empty){min-height:0;}
 .empty{min-height:110px;}
