@@ -1,0 +1,2245 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Planejador 2x2x2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Rubik:wght@600;700&display=swap">
+<style>
+/* Layout: app em tela cheia. Barra do topo com a meta, passos em sequência (time, preços, melhorar, compras) e, em cada passo, colunas que se reorganizam conforme a largura. */
+:root{
+  --bg:#e3e8ee;
+  --surface:#f9fafb;
+  --surface-2:#eef1f5;
+  --surface-3:#e2e7ee;
+  --line:#d3d9e0;
+  --line-strong:#b4bdc8;
+  --text:#1b2433;
+  --muted:#536073;
+  --faint:#6e7a8b;
+  --edge:#1b2433;
+  --plate:#fdfdfe;
+  --track:#dfe4ea;
+  --bar-gap:rgba(253,253,254,.55);
+  --lurer:#2f49b8;
+  --lurer-fill:#4a66dd;
+  --lurer-soft:#e1e6fb;
+  --on-lurer:#ffffff;
+  --damage:#8a5300;
+  --damage-fill:#e39a14;
+  --damage-soft:#fbeed3;
+  --on-damage:#1b2433;
+  --ok:#176b3b;
+  --ok-soft:#dcf1e4;
+  --bad:#b62a2a;
+  --bad-soft:#f9e0e0;
+  --warn:#8a5300;
+  --warn-soft:#fdf3e1;
+  --warn-line:#d08a12;
+  --plan:#7fa6ff;
+  --shadow:0 1px 2px rgba(27,36,51,.07);
+  --font-ui:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-num:"Rubik","Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --gut:28px;
+  --nav-h:64px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1017;--surface:#131a25;--surface-2:#19212e;--surface-3:#222c3c;--line:#253042;--line-strong:#37435a;
+    --text:#e6ebf3;--muted:#a4aebe;--faint:#8590a3;--edge:#56627a;--plate:#172030;--track:#243044;
+    --bar-gap:rgba(15,20,29,.45);
+    --lurer:#9aabff;--lurer-fill:#6f86f4;--lurer-soft:rgba(111,134,244,.18);--on-lurer:#0f141d;
+    --damage:#ffc766;--damage-fill:#e8a019;--damage-soft:rgba(232,160,25,.16);--on-damage:#1b2433;
+    --ok:#5fd699;--ok-soft:rgba(95,214,153,.14);--bad:#ff8080;--bad-soft:rgba(255,128,128,.13);
+    --warn:#ffc766;--warn-soft:rgba(232,160,25,.11);--warn-line:#c98a1c;--plan:#4f6bd6;--shadow:none;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1017;--surface:#131a25;--surface-2:#19212e;--surface-3:#222c3c;--line:#253042;--line-strong:#37435a;
+  --text:#e6ebf3;--muted:#a4aebe;--faint:#8590a3;--edge:#56627a;--plate:#172030;--track:#243044;
+  --bar-gap:rgba(15,20,29,.45);
+  --lurer:#9aabff;--lurer-fill:#6f86f4;--lurer-soft:rgba(111,134,244,.18);--on-lurer:#0f141d;
+  --damage:#ffc766;--damage-fill:#e8a019;--damage-soft:rgba(232,160,25,.16);--on-damage:#1b2433;
+  --ok:#5fd699;--ok-soft:rgba(95,214,153,.14);--bad:#ff8080;--bad-soft:rgba(255,128,128,.13);
+  --warn:#ffc766;--warn-soft:rgba(232,160,25,.11);--warn-line:#c98a1c;--plan:#4f6bd6;--shadow:none;
+  color-scheme:dark;
+}
+
+/* ---------- base ---------- */
+*,*::before,*::after{box-sizing:border-box;}
+html{background:var(--bg);}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+[hidden]{display:none!important;}
+.sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+h1,h2,h3{font-family:var(--font-num);font-weight:700;margin:0;line-height:1.2;text-wrap:balance;}
+h1{font-size:20px;}
+h2{font-size:19px;}
+h3{font-size:16.5px;}
+p{margin:0;}
+button,input,select,textarea{font:inherit;color:inherit;}
+.muted{color:var(--muted);}
+.fine{font-size:14px;color:var(--muted);max-width:75ch;}
+.nw{white-space:nowrap;}
+.ta-r{text-align:right;}
+
+/* ---------- barra do topo ---------- */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;padding-block:12px;padding-inline:var(--gut);background:var(--surface);border-bottom:1px solid var(--line);}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;}
+.mark{display:block;width:34px;height:22px;flex:none;}
+.m-l{fill:var(--lurer-fill);}
+.m-d{fill:var(--damage-fill);}
+.brand .sub{display:block;font-size:13px;color:var(--muted);}
+.meta{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px;margin-left:auto;}
+.mf label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:3px;}
+.mf select{width:170px;height:36px;}
+.mf input[type="text"]{width:150px;height:36px;}
+.mf .src{display:inline-block;margin-left:6px;padding:0 7px;border-radius:999px;font-size:11.5px;line-height:18px;font-weight:700;background:var(--surface-2);color:var(--muted);vertical-align:1px;}
+.mf .src.man{background:var(--warn-soft);color:var(--warn);}
+.stat{display:grid;}
+.stat .k{font-size:13px;font-weight:700;color:var(--muted);}
+.stat .v{font-family:var(--font-num);font-weight:700;font-size:22px;line-height:36px;font-variant-numeric:tabular-nums;}
+.meta-ops{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding-bottom:3px;}
+.meta-nota{flex-basis:100%;padding:10px 14px;border-radius:8px;background:var(--surface-2);font-size:14px;color:var(--muted);}
+.meta-nota p{max-width:110ch;}
+.meta-nota p+p{margin-top:6px;}
+
+/* ---------- passos ---------- */
+.steps{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;display:flex;align-items:stretch;gap:2px;padding-inline:var(--gut);background:var(--surface);border-bottom:1px solid var(--line-strong);box-shadow:var(--shadow);overflow-x:auto;scrollbar-width:none;}
+.steps::-webkit-scrollbar{display:none;}
+.step{flex:0 0 auto;display:grid;grid-template-columns:28px auto;grid-template-rows:auto auto;column-gap:10px;align-content:center;min-height:var(--nav-h);padding:8px 18px 8px 6px;border:0;border-bottom:3px solid transparent;background:none;color:var(--muted);text-align:left;cursor:pointer;}
+.step .num{grid-row:1/3;align-self:center;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-num);font-weight:700;font-size:14px;background:var(--surface-3);color:var(--muted);}
+.step .t{font-weight:700;font-size:15.5px;line-height:1.25;color:var(--text);}
+.step .sh{display:none;}
+.step .st{font-size:13px;line-height:1.3;white-space:nowrap;}
+.step:hover{background:var(--surface-2);}
+.step[aria-selected="true"]{border-bottom-color:var(--text);}
+.step[aria-selected="true"] .num{background:var(--text);color:var(--surface);}
+.step:focus-visible{outline:2px solid var(--text);outline-offset:-3px;}
+.sep{flex:0 0 16px;align-self:center;height:2px;border-radius:2px;background:var(--line-strong);}
+.st.ok{color:var(--ok);}
+.st.warn{color:var(--warn);}
+.st.bad{color:var(--bad);}
+
+/* ---------- área principal ---------- */
+main{padding-inline:var(--gut);padding-block:24px 56px;}
+.panel{min-width:0;padding:18px 20px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);}
+.panel-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 16px;margin-bottom:14px;}
+.panel-head>div{flex:1 1 280px;min-width:0;}
+.panel-sub{margin-top:3px;font-size:14px;color:var(--muted);max-width:72ch;}
+.panel-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-top:4px;padding-top:12px;border-top:1px solid var(--line);}
+.stack{display:grid;gap:20px;align-content:start;min-width:0;}
+.notice{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;padding:10px 14px;border-radius:10px;background:var(--lurer-soft);}
+.lbl-sm{margin:16px 0 6px;font-size:14px;font-weight:700;}
+.cq{container-type:inline-size;}
+
+/* ---------- campos ---------- */
+input[type="text"],select{display:block;width:100%;height:38px;padding:0 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--plate);color:var(--text);font-size:15.5px;font-variant-numeric:tabular-nums;}
+input[type="text"]::placeholder{color:var(--faint);opacity:1;}
+input[type="text"]:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--text);outline-offset:1px;}
+input.invalid{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad);}
+input.need,select.need{border-color:var(--warn-line);box-shadow:inset 0 0 0 1px var(--warn-line);background:var(--warn-soft);}
+.fld{min-width:0;}
+.fld>label{display:block;margin-bottom:4px;font-weight:700;font-size:14px;}
+.echo{display:block;min-height:20px;padding:2px 2px 0;font-size:13px;line-height:1.35;color:var(--faint);font-variant-numeric:tabular-nums;}
+.echo.bad{color:var(--bad);}
+.hint{display:block;padding:4px 2px 0;font-size:13px;line-height:1.4;color:var(--faint);}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 14px;align-items:end;}
+
+/* ---------- botões, chips, selos ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border:1px solid var(--line-strong);border-radius:7px;background:var(--plate);color:var(--text);font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer;}
+.btn:hover{background:var(--surface-2);}
+.btn:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-sm{height:30px;padding:0 10px;font-size:14px;}
+.btn-x{height:32px;padding:0 10px;color:var(--faint);}
+.btn[data-confirm="1"]{border-color:var(--bad);background:var(--bad-soft);color:var(--bad);}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+.linkbtn{padding:0;border:0;background:none;color:var(--lurer);font-size:14px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.linkbtn:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;}
+.switch input{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:34px;height:20px;margin:0;border-radius:999px;background:var(--line-strong);cursor:pointer;transition:background .15s;}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--plate);transition:transform .15s;}
+.switch input:checked{background:var(--ok);}
+.switch input:checked::after{transform:translateX(14px);}
+.switch input:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line-strong);border-radius:999px;background:var(--plate);color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;}
+.chip[aria-pressed="true"]{border-color:var(--text);background:var(--text);color:var(--surface);}
+.chip:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.chip-dot{width:8px;height:8px;border-radius:50%;background:var(--warn-line);}
+.pill{display:inline-block;padding:1px 10px;border-radius:999px;font-size:13.5px;font-weight:700;white-space:nowrap;}
+.pill.ok{background:var(--ok-soft);color:var(--ok);}
+.pill.bad{background:var(--bad-soft);color:var(--bad);}
+.pill.warn{background:var(--warn-soft);color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn-line);}
+.pill.na{background:var(--surface-3);color:var(--muted);}
+.verdict{padding:3px 12px;border-radius:999px;font-size:15px;font-weight:700;}
+.verdict.ok{background:var(--ok-soft);color:var(--ok);}
+.verdict.bad{background:var(--bad-soft);color:var(--bad);}
+.counts{display:flex;flex-wrap:wrap;gap:6px;}
+.count{padding:2px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:14px;}
+.count b{font-weight:700;}
+.count.lurer.done{border-color:transparent;background:var(--lurer-soft);color:var(--lurer);}
+.count.damage.done{border-color:transparent;background:var(--damage-soft);color:var(--damage);}
+.count.over{border-color:transparent;background:var(--bad-soft);color:var(--bad);}
+@keyframes flash{0%,100%{box-shadow:0 0 0 0 transparent;}25%,75%{box-shadow:0 0 0 4px var(--plan);}}
+.flash{animation:flash 1.5s ease 1;}
+
+/* ---------- tabelas ---------- */
+.scroll{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px;background:var(--surface);}
+table{width:100%;border-collapse:collapse;font-size:15px;}
+th,td{padding:9px 12px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--line);}
+thead th{background:var(--surface-2);color:var(--muted);font-size:13.5px;font-weight:700;white-space:nowrap;}
+tbody th{font-weight:400;}
+tbody tr:last-child td,tbody tr:last-child th{border-bottom:0;}
+th.r,td.r{text-align:right;}
+td.r{font-variant-numeric:tabular-nums;white-space:nowrap;}
+tfoot td{border-top:1px solid var(--line-strong);border-bottom:0;background:var(--surface-2);font-weight:700;}
+.t-form td,.t-form th{padding:6px 10px;vertical-align:top;}
+.t-form tbody th,.t-form td.r{padding-top:14px;}
+.t-form .echo{min-height:18px;}
+.via{display:block;font-size:12.5px;font-weight:700;color:var(--muted);}
+tr.need>*{background:var(--warn-soft);}
+tr.need>:first-child{box-shadow:inset 3px 0 0 var(--warn-line);}
+
+/* ---------- passo 1: time e rotação ---------- */
+.l-time{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;}
+.tcols,.trow{display:grid;grid-template-columns:36px minmax(0,1fr) 150px 140px 90px;grid-template-areas:"slot nome role dano gap";column-gap:12px;}
+.tcols{padding-bottom:6px;font-size:13.5px;color:var(--muted);}
+.tcols .c1{grid-area:slot;}
+.tcols .c2{grid-area:nome;}
+.tcols .c3{grid-area:role;}
+.tcols .c4{grid-area:dano;}
+.tcols .c5{grid-area:gap;text-align:right;}
+.trow{align-items:start;padding:10px 0;border-top:1px solid var(--line);}
+.slot{grid-area:slot;display:grid;place-items:center;width:36px;height:38px;border-radius:5px;background:var(--surface-3);color:var(--faint);font-family:var(--font-num);font-weight:700;font-size:17px;}
+.trow[data-role="lurer"] .slot{background:var(--lurer-fill);color:var(--on-lurer);}
+.trow[data-role="damage"] .slot{background:var(--damage-fill);color:var(--on-damage);}
+.c-nome{grid-area:nome;min-width:0;}
+.c-dano{grid-area:dano;min-width:0;}
+.gapc{grid-area:gap;display:flex;align-items:center;justify-content:flex-end;height:38px;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;color:var(--faint);}
+.gapc.ok{color:var(--ok);}
+.gapc.bad{color:var(--bad);}
+.gapc .g-s{display:none;}
+fieldset.role{grid-area:role;display:flex;width:100%;min-width:0;height:38px;margin:0;padding:0;border:1px solid var(--line-strong);border-radius:7px;overflow:hidden;}
+.seg{position:relative;display:flex;flex:1 1 0;min-width:0;}
+.seg input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
+.seg span{flex:1;display:flex;align-items:center;justify-content:center;background:var(--plate);color:var(--muted);font-size:15px;font-weight:700;}
+.seg + .seg span{border-left:1px solid var(--line-strong);}
+.seg input:hover + span{color:var(--text);}
+.seg.lurer input:checked + span{background:var(--lurer-soft);color:var(--lurer);}
+.seg.damage input:checked + span{background:var(--damage-soft);color:var(--damage);}
+.seg input:focus-visible + span{outline:2px solid var(--text);outline-offset:-4px;}
+.todo{display:grid;gap:6px;margin:0;padding:0;list-style:none;}
+.todo li{display:flex;align-items:baseline;gap:10px;}
+.todo .ic{flex:none;width:18px;font-weight:700;text-align:center;}
+.todo li.ok .ic{color:var(--ok);}
+.todo li.no .ic{color:var(--faint);}
+.todo .det{color:var(--muted);}
+.haz-line{margin-bottom:16px;padding:10px 14px;border-radius:8px;background:var(--surface-2);font-size:15px;}
+.haz-line.ok{background:var(--ok-soft);}
+.haz-line.bad{background:var(--bad-soft);}
+.plates{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;}
+@container (min-width:720px){.plates{grid-template-columns:repeat(3,minmax(0,1fr));}}
+.plate{min-width:0;margin:2px;padding:14px 14px 10px;background:var(--plate);box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge);}
+.plate-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.mem{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;column-gap:10px;padding:5px 0;}
+.mem .n,.tp-m .n{display:grid;place-items:center;width:28px;height:28px;border-radius:3px;font-family:var(--font-num);font-weight:700;font-size:15px;}
+.mem.lurer .n,.tp-m.lurer .n{background:var(--lurer-fill);color:var(--on-lurer);}
+.mem.damage .n,.tp-m.damage .n{background:var(--damage-fill);color:var(--on-damage);}
+.mem .who{min-width:0;}
+.mem .role-t{display:block;font-size:12px;font-weight:700;line-height:1.2;}
+.mem.lurer .role-t{color:var(--lurer);}
+.mem.damage .role-t{color:var(--damage);}
+.mem .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mem .v{text-align:right;font-variant-numeric:tabular-nums;}
+.slotref{color:var(--faint);font-size:14px;}
+.plate-sum{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line);}
+.big{font-family:var(--font-num);font-weight:700;font-size:24px;line-height:1.15;font-variant-numeric:tabular-nums;}
+.margin{font-size:14px;font-weight:700;}
+.margin.ok{color:var(--ok);}
+.margin.bad{color:var(--bad);}
+.bar{position:relative;height:14px;margin:14px 2px 24px;background:var(--track);box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge);}
+.bar .bl,.bar .bd,.bar .bp{position:absolute;top:0;bottom:0;}
+.bar .bl{left:0;background:var(--lurer-fill);}
+.bar .bd{background:var(--damage-fill);}
+.bar .bp{background:var(--plan);opacity:.8;}
+.bar::after{content:"";position:absolute;inset:0;z-index:1;background:repeating-linear-gradient(90deg,transparent 0 6px,var(--bar-gap) 6px 8px);pointer-events:none;}
+.tick{position:absolute;top:-6px;bottom:-6px;z-index:2;width:2px;margin-left:-1px;background:var(--text);}
+.tick-l{position:absolute;top:calc(100% + 3px);font-size:12px;line-height:1;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;}
+.tick-l.al-c{left:50%;transform:translateX(-50%);}
+.tick-l.al-l{left:0;}
+.tick-l.al-r{right:0;}
+.diag{margin-top:14px;font-size:15px;max-width:80ch;}
+.diag strong{font-variant-numeric:tabular-nums;}
+.warn-t{color:var(--bad);font-weight:700;}
+.t-all{min-width:680px;}
+.th-l{color:var(--lurer);}
+.rank{font-family:var(--font-num);font-weight:700;}
+.best{display:inline-block;margin-left:8px;padding:0 8px;border-radius:999px;background:var(--text);color:var(--surface);font-size:12px;font-weight:700;line-height:1.6;vertical-align:1px;}
+tr.is-best td{background:var(--surface-2);}
+tr.is-best td:first-child{box-shadow:inset 3px 0 0 var(--text);}
+.cell-n{display:block;}
+.cell-v{display:block;font-weight:700;font-variant-numeric:tabular-nums;}
+.cell-v.ok{color:var(--ok);}
+.cell-v.bad{color:var(--bad);}
+#todas{margin-top:24px;}
+
+/* ---------- passo 2: preços ---------- */
+.pre-top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:20px;}
+.pre-top>div{min-width:0;}
+.sec-index{display:flex;flex-wrap:wrap;gap:8px;}
+.idx{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 6px 0 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--plate);color:var(--text);font-size:14.5px;font-weight:700;cursor:pointer;}
+.idx:hover{background:var(--surface-2);}
+.idx:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.idx .pill{font-size:12.5px;}
+.legend-need{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);}
+.sw-need{display:inline-block;width:22px;height:14px;border-radius:4px;background:var(--warn-soft);box-shadow:inset 0 0 0 2px var(--warn-line);}
+.g-precos{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;}
+.span-all{grid-column:1/-1;}
+.regras{display:grid;gap:12px;}
+.usado{margin-top:8px;font-size:14px;color:var(--muted);}
+.guide{margin-top:10px;font-size:14px;color:var(--muted);}
+.guide b{color:var(--text);font-variant-numeric:tabular-nums;}
+details.disc{margin-top:12px;}
+details.disc summary{font-size:14px;font-weight:700;cursor:pointer;}
+details.disc .scroll{margin-top:8px;}
+.stones-l{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start;}
+.stones-l h3{margin-bottom:4px;}
+.stones-l .fine{margin-bottom:10px;}
+.mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:12px;}
+.mat{display:grid;gap:6px;align-content:start;padding:10px 12px 4px;border:1px solid var(--line);border-radius:10px;background:var(--plate);}
+.mat-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;}
+.mat .mini{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:2px;}
+.mat-add{display:grid;place-items:center;min-height:118px;border:1px dashed var(--line-strong);border-radius:10px;background:transparent;color:var(--muted);font-weight:700;font-size:15px;cursor:pointer;}
+.mat-add:hover{background:var(--surface-2);color:var(--text);}
+.mat-add:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.t-stones{min-width:980px;}
+.t-stones td input[type="text"]{height:34px;min-width:70px;}
+td.cost{min-width:150px;white-space:normal;}
+.via2{display:block;font-size:12.5px;color:var(--faint);}
+.t-stones td.r input[type="text"]{text-align:right;}
+.conf{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;border-radius:6px;}
+.conf input{width:18px;height:18px;margin:0;accent-color:var(--ok);}
+.conf input:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.note{margin-top:12px;font-size:14px;color:var(--muted);max-width:90ch;}
+.note b{color:var(--text);}
+
+/* ---------- passo 3: melhorar ---------- */
+.l-melhorar{display:grid;grid-template-columns:minmax(0,1fr);gap:20px 24px;align-items:start;}
+.poke-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0;}
+.list-h{grid-column:1/-1;font-size:15px;color:var(--muted);}
+.pk{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;column-gap:10px;min-width:0;padding:8px 10px 8px 8px;border:1px solid var(--line-strong);border-radius:9px;background:var(--plate);color:var(--text);text-align:left;cursor:pointer;}
+.pk:hover{background:var(--surface-2);}
+.pk[aria-pressed="true"]{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text);background:var(--surface-2);}
+.pk:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.pk .sq{display:grid;place-items:center;width:30px;height:30px;border-radius:4px;background:var(--surface-3);color:var(--faint);font-family:var(--font-num);font-weight:700;}
+.pk[data-role="lurer"] .sq{background:var(--lurer-fill);color:var(--on-lurer);}
+.pk[data-role="damage"] .sq{background:var(--damage-fill);color:var(--on-damage);}
+.pk-t{display:grid;min-width:0;}
+.pk-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:15px;}
+.pk-s{font-size:13px;line-height:1.3;color:var(--muted);}
+.pk-s.ok{color:var(--ok);}
+.pk-s.warn{color:var(--warn);}
+.pk-s.bad{color:var(--bad);}
+.pk-g{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
+.pk-g.ok{color:var(--ok);}
+.pk-g.bad{color:var(--bad);}
+.res{display:grid;gap:20px;min-width:0;}
+.gap-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;}
+.gap-big{font-family:var(--font-num);font-weight:700;font-size:clamp(28px,4vw,38px);line-height:1.05;font-variant-numeric:tabular-nums;}
+.gap-big.ok{color:var(--ok);}
+.gap-big.bad{color:var(--bad);}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:-12px;font-size:14px;color:var(--muted);}
+.legend i{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px;}
+.lg-now{background:var(--damage-fill);}
+.lg-plan{background:var(--plan);opacity:.8;}
+.haz-p{margin-top:12px;font-size:14.5px;color:var(--muted);}
+.haz-p b{color:var(--text);}
+.rec{margin:2px;padding:18px 20px 16px;background:var(--plate);box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge);}
+.rec-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 14px;margin-bottom:10px;}
+.steps-l{margin:0;padding:0;list-style:none;}
+.steps-l li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:10px 0;border-top:1px solid var(--line);}
+.steps-l li:first-child{border-top:0;}
+.steps-l .what{font-weight:700;}
+.steps-l .how{grid-column:1;font-size:14px;color:var(--muted);}
+.steps-l .how .btn{margin-top:8px;}
+.steps-l .cost{grid-row:1/span 2;grid-column:2;align-self:center;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
+.rec-sum{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin-top:6px;padding-top:12px;border-top:2px solid var(--edge);}
+.rec-sum .lbl{display:block;font-size:14px;color:var(--muted);}
+.alert{border-color:var(--warn-line);background:var(--warn-soft);}
+.alert.bad{border-color:var(--bad);background:var(--bad-soft);}
+.alert-p{max-width:80ch;}
+.grupos{display:grid;gap:12px;margin:14px 0 0;padding:0;list-style:none;}
+.grupo{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);}
+.g-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;}
+.g-sub{margin-top:2px;font-size:14px;color:var(--muted);}
+.g-itens{display:grid;gap:6px;margin:10px 0 0;padding:0;list-style:none;}
+.g-itens li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:8px 10px;border-radius:8px;background:var(--surface-2);}
+.tp-duos{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:4px;}
+@container (min-width:860px){.tp-duos{grid-template-columns:repeat(3,minmax(0,1fr));}}
+.tp-duo{min-width:0;padding:12px 14px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);}
+.tp-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.tp-m{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:start;column-gap:10px;padding:8px 0;border-top:1px solid var(--line);}
+.tp-m .who{min-width:0;}
+.tp-m .role-t{display:block;font-size:12px;font-weight:700;line-height:1.2;}
+.tp-m.lurer .role-t{color:var(--lurer);}
+.tp-m.damage .role-t{color:var(--damage);}
+.tp-m .nm{display:block;font-weight:700;}
+.tp-m .v{text-align:right;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.tp-m .v .to{display:block;color:var(--text);font-weight:700;font-size:15px;}
+.mud{display:grid;gap:3px;margin:4px 0 0;padding:0;list-style:none;font-size:13.5px;}
+.mud li{display:block;}
+.mud li b{margin-left:6px;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.mud .linkbtn{margin-left:4px;font-size:13px;}
+.prog-sum{padding:14px 16px;border-radius:10px;background:var(--surface-2);}
+.prog-sum.bad{background:var(--bad-soft);}
+.prog-sum.bad p+p,.prog-sum.bad p+ul{margin-top:8px;}
+.ps-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;}
+.ps-top .lbl{flex-basis:100%;font-size:14px;font-weight:700;color:var(--muted);}
+.ps-top .fine{flex:1 1 220px;}
+.ps-v{margin-top:10px;max-width:80ch;}
+.ps-v.ok{color:var(--ok);font-weight:700;}
+.pp{display:grid;gap:12px;margin:16px 0 0;padding:0;list-style:none;}
+.pp-s{min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);}
+.pp-s.cabe{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok);}
+.pp-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;}
+.pp-n{font-size:13px;font-weight:700;color:var(--muted);}
+.pp-hz{font-family:var(--font-num);font-size:16.5px;}
+.pp-c{margin-left:auto;font-family:var(--font-num);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.pp .mud{margin-top:8px;}
+.pp .mud li{display:flex;justify-content:space-between;gap:4px 12px;}
+.pp .mud li b{margin-left:0;}
+.pp-d,.pp-a{margin-top:8px;font-size:13.5px;color:var(--muted);}
+.pp-d b{color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.pp-du{display:inline-block;max-width:100%;}
+.pp-a .ok{color:var(--ok);font-weight:700;}
+.tp-sum{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-size:14.5px;}
+.tp-sum .tp-c{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;}
+.sim-ac{align-self:end;padding-bottom:20px;}
+.sim-out{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:8px;padding:12px;border-radius:10px;background:var(--surface-2);}
+.sim-out .lbl{display:block;font-size:13px;font-weight:700;color:var(--muted);}
+.sim-out .big{display:block;font-size:22px;}
+.sim-out .fine{display:block;font-size:12.5px;}
+.sim-dupla{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:14.5px;}
+.sim-dupla.ok{background:var(--ok-soft);}
+.sim-dupla.bad{background:var(--bad-soft);}
+.paths{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;}
+@container (min-width:620px){.paths{grid-template-columns:repeat(3,minmax(0,1fr));}}
+.path{display:grid;align-content:start;gap:6px;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--plate);}
+.path .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.path .pv{font-family:var(--font-num);font-weight:700;font-size:22px;line-height:1.15;font-variant-numeric:tabular-nums;}
+.path .pd{font-size:14px;color:var(--muted);}
+.path.cheapest{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok);}
+.how-box summary{font-weight:700;cursor:pointer;}
+.how-box summary:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.how-box ol{display:grid;gap:6px;margin:10px 0 0;padding-left:22px;color:var(--muted);max-width:90ch;}
+.how-box ol b{color:var(--text);font-variant-numeric:tabular-nums;}
+
+/* ---------- passo 4: compras ---------- */
+.l-compras{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;}
+.cen-note{margin-top:8px;font-size:14px;color:var(--muted);}
+.grand{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;margin-top:18px;padding:14px 16px;background:var(--plate);box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge);}
+.grand .gl{font-weight:700;}
+.grand .gv{margin-left:auto;font-family:var(--font-num);font-weight:700;font-size:26px;font-variant-numeric:tabular-nums;}
+.grand .gs{width:100%;font-size:14px;color:var(--muted);}
+.bands{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:20px;align-items:start;}
+.band-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:6px;}
+.conf-falta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:10px;}
+.conf-falta .fine{flex:1 1 260px;}
+.band-head .fr{font-size:14px;color:var(--muted);}
+.band-head .ft{margin-left:auto;font-size:15px;color:var(--muted);}
+.band-head .ft b{color:var(--text);font-size:18px;font-variant-numeric:tabular-nums;}
+.compare{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 8px;}
+.tile{flex:1 1 180px;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--plate);}
+.tile.win{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok);}
+.tile .tl{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;color:var(--muted);}
+.tile .tv{display:block;font-weight:700;font-size:19px;line-height:1.3;font-variant-numeric:tabular-nums;}
+.tile .ts{display:block;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;}
+.tile.na .tv{font-size:15px;font-weight:400;color:var(--muted);}
+.verd{margin-bottom:10px;font-size:15px;max-width:80ch;}
+.verd b{color:var(--ok);}
+.verd.quiet{color:var(--muted);}
+
+/* ---------- caixa de dados ---------- */
+dialog{width:min(640px,calc(100vw - 32px));max-width:none;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);}
+dialog::backdrop{background:rgba(5,8,12,.55);}
+.dlg{padding:18px 20px 20px;}
+.dlg textarea{display:block;width:100%;min-height:120px;margin-top:12px;padding:8px;border:1px solid var(--line-strong);border-radius:7px;background:var(--plate);color:var(--text);font-family:ui-monospace,Consolas,monospace;font-size:12px;}
+
+/* ---------- larguras ---------- */
+@media (min-width:900px){
+  .g-precos{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #sec-regras{grid-column:1/-1;}
+  #sec-regras .regras{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 20px;}
+}
+@media (max-width:999px){
+  .l-melhorar{display:flex;flex-direction:column;align-items:stretch;}
+  #pk-res{display:contents;}
+  #pk-plan{order:1;}
+  #pk-prog{order:2;}
+  .poke-list{order:3;}
+  #pk-mid{order:4;}
+  #pk-sel{order:5;}
+}
+@media (min-width:1000px){
+  .l-melhorar{grid-template-columns:minmax(320px,400px) minmax(0,1fr);}
+  .poke-list{grid-column:1/-1;}
+}
+@media (min-width:1100px){
+  .l-compras{grid-template-columns:minmax(340px,440px) minmax(0,1fr);}
+}
+@media (min-width:1600px){
+  .l-time{grid-template-columns:minmax(660px,5fr) minmax(0,7fr);}
+}
+@media (min-width:1440px){
+  .g-precos{grid-template-columns:repeat(3,minmax(0,1fr));}
+  #sec-regras{grid-column:auto;}
+  #sec-regras .regras{grid-template-columns:minmax(0,1fr);}
+}
+@media (min-width:1600px){
+  .l-melhorar{grid-template-columns:250px minmax(340px,440px) minmax(0,1fr);}
+  .poke-list{grid-column:auto;grid-template-columns:minmax(0,1fr);}
+}
+@media (max-width:760px){
+  :root{--gut:16px;}
+  .brand{flex:1 1 auto;}
+  .meta{order:3;flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;margin-left:0;}
+  .mf select,.mf input[type="text"]{width:100%;}
+  .meta-ops{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 18px;}
+  .stat .v{font-size:20px;line-height:1.3;}
+  .meta-nota{order:4;}
+  .step{flex:1 1 0;min-width:0;grid-template-columns:1fr;grid-template-rows:auto auto;justify-items:center;row-gap:3px;padding:8px 4px;text-align:center;}
+  .step .num{grid-row:auto;width:24px;height:24px;font-size:13px;}
+  .step .lg,.step .st,.sep{display:none;}
+  .step .sh{display:inline;font-size:14px;}
+  main{padding-block:18px 44px;}
+  .panel{padding:14px;}
+  .tcols{display:none;}
+  .trow{grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"slot nome nome gap" "role role dano dano";row-gap:8px;column-gap:10px;}
+  .gapc .g-l{display:none;}
+  .gapc .g-s{display:inline;}
+  .poke-list{grid-template-columns:minmax(0,1fr);}
+}
+@media (prefers-reduced-motion:reduce){
+  .switch input,.switch input::after{transition:none;}
+  .flash{animation:none;outline:3px solid var(--plan);outline-offset:2px;}
+}
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 34 22" aria-hidden="true" focusable="false" shape-rendering="crispEdges">
+        <rect class="m-l" x="0" y="0" width="10" height="10"/><rect class="m-d" x="0" y="12" width="10" height="10"/>
+        <rect class="m-l" x="12" y="0" width="10" height="10"/><rect class="m-d" x="12" y="12" width="10" height="10"/>
+        <rect class="m-l" x="24" y="0" width="10" height="10"/><rect class="m-d" x="24" y="12" width="10" height="10"/>
+      </svg>
+      <div>
+        <h1>Planejador 2x2x2</h1>
+        <span class="sub">Rotação de caça no PokeAlliance</span>
+      </div>
+    </div>
+    <div class="meta" role="group" aria-label="Meta de dano">
+      <div class="mf"><label for="m-haz">Hazard</label><select id="m-haz" data-path="hazard"></select></div>
+      <div class="mf"><label for="m-runa">Runa de ataque</label><select id="m-runa" data-path="runaCol"></select></div>
+      <div class="mf"><label for="alvo">Dano por dupla <span class="src" id="alvo-src"></span></label><input type="text" id="alvo" data-path="alvo" data-fmt="dano" autocomplete="off" spellcheck="false" aria-describedby="alvo-src"></div>
+      <div class="stat"><span class="k">Cada Pokémon</span><span class="v" id="meta-v">—</span></div>
+      <div class="meta-ops">
+        <button type="button" class="linkbtn" id="btn-tabela" data-act="usar-tabela" hidden>Usar a tabela</button>
+        <button type="button" class="linkbtn" id="btn-nota" aria-expanded="false" aria-controls="meta-nota" data-act="nota">Sobre a meta</button>
+      </div>
+    </div>
+    <button type="button" class="btn" data-act="dados">Dados</button>
+    <div class="meta-nota" id="meta-nota" hidden>
+      <p>A meta vem da tabela "Dano necessário por hazard", criada por xandin. Os testes foram feitos com prey de ataque e podem conter erro. A coluna da runa já desconta o bônus dela, então a meta é comparada com o dano medido, sem a runa. Cada Pokémon precisa de metade do dano da dupla.</p>
+      <p>Ao escolher o hazard e a runa, o campo "Dano por dupla" recebe o valor da tabela. Para usar outro valor, é só digitar por cima: a meta passa a ser a que você digitou. Para voltar ao valor da tabela, clique em "Usar a tabela" ou escolha outro hazard ou outra runa.</p>
+    </div>
+  </header>
+
+  <nav class="steps" role="tablist" aria-label="Passos">
+    <button class="step" role="tab" id="tab-time" aria-controls="p-time" data-act="tab" data-v="time"><span class="num">1</span><span class="t"><span class="lg">Time e rotação</span><span class="sh">Time</span></span><span class="st" id="st-time"></span></button>
+    <span class="sep" aria-hidden="true"></span>
+    <button class="step" role="tab" id="tab-precos" aria-controls="p-precos" data-act="tab" data-v="precos"><span class="num">2</span><span class="t"><span class="lg">Preços</span><span class="sh">Preços</span></span><span class="st" id="st-precos"></span></button>
+    <span class="sep" aria-hidden="true"></span>
+    <button class="step" role="tab" id="tab-melhorar" aria-controls="p-melhorar" data-act="tab" data-v="melhorar"><span class="num">3</span><span class="t"><span class="lg">Melhorar o time</span><span class="sh">Melhorar</span></span><span class="st" id="st-melhorar"></span></button>
+    <span class="sep" aria-hidden="true"></span>
+    <button class="step" role="tab" id="tab-compras" aria-controls="p-compras" data-act="tab" data-v="compras"><span class="num">4</span><span class="t"><span class="lg">Lista de compras</span><span class="sh">Compras</span></span><span class="st" id="st-compras"></span></button>
+  </nav>
+
+  <main>
+    <div class="notice" id="aviso-exemplo" hidden>
+      <p>O Shiny Infernape já preenchido é só um exemplo para mostrar a ferramenta. Troque pelos dados do seu time.</p>
+      <button type="button" class="btn btn-sm" data-act="exemplo-limpar">Limpar o exemplo</button>
+    </div>
+
+    <!-- passo 1 -->
+    <section id="p-time" role="tabpanel" aria-labelledby="tab-time" hidden>
+      <div class="l-time">
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Seu time</h2><p class="panel-sub">Nome, função na rotação e dano total do combo de cada Pokémon.</p></div>
+            <div class="counts" id="counts"></div>
+          </div>
+          <div class="tcols" aria-hidden="true"><span class="c1"></span><span class="c2">Nome</span><span class="c3">Função</span><span class="c4">Dano total do combo</span><span class="c5">Para a meta</span></div>
+          <div id="rows"></div>
+          <div class="panel-foot">
+            <p class="fine">O dano aceita 320000, 320.000 ou 320k.</p>
+            <button type="button" class="btn" data-act="limpar">Limpar time</button>
+          </div>
+        </section>
+        <div class="stack" id="rot-res"></div>
+      </div>
+      <section class="panel" id="todas" hidden></section>
+    </section>
+
+    <!-- passo 2 -->
+    <section id="p-precos" role="tabpanel" aria-labelledby="tab-precos" hidden>
+      <div class="pre-top">
+        <div>
+          <h2>Preços</h2>
+          <p class="panel-sub">Valores em gold aceitam 30kk, 1,5kk, 500k ou o número inteiro. Campo vazio é preço não informado: o caminho que depende dele fica de fora, sem estimativa no lugar.</p>
+          <p class="legend-need" style="margin-top:8px"><span class="sw-need" aria-hidden="true"></span>Em destaque: o que falta para montar o plano de algum Pokémon do time.</p>
+        </div>
+        <nav class="sec-index" id="sec-index" aria-label="Seções de preço"></nav>
+      </div>
+      <div id="precos-body"></div>
+    </section>
+
+    <!-- passo 3 -->
+    <section id="p-melhorar" role="tabpanel" aria-labelledby="tab-melhorar" hidden>
+      <div class="l-melhorar">
+        <div class="poke-list" id="poke-list" role="group" aria-label="Pokémon do time"></div>
+        <div class="stack" id="pk-mid"><section class="panel" id="pk-form"></section><section class="panel" id="pk-sim"></section></div>
+        <div class="res" id="pk-res"><div class="stack" id="pk-plan"></div><div class="stack" id="pk-prog"></div><div class="stack" id="pk-sel"></div></div>
+      </div>
+    </section>
+
+    <!-- passo 4 -->
+    <section id="p-compras" role="tabpanel" aria-labelledby="tab-compras" hidden>
+      <div class="l-compras">
+        <section class="panel" id="c-ctrl"></section>
+        <div class="stack" id="c-res"></div>
+      </div>
+    </section>
+
+    <p class="sr" id="live" aria-live="polite"></p>
+  </main>
+</div>
+
+<dialog id="dlg-dados" aria-labelledby="dlg-t">
+  <div class="dlg">
+    <div class="panel-head">
+      <div><h2 id="dlg-t">Guardar ou levar seus dados</h2><p class="panel-sub" id="dlg-sub">Para guardar uma cópia ou abrir em outro aparelho, gere o texto e copie. Depois cole aqui e clique em Carregar.</p></div>
+      <button type="button" class="btn btn-x" data-act="dlg-fechar" aria-label="Fechar">✕</button>
+    </div>
+    <label class="sr" for="io-box">Texto dos dados</label>
+    <textarea id="io-box" spellcheck="false"></textarea>
+    <div class="btn-row">
+      <button type="button" class="btn" data-act="io-gerar">Gerar texto</button>
+      <button type="button" class="btn" data-act="io-copiar">Copiar</button>
+      <button type="button" class="btn" data-act="io-carregar">Carregar</button>
+    </div>
+    <p class="fine" id="io-msg" style="margin-top:10px"></p>
+  </div>
+</dialog>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   DADOS FIXOS (guias e tabelas enviados)
+   ============================================================ */
+// X-Attack: % por tier (tabela de held). Tier máximo 7.
+var XATK=[0,8,12,16,19,22,25,28];
+// Star: % de dano por Star conforme o tier do Pokémon (guia Star Ascension)
+var RAR=[
+  {id:"leg",nome:"Legendary",pct:15},
+  {id:"ur", nome:"Ultra Rare",pct:10},
+  {id:"sr", nome:"Super Rare",pct:8},
+  {id:"t1", nome:"T1",pct:6},
+  {id:"t2", nome:"T2",pct:4},
+  {id:"t3", nome:"T3",pct:2}
+];
+var RARMAP={};RAR.forEach(function(r){RARMAP[r.id]=r;});
+// Guia: gasto total de 0 a 5 Stars (D = Diamond, gold em kk)
+var GUIA={
+  leg:{dia:[720,180],gold:[360,360],misto:[540,270]},
+  ur: {dia:[360,90], gold:[180,180],misto:[270,135]},
+  sr: {dia:[260,70], gold:[130,140],misto:[195,105]},
+  t1: {dia:[180,45], gold:[90,90],  misto:[135,67.5]},
+  t2: {dia:[90,22.5],gold:[45,45],  misto:[69,33.5]},
+  t3: {dia:[60,15],  gold:[30,30],  misto:[45,22.5]}
+};
+// Boost: pedras e chance inicial (guia Sistema de Boost). Limite +50.
+var FAIXAS=[
+  {nome:"Novice",base:50},{nome:"Elemental",base:40},{nome:"Common",base:30},{nome:"Enhanced",base:20},
+  {nome:"Potent",base:18},{nome:"Advanced",base:15},{nome:"Fortified",base:12},{nome:"Supreme",base:10},
+  {nome:"Celestial",base:8},{nome:"Mystic",base:5}
+];
+var BOOST_MAX=50;
+// Quantidades por craft (prints da janela Criar usados na calculadora de boost)
+var QTY_PADRAO=[[22,182,182,343,5],[46,196,273,427,10],[70,357,336,448,16],[215,497,448,553,20],[361,525,581,616,29],
+  [761,693,777,805,36],[1256,889,910,1022,41],[1783,945,1029,1050,46],[2320,1113,1197,1239,49],[3048,1463,1358,1491,55]];
+// Dano necessário por dupla (em mil) para matar o lure, por hazard (linha) e runa de ataque (coluna 0 a 5).
+// Fonte: tabela "Dano necessário por hazard", criada por xandin. Valores copiados como estão.
+var HAZ=[[560,548,537,526,515,505],[578,566,555,545,535,522],[596,584,573,562,552,539],[614,600,590,579,568,556],[632,619,608,596,585,573],
+  [650,636,623,610,598,586],[663,649,638,625,614,603],[676,662,650,638,624,615],[689,675,662,650,636,625],[702,688,675,662,650,638],
+  [715,700,685,671,650,645],[730,716,702,689,676,664],[740,725,712,699,685,673],[755,740,726,712,699,686],[765,750,726,722,708,695],
+  [780,765,750,736,722,704],[815,795,779,763,748,733],[845,825,807,791,775,760]];
+var RUNA_TXT=["Runa 0 (sem bônus)","Runa 1 (+2%)","Runa 2 (+4%)","Runa 3 (+6%)","Runa 4 (+8%)","Runa 5 (+10%)"];
+var CEN_TXT={mean:"Média de tentativas",p90:"Cobre 90% dos casos",p99:"Cobre 99% dos casos",worst:"Pior caso"};
+var CEN_CURTO={mean:"pela média de tentativas",p90:"cobrindo 90% dos casos",p99:"cobrindo 99% dos casos",worst:"no pior caso"};
+var NOTAS_CEN={
+  none:"Cenário ideal, sem nenhuma falha. Serve só de piso: na prática você vai gastar mais.",
+  mean:"Gasto médio no longo prazo. Em parte das vezes você gasta menos que isso, em parte, mais.",
+  p90:"Quantidade que basta em 9 de cada 10 sequências. Boa margem para comprar material.",
+  p99:"Quantidade que basta em 99 de cada 100 sequências. Margem folgada.",
+  worst:"Teto absoluto: falhar em todas as tentativas até a chance chegar a 100%. Não dá para gastar mais que isso."
+};
+var MOTIVO_TXT={qtd:"sem quantidades do craft",conf:"craft não conferido",mat:"falta preço de material"};
+
+/* ============================================================
+   LÓGICA (pura)
+   ============================================================ */
+function parseNum(raw){
+  if(raw===null||raw===undefined)return null;
+  var s=String(raw).trim().toLowerCase().replace(/\s+/g,"");
+  if(s==="")return null;
+  var mult=1;
+  if(/kk$/.test(s)){mult=1e6;s=s.slice(0,-2);}
+  else if(/k$/.test(s)){mult=1e3;s=s.slice(0,-1);}
+  if(s==="")return NaN;
+  if(mult===1){
+    if(!/^\d+$/.test(s)&&!/^\d{1,3}([.,]\d{3})+$/.test(s))return NaN;
+    return parseInt(s.replace(/[.,]/g,""),10);
+  }
+  if(!/^\d+([.,]\d+)?$/.test(s))return NaN;
+  return Math.round(parseFloat(s.replace(",","."))*mult);
+}
+function valido(v){return typeof v==="number"&&isFinite(v);}
+
+// P(sucesso exatamente na tentativa k): a chance sobe "gain" a cada falha e volta à base após o sucesso
+function attemptPmf(base,gain){
+  var pmf=[0],p=base,surv=1,k=1;
+  while(surv>1e-14&&k<5000){
+    var pk=Math.min(1,Math.max(0,p));
+    pmf[k]=surv*pk;surv*=(1-pk);p=p+gain;k++;
+    if(pk>=1)break;
+  }
+  if(surv>1e-9)pmf[k]=(pmf[k]||0)+surv;
+  return pmf;
+}
+function convolve(a,b){
+  var r=new Array(a.length+b.length-1).fill(0);
+  for(var i=0;i<a.length;i++){if(!a[i])continue;for(var j=0;j<b.length;j++){if(b[j])r[i+j]+=a[i]*b[j];}}
+  return r;
+}
+function meanOf(d){var m=0;for(var k=0;k<d.length;k++)m+=k*d[k];return m;}
+function quantileOf(d,q){var c=0;for(var k=0;k<d.length;k++){c+=d[k];if(c>=q-1e-12)return k;}return d.length-1;}
+function maxOf(d){for(var k=d.length-1;k>=0;k--){if(d[k]>1e-14)return k;}return 0;}
+var pmfCache={},stCache={};
+// stones gastas para m boosts na faixa fi, no cenário escolhido
+function stonesNaFaixa(fi,m,ganho,cen){
+  if(m<=0)return 0;
+  if(cen==="none")return m;
+  var key=fi+"|"+m+"|"+ganho+"|"+cen;
+  if(key in stCache)return stCache[key];
+  var pk=fi+"|"+ganho;
+  var pmf=pmfCache[pk]||(pmfCache[pk]=attemptPmf(FAIXAS[fi].base/100,ganho/100));
+  var r;
+  if(cen==="mean")r=m*meanOf(pmf);
+  else{
+    var d=[1];for(var i=0;i<m;i++)d=convolve(d,pmf);
+    r=cen==="p90"?quantileOf(d,.90):(cen==="p99"?quantileOf(d,.99):maxOf(d));
+  }
+  stCache[key]=r;
+  return r;
+}
+// boost número n (ir para +n) usa a faixa ceil(n/5): +1..+5 Novice, +6..+10 Elemental...
+function faixaDoBoost(n){return Math.ceil(n/5)-1;}
+
+/* ---- o que falta (itens estruturados) ---- */
+function fx(t){return {k:"x:"+t,t:"xatk",tier:t};}
+function ffee(rar,e){return {k:"f:"+rar+":"+e,t:"fee",rar:rar,e:e};}
+var FDIA={k:"dia",t:"dia"};
+var FCOPIA={k:"copia",t:"copia"};
+function fstone(fi,why){return {k:"s:"+fi,t:"stone",fi:fi,why:why};}
+function uniqItems(a){var o=[],s={};a.forEach(function(x){if(!s[x.k]){s[x.k]=1;o.push(x);}});return o;}
+
+/* ---- custos ---- */
+function custoHeld(h0,h,ctx){
+  var c=0,f=[];
+  for(var t=h0+1;t<=h;t++){var v=ctx.xatk[t];if(valido(v))c+=v;else f.push(fx(t));}
+  return {c:c,falta:f};
+}
+function taxaStar(rar,e,ctx){ // etapa e: ir de e-1 para e Stars
+  var t=ctx.fees[rar][e-1];
+  if(!valido(t.d)||!valido(t.g))return {ok:false,falta:[ffee(rar,e)]};
+  if(t.d>0&&!valido(ctx.diamante))return {ok:false,falta:[FDIA]};
+  return {ok:true,v:t.d*(t.d>0?ctx.diamante:0)+t.g,d:t.d,g:t.g};
+}
+// Para subir de N para N+1 Stars, a máquina pede outra cópia com N Stars, feita a partir de cópias sem Star.
+function custoStar(s0,s,rar,preco,ctx){
+  var r={c:0,falta:[],copias:0,dTot:0,gTot:0};
+  if(s<=s0)return r;
+  var cnt=[0,0,0,0,0,0];
+  for(var j=s0+1;j<=s;j++){
+    r.copias+=Math.pow(2,j-1);
+    for(var e=1;e<j;e++)cnt[e]+=Math.pow(2,j-1-e);
+    cnt[j]+=1;
+  }
+  if(valido(preco))r.c+=r.copias*preco;else r.falta.push(FCOPIA);
+  for(var e2=1;e2<=s;e2++){
+    if(!cnt[e2])continue;
+    var t=taxaStar(rar,e2,ctx);
+    if(!t.ok){r.falta=r.falta.concat(t.falta);continue;}
+    r.c+=cnt[e2]*t.v;r.dTot+=cnt[e2]*t.d;r.gTot+=cnt[e2]*t.g;
+  }
+  r.falta=uniqItems(r.falta);
+  return r;
+}
+function custoBoost(b0,n,ctx){
+  var cont={};
+  for(var i=1;i<=n;i++){var fi=faixaDoBoost(b0+i);cont[fi]=(cont[fi]||0)+1;}
+  var c=0,st=0,f=[],det=[];
+  Object.keys(cont).map(Number).sort(function(a,b){return a-b;}).forEach(function(fi){
+    var m=cont[fi],stones=stonesNaFaixa(fi,m,ctx.ganho,ctx.cenario),u=ctx.stone[fi];
+    st+=stones;
+    if(!u.ok){f.push(fstone(fi,u.motivo));det.push({fi:fi,m:m,stones:stones,custo:null});return;}
+    c+=stones*u.unit;det.push({fi:fi,m:m,stones:stones,custo:stones*u.unit,via:u.via});
+  });
+  return {c:c,falta:f,stones:st,det:det};
+}
+
+/* ---- dano ----
+   Bônus em % do X-Attack, da Star e do treino SOMAM: dano = base × (1 + X-Attack + Stars × %Star + treino).
+   O dano medido inclui X-Attack, Stars e treino, mas não a runa: a runa entra pela coluna da tabela de hazard.
+   O boost soma "dano por boost"; se o ganho acompanha os bônus em %, cresce junto com eles. */
+function montarModelo(p,ctx){
+  var D0=parseNum(p.dano),b0=parseNum(p.boost),k=parseNum(p.danoBoost),P=parseNum(p.preco);
+  var h0=p.held===""?null:+p.held,s0=+p.stars||0,rar=p.rar;
+  var tl=String(p.treino||"").trim()===""?0:parseNum(p.treino);
+  var falta=[];
+  if(!valido(D0)||D0<=0)falta.push({txt:"o dano total do combo",id:"f-dano"});
+  if(h0===null)falta.push({txt:"o X-Attack atual",id:"f-held"});
+  if(!valido(b0)||b0<0||b0>BOOST_MAX)falta.push({txt:"o boost atual (de 0 a 50)",id:"f-boost"});
+  if(!valido(k)||k<=0)falta.push({txt:"quanto de dano cada boost dá",id:"f-db"});
+  if(s0>0&&!RARMAP[rar])falta.push({txt:"o tier do Pokémon, para calcular o bônus das Stars que ele já tem",id:"f-rar"});
+  if(!valido(tl)||tl<0)falta.push({txt:"o nível do treino de Attack",id:"f-treino"});
+  if(falta.length)return {falta:falta};
+  var r=RARMAP[rar]?RARMAP[rar].pct/100:0,t=tl*0.001;
+  var M0=1+XATK[h0]/100+s0*r+t;
+  return {D0:D0,h0:h0,b0:b0,s0:s0,k:k,P:valido(P)?P:null,rar:rar,r:r,podeStar:!!RARMAP[rar],
+    treino:tl,t:t,M0:M0,B0:D0/M0};
+}
+function mult(m,h,s){return 1+XATK[h]/100+s*m.r+m.t;}
+function porBoost(m,h,s,esc){return esc?m.k*mult(m,h,s)/m.M0:m.k;}
+function danoCom(m,h,s,n,esc){return m.B0*mult(m,h,s)+n*porBoost(m,h,s,esc);}
+function boostsNecessarios(m,h,s,esc,alvo){
+  var base=m.B0*mult(m,h,s);
+  if(base>=alvo-1e-6)return 0;
+  return Math.ceil((alvo-base)/porBoost(m,h,s,esc)-1e-9);
+}
+function avaliar(m,h,s,n,ctx){
+  var ch=custoHeld(m.h0,h,ctx),cs=custoStar(m.s0,s,m.rar,m.P,ctx),cb=custoBoost(m.b0,n,ctx);
+  return {h:h,s:s,n:n,dano:danoCom(m,h,s,n,ctx.escala),custo:ch.c+cs.c+cb.c,
+    falta:uniqItems(ch.falta.concat(cs.falta,cb.falta)),ch:ch,cs:cs,cb:cb};
+}
+// O caminho mais barato usando só este Pokémon para chegar em "alvo"
+function planejar(m,ctx,alvo){
+  var sMax=m.podeStar?5:m.s0,comp=[],bloq=0;
+  for(var h=m.h0;h<=7;h++){
+    for(var s=m.s0;s<=sMax;s++){
+      var n=boostsNecessarios(m,h,s,ctx.escala,alvo);
+      if(m.b0+n>BOOST_MAX)continue;
+      var c=avaliar(m,h,s,n,ctx);
+      if(c.falta.length)bloq++;else comp.push(c);
+    }
+  }
+  comp.sort(function(a,b){return Math.abs(a.custo-b.custo)>0.5?a.custo-b.custo:b.dano-a.dano;});
+  return {melhor:comp[0]||null,bloqueados:bloq};
+}
+function caminhoSo(m,ctx,tipo,alvo){
+  var h,s,n;
+  if(tipo==="held"){
+    for(h=m.h0+1;h<=7;h++){if(boostsNecessarios(m,h,m.s0,ctx.escala,alvo)===0)return {chega:true,r:avaliar(m,h,m.s0,0,ctx)};}
+    return {chega:false,max:danoCom(m,7,m.s0,0,ctx.escala),limite:"Tier 7"};
+  }
+  if(tipo==="star"){
+    if(!m.podeStar)return {semStar:true};
+    for(s=m.s0+1;s<=5;s++){if(boostsNecessarios(m,m.h0,s,ctx.escala,alvo)===0)return {chega:true,r:avaliar(m,m.h0,s,0,ctx)};}
+    return {chega:false,max:danoCom(m,m.h0,5,0,ctx.escala),limite:"5 Stars"};
+  }
+  n=boostsNecessarios(m,m.h0,m.s0,ctx.escala,alvo);
+  if(m.b0+n>BOOST_MAX)return {chega:false,max:danoCom(m,m.h0,m.s0,BOOST_MAX-m.b0,ctx.escala),limite:"+50"};
+  return {chega:true,r:avaliar(m,m.h0,m.s0,n,ctx)};
+}
+
+/* ---- plano do time: a meta é a SOMA da dupla ----
+   Para cada Pokémon, listamos todas as combinações de X-Attack, Stars e boost.
+   Em cada dupla, procuramos a combinação mais barata dos dois que chega na meta.
+   Testamos as 6 formas de montar as duplas e ficamos com o menor custo total. */
+function fixo(d){return {fixo:true,ok:true,custo:0,dano:d,n:0};}
+function semMudanca(o,m){return !!o.fixo||(o.h===m.h0&&o.s===m.s0&&o.n===0);}
+function faltaOp(o){return o.fixo?[]:uniqItems(o.ch.falta.concat(o.cs.falta,o.cb.falta));}
+function opcoes(m,ctx){
+  var held={},star={},boost=[],ops=[],h,s,n;
+  var sMax=m.podeStar?5:m.s0,nMax=BOOST_MAX-m.b0;
+  for(h=m.h0;h<=7;h++)held[h]=custoHeld(m.h0,h,ctx);
+  for(s=m.s0;s<=sMax;s++)star[s]=custoStar(m.s0,s,m.rar,m.P,ctx);
+  for(n=0;n<=nMax;n++)boost[n]=custoBoost(m.b0,n,ctx);
+  for(h=m.h0;h<=7;h++)for(s=m.s0;s<=sMax;s++)for(n=0;n<=nMax;n++){
+    var a=held[h],b=star[s],c=boost[n];
+    ops.push({h:h,s:s,n:n,dano:danoCom(m,h,s,n,ctx.escala),custo:a.c+b.c+c.c,
+      ok:!a.falta.length&&!b.falta.length&&!c.falta.length,ch:a,cs:b,cb:c});
+  }
+  return ops;
+}
+// Só as opções que valem a pena: cada uma dá mais dano que todas as mais baratas.
+// Com "ot", entram também as que têm preço vazio, contando só a parte conhecida do custo.
+function fronteira(ops,ot){
+  var l=ops.filter(function(o){return ot||o.ok;});
+  l.sort(function(a,b){return (a.custo-b.custo)||((b.ok?1:0)-(a.ok?1:0))||(a.dano-b.dano);});
+  var f=[],best=-Infinity;
+  l.forEach(function(o){if(o.dano>best+1e-6){f.push(o);best=o.dano;}});
+  return f;
+}
+function menorCusto(f,need){
+  var lo=0,hi=f.length;
+  while(lo<hi){var mid=(lo+hi)>>1;if(f[mid].dano>=need-1e-6)hi=mid;else lo=mid+1;}
+  return lo<f.length?f[lo]:null;
+}
+function melhorDupla(fL,fD,alvo){
+  var best=null;
+  for(var i=0;i<fL.length;i++){
+    var a=fL[i],b=menorCusto(fD,alvo-a.dano);
+    if(!b)continue;
+    var c=a.custo+b.custo,miss=(a.ok?0:1)+(b.ok?0:1),dn=a.dano+b.dano;
+    if(!best||c<best.custo-0.5||(Math.abs(c-best.custo)<=0.5&&(miss<best.miss||(miss===best.miss&&dn>best.dano))))best={custo:c,a:a,b:b,dano:dn,miss:miss};
+  }
+  return best;
+}
+function planoTime(info,rot,alvo,key){
+  var L=rot.L.map(function(p){return p.slot-1;}),D=rot.D.map(function(p){return p.slot-1;});
+  var memo={},best=null;
+  PERMS.forEach(function(perm){
+    var duplas=[],total=0,miss=0;
+    for(var k=0;k<3;k++){
+      var li=L[k],di=D[perm[k]],id=li+"|"+di;
+      if(!(id in memo))memo[id]=melhorDupla(info[li][key],info[di][key],alvo);
+      var md=memo[id];
+      if(!md)return;
+      duplas.push({li:li,di:di,md:md});total+=md.custo;miss+=md.miss;
+    }
+    var minD=Math.min(duplas[0].md.dano,duplas[1].md.dano,duplas[2].md.dano);
+    if(!best||total<best.total-0.5||(Math.abs(total-best.total)<=0.5&&(miss<best.miss||(miss===best.miss&&minD>best.minD))))
+      best={perm:perm,duplas:duplas,total:total,miss:miss,minD:minD};
+  });
+  return best;
+}
+function hazardMax(valorDupla,rc){var h=-1;for(var i=0;i<HAZ.length;i++){if(HAZ[i][rc]*1000<=valorDupla)h=i;}return h;}
+
+/* ---- subir de hazard ----
+   1) Acha a configuração mais barata, saindo de hoje, que faz o time matar o hazard escolhido.
+   2) Divide em passos: em cada passo, o jeito mais barato de matar o próximo hazard
+      sem desfazer o que já foi comprado e sem sair da configuração do item 1.
+   O último passo chega na configuração do item 1, então o total é o mesmo. */
+function alvoHaz(h,rc){return HAZ[h][rc]*1000;}
+function hojeOp(m){return {h:m.h0,s:m.s0,n:0,dano:m.D0,custo:0,ok:true,ch:{c:0},cs:{c:0},cb:{c:0}};}
+// divisão em duplas com a dupla mais fraca mais forte possível (é ela que define o hazard)
+function melhorDivisao(danos,rot){
+  var L=rot.L.map(function(p){return p.slot-1;}),D=rot.D.map(function(p){return p.slot-1;}),best=null;
+  PERMS.forEach(function(perm){
+    var ds=[0,1,2].map(function(k){var li=L[k],di=D[perm[k]];return {li:li,di:di,soma:danos[li]+danos[di]};});
+    var min=Math.min(ds[0].soma,ds[1].soma,ds[2].soma);
+    if(!best||min>best.min+1e-6)best={duplas:ds,min:min};
+  });
+  return best;
+}
+// o que muda num Pokémon entre duas opções (a = antes, b = depois)
+function itensDiff(i,m,a,b){
+  var L=[];
+  if(b.h>a.h)L.push({i:i,t:"held",txt:(a.h===0?"X-Attack: nenhum → Tier "+b.h:"X-Attack Tier "+a.h+" → "+b.h),custo:b.ch.c-a.ch.c});
+  if(b.s>a.s)L.push({i:i,t:"star",txt:(a.s===0?"Sem Star":plural(a.s,"Star","Stars"))+" → "+plural(b.s,"Star","Stars"),custo:b.cs.c-a.cs.c});
+  if(b.n>a.n)L.push({i:i,t:"boost",txt:"Boost +"+(m.b0+a.n)+" → +"+(m.b0+b.n),custo:b.cb.c-a.cb.c});
+  return L;
+}
+// Sobe um hazard por vez a partir de "hoje". Com "fim", não passa da configuração final.
+function caminhoHaz(info,rot,rc,hoje,fim,T){
+  var prev=hoje.slice(),passos=[],gasto=0;
+  var hz=hazardMax(melhorDivisao(info.map(function(r,i){return prev[i]?prev[i].dano:r.dano;}),rot).min,rc);
+  while(hz<T){
+    var tmp=info.map(function(r,i){
+      if(!prev[i])return {f:r.fr};
+      var lo=prev[i],hi=fim?fim[i]:null;
+      return {f:fronteira(r.ops.filter(function(o){
+        return o.ok&&o.h>=lo.h&&o.s>=lo.s&&o.n>=lo.n&&(!hi||(o.h<=hi.h&&o.s<=hi.s&&o.n<=hi.n));
+      }),false)};
+    });
+    var p=planoTime(tmp,rot,alvoHaz(hz+1,rc),"f");
+    if(!p)return {passos:passos,gasto:gasto,parou:true};
+    var novo=prev.slice();
+    p.duplas.forEach(function(d){if(prev[d.li])novo[d.li]=d.md.a;if(prev[d.di])novo[d.di]=d.md.b;});
+    var danos=info.map(function(r,i){return novo[i]?novo[i].dano:r.dano;});
+    var div=melhorDivisao(danos,rot),ate=Math.max(hazardMax(div.min,rc),hz+1);
+    var itens=[],custo=0;
+    info.forEach(function(r,i){if(prev[i])itensDiff(i,r.m,prev[i],novo[i]).forEach(function(it){itens.push(it);custo+=it.custo;});});
+    gasto+=custo;
+    passos.push({de:hz,ate:ate,custo:custo,acum:gasto,itens:itens,div:div});
+    prev=novo;hz=ate;
+  }
+  return {passos:passos,gasto:gasto};
+}
+function progressao(info,rot,rc,T){
+  var cheio=info.map(function(r){return {f:r.fr};});
+  var pT=planoTime(cheio,rot,alvoHaz(T,rc),"f");
+  if(!pT){
+    var res={T:T,impossivel:true,faltaPreco:[]};
+    var ot=planoTime(info,rot,alvoHaz(T,rc),"frOt");
+    if(ot)ot.duplas.forEach(function(d){[[d.li,d.md.a],[d.di,d.md.b]].forEach(function(x){if(!x[1].ok)res.faltaPreco=res.faltaPreco.concat(faltaOp(x[1]));});});
+    res.faltaPreco=uniqItems(res.faltaPreco);
+    return res;
+  }
+  var fim=info.map(function(){return null;});
+  pT.duplas.forEach(function(d){fim[d.li]=d.md.a;fim[d.di]=d.md.b;});
+  var hoje=info.map(function(r){return r.ops?hojeOp(r.m):null;});
+  info.forEach(function(r,i){if(!r.ops)fim[i]=null;});
+  return {T:T,total:pT.total,plano:caminhoHaz(info,rot,rc,hoje,fim,T),miope:caminhoHaz(info,rot,rc,hoje,null,T)};
+}
+// Sem escolha do jogador: até 3 hazards acima de hoje, ou o mais alto que der com os dados
+function alvoProgAuto(info,rot,rc,N){
+  var cheio=info.map(function(r){return {f:r.fr};});
+  for(var h=Math.min(HAZ.length-1,N+3);h>N+1;h--){if(planoTime(cheio,rot,alvoHaz(h,rc),"f"))return h;}
+  return N+1;
+}
+// Itens que cabem na verba (soma mais alta sem passar dela)
+function cabeNaVerba(itens,verba){
+  var n=itens.length,best=[],bestV=-1;
+  if(n<=14){
+    for(var mask=1;mask<(1<<n);mask++){
+      var v=0,sel=[];
+      for(var k=0;k<n;k++)if(mask&(1<<k)){v+=itens[k].custo;sel.push(itens[k]);}
+      if(v<=verba+0.5&&(v>bestV+0.5||(Math.abs(v-bestV)<=0.5&&sel.length<best.length))){bestV=v;best=sel;}
+    }
+    return best;
+  }
+  var resto=verba;
+  return itens.slice().sort(function(a,b){return b.custo-a.custo;}).filter(function(it){if(it.custo<=resto+0.5){resto-=it.custo;return true;}return false;});
+}
+
+/* ---- rotação ---- */
+var PERMS=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+function ranquear(lurers,damages,alvo){
+  var combos=PERMS.map(function(p){
+    var duplas=lurers.map(function(l,i){var d=damages[p[i]],soma=l.dano+d.dano;return {lurer:l,damage:d,soma:soma,folga:soma-alvo,bate:soma>=alvo};});
+    return {duplas:duplas,batem:duplas.filter(function(x){return x.bate;}).length,ordenadas:duplas.map(function(x){return x.soma;}).sort(function(a,b){return a-b;})};
+  });
+  function cmp(a,b){if(b.batem!==a.batem)return b.batem-a.batem;for(var i=0;i<3;i++){if(b.ordenadas[i]!==a.ordenadas[i])return b.ordenadas[i]-a.ordenadas[i];}return 0;}
+  combos.sort(cmp);
+  combos.forEach(function(c){c.melhor=cmp(c,combos[0])===0;});
+  return combos;
+}
+
+/* ============================================================
+   FORMATAÇÃO
+   ============================================================ */
+var fmtN=new Intl.NumberFormat("pt-BR");
+var fmt1=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:1});
+var fmt2=new Intl.NumberFormat("pt-BR",{maximumFractionDigits:2});
+var fmt3=new Intl.NumberFormat("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3});
+function fmt(n){return fmtN.format(Math.round(n));}
+function gold(v){
+  if(!valido(v))return "—";
+  var a=Math.abs(v);
+  if(a>=1e6)return fmt2.format(v/1e6)+" kk";
+  if(a>=1e3)return fmt1.format(v/1e3)+" k";
+  return fmtN.format(Math.round(v));
+}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function plural(n,um,varios){return fmtN.format(n)+" "+(n===1?um:varios);}
+function juntar(a){return a.length<=1?a.join(""):a.slice(0,-1).join(", ")+" e "+a[a.length-1];}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s;}
+function $(id){return document.getElementById(id);}
+function opt(v,txt,cur){return '<option value="'+v+'"'+(String(cur)===String(v)?" selected":"")+'>'+txt+'</option>';}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+var N=6,KEY="pka-planejador-2x2x2:v1";
+var PASSOS=["time","precos","melhorar","compras"];
+function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0"};}
+function feesVazias(){var o={};RAR.forEach(function(r){o[r.id]=[0,1,2,3,4].map(function(){return {d:"",g:""};});});return o;}
+function estadoPadrao(){
+  var time=[];for(var i=0;i<N;i++)time.push(pokeVazio());
+  // Exemplo com os números de um caso real (Shiny Infernape)
+  time[0]={nome:"Shiny Infernape",funcao:"",dano:"237k",held:"4",boost:"10",stars:"0",rar:"",preco:"140kk",danoBoost:"1.100",treino:"35"};
+  return {
+    exemplo:true,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",time:time,sel:0,tab:"time",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
+    precos:{
+      xatk:["","","","","30kk","",""],
+      diamante:"",fees:feesVazias(),starRar:"t1",
+      ganho:"10",cenario:"mean",escala:"sim",lista:{de:"10",ate:"15"},listaCen:"mean",listaPoke:"",listaModo:"barato",
+      materiais:[{nome:"Material 1",preco:""},{nome:"Material 2",preco:""},{nome:"Material 3",preco:""},{nome:"Material 4",preco:""},{nome:"Material 5",preco:""}],
+      stones:FAIXAS.map(function(f,i){return {market:"",conf:false,qty:QTY_PADRAO[i].map(String)};})
+    }
+  };
+}
+function str(v,d){return typeof v==="string"?v:d;}
+function normalizar(o){
+  var s=estadoPadrao();
+  if(!o||typeof o!=="object")return s;
+  s.exemplo=o.exemplo===true;
+  s.alvo=str(o.alvo,s.alvo);
+  if(typeof o.metaManual==="boolean")s.metaManual=o.metaManual;
+  if(/^(\d|1[0-7])$/.test(String(o.hazard)))s.hazard=String(o.hazard);
+  if(/^[0-5]$/.test(String(o.runaCol)))s.runaCol=String(o.runaCol);
+  else if(Array.isArray(o.time)){
+    // dados antigos: a runa ficava no Pokémon, em %. Leva para a coluna da tabela.
+    o.time.some(function(p){var v=p&&String(p.runa||"").replace(",",".").trim();
+      var i=["2","4","6","8","10"].indexOf(v);if(i>=0){s.runaCol=String(i+1);return true;}return false;});
+  }
+  if(Array.isArray(o.time)&&o.time.length===N){
+    s.time=o.time.map(function(p){
+      var v=pokeVazio();p=p||{};
+      Object.keys(v).forEach(function(k){v[k]=str(p[k],v[k]);});
+      if(v.funcao!=="lurer"&&v.funcao!=="damage")v.funcao="";
+      return v;
+    });
+  }
+  if(typeof o.sel==="number"&&o.sel>=0&&o.sel<N)s.sel=o.sel;
+  if(o.prog&&typeof o.prog==="object"){
+    if(/^(\d|1[0-7])?$/.test(String(o.prog.ate)))s.prog.ate=String(o.prog.ate);
+    s.prog.verba=str(o.prog.verba,"");
+  }
+  var tab=o.tab==="rotacao"?"time":o.tab;
+  if(PASSOS.indexOf(tab)>=0)s.tab=tab;
+  var p=o.precos;
+  if(p&&typeof p==="object"){
+    if(Array.isArray(p.xatk)&&p.xatk.length===7)s.precos.xatk=p.xatk.map(function(x){return str(x,"");});
+    s.precos.diamante=str(p.diamante,"");
+    if(p.fees&&typeof p.fees==="object")RAR.forEach(function(r){
+      var a=p.fees[r.id];
+      if(Array.isArray(a)&&a.length===5)s.precos.fees[r.id]=a.map(function(t){t=t||{};return {d:str(t.d,""),g:str(t.g,"")};});
+    });
+    if(RARMAP[p.starRar])s.precos.starRar=p.starRar;
+    s.precos.ganho=str(p.ganho,"10");
+    if(["mean","p90","p99","worst"].indexOf(p.cenario)>=0)s.precos.cenario=p.cenario;
+    if(p.escala==="sim"||p.escala==="nao")s.precos.escala=p.escala;
+    if(p.lista&&typeof p.lista==="object")s.precos.lista={de:str(p.lista.de,"10"),ate:str(p.lista.ate,"15")};
+    if(["none","mean","p90","p99","worst"].indexOf(p.listaCen)>=0)s.precos.listaCen=p.listaCen;
+    if(/^[0-5]?$/.test(String(p.listaPoke)))s.precos.listaPoke=String(p.listaPoke);
+    if(p.listaModo==="barato"||p.listaModo==="craft")s.precos.listaModo=p.listaModo;
+    if(Array.isArray(p.materiais)&&p.materiais.length>=1){
+      s.precos.materiais=p.materiais.map(function(m){m=m||{};return {nome:str(m.nome,""),preco:str(m.preco,"")};});
+      if(Array.isArray(p.stones)&&p.stones.length===FAIXAS.length){
+        s.precos.stones=p.stones.map(function(st,fi){
+          st=st||{};var q=Array.isArray(st.qty)?st.qty:[];
+          var qty=s.precos.materiais.map(function(_,i){return str(q[i],"0");});
+          // dados salvos antes da confirmação: faixa com quantidades diferentes das padrão foi digitada pelo jogador
+          var conf=typeof st.conf==="boolean"?st.conf:
+            (qty.length===QTY_PADRAO[fi].length&&qty.some(function(v,i){return parseNum(v)!==QTY_PADRAO[fi][i];}));
+          return {market:str(st.market,""),conf:conf,qty:qty};
+        });
+      }else{
+        s.precos.stones=FAIXAS.map(function(){return {market:"",conf:false,qty:s.precos.materiais.map(function(){return "0";})};});
+      }
+    }
+  }
+  return s;
+}
+var state=estadoPadrao();
+var storageOk=(function(){try{var k=KEY+":t";localStorage.setItem(k,"1");localStorage.removeItem(k);return true;}catch(e){return false;}})();
+function carregar(){if(!storageOk)return;try{var raw=localStorage.getItem(KEY);if(raw)state=normalizar(JSON.parse(raw));}catch(e){}}
+function salvar(){if(!storageOk)return;try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function getPath(path){var o=state;path.split(".").forEach(function(k){o=o==null?undefined:o[k];});return o;}
+function setPath(path,v){var ks=path.split("."),o=state;for(var i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v;}
+function nomeDe(i){return state.time[i].nome.trim()||("Pokémon "+(i+1));}
+
+/* ============================================================
+   ANÁLISE (recalculada a cada mudança)
+   ============================================================ */
+function contexto(){
+  var P=state.precos;
+  var ctx={xatk:[0],diamante:parseNum(P.diamante),fees:{},stone:[],
+    ganho:parseNum(P.ganho),cenario:P.cenario,escala:P.escala==="sim"};
+  if(!valido(ctx.ganho)||ctx.ganho<0)ctx.ganho=10;
+  P.xatk.forEach(function(x){ctx.xatk.push(parseNum(x));});
+  RAR.forEach(function(r){ctx.fees[r.id]=P.fees[r.id].map(function(t){return {d:parseNum(t.d),g:parseNum(t.g)};});});
+  ctx.stone=P.stones.map(function(st){
+    var craft=0,matOk=true,usa=false;
+    P.materiais.forEach(function(m,mi){
+      var q=parseNum(st.qty[mi]);
+      if(!valido(q)||q<=0)return;
+      usa=true;
+      var pr=parseNum(m.preco);
+      if(!valido(pr)){matOk=false;return;}
+      craft+=q*pr;
+    });
+    var craftOk=usa&&st.conf&&matOk;
+    var mk=parseNum(st.market),mkOk=valido(mk)&&mk>0;
+    var r={craft:craftOk?craft:null,market:mkOk?mk:null,ok:craftOk||mkOk,
+      motivo:!usa?"qtd":(!st.conf?"conf":(!matOk?"mat":""))};
+    if(craftOk&&mkOk){r.unit=Math.min(craft,mk);r.via=mk<craft?"pronta":"craft";}
+    else if(craftOk){r.unit=craft;r.via="craft";}
+    else if(mkOk){r.unit=mk;r.via="pronta";}
+    return r;
+  });
+  var a=state.metaManual?parseNum(state.alvo):HAZ[+state.hazard][+state.runaCol]*1000;
+  ctx.alvo=a;
+  ctx.meta=(valido(a)&&a>0)?a/2:null;
+  return ctx;
+}
+function analisarRotacao(ctx){
+  var alvo=ctx.alvo,inval=0;
+  var pokes=state.time.map(function(p,i){
+    var d=parseNum(p.dano);
+    if(String(p.dano).trim()!==""&&!valido(d))inval++;
+    return {slot:i+1,nome:nomeDe(i),funcao:p.funcao,dano:d};
+  });
+  var L=pokes.filter(function(p){return p.funcao==="lurer";}),D=pokes.filter(function(p){return p.funcao==="damage";});
+  var comDano=pokes.filter(function(p){return valido(p.dano);}).length;
+  var r={pokes:pokes,L:L,D:D,comDano:comDano,inval:inval,alvo:alvo,alvoOk:valido(alvo)&&alvo>0};
+  r.pronto=L.length===3&&D.length===3&&comDano===N&&r.alvoOk;
+  if(!r.pronto)return r;
+  r.combos=ranquear(L,D,alvo);r.melhor=r.combos[0];
+  r.maxMin=0;r.combos.forEach(function(c){if(c.ordenadas[0]>r.maxMin)r.maxMin=c.ordenadas[0];});
+  r.hMax=hazardMax(r.maxMin,+state.runaCol);
+  r.total=pokes.reduce(function(s,p){return s+p.dano;},0);
+  return r;
+}
+var A=null;
+function analisar(){
+  var ctx=contexto(),rot=analisarRotacao(ctx);
+  var info=state.time.map(function(p,i){
+    var r={i:i,nome:nomeDe(i),funcao:p.funcao,dano:parseNum(p.dano),vazio:!p.nome.trim()&&!String(p.dano).trim()};
+    var m=montarModelo(p,ctx);r.m=m;
+    if(m.falta){r.fr=r.frOt=valido(r.dano)?[fixo(r.dano)]:null;return r;}
+    var ops=opcoes(m,ctx);
+    r.ops=ops;r.fr=fronteira(ops,false);r.frOt=fronteira(ops,true);
+    return r;
+  });
+  var tp=null,tpOt=null,dica=null,plano={};
+  if(rot.pronto){tp=planoTime(info,rot,ctx.alvo,"fr");tpOt=planoTime(info,rot,ctx.alvo,"frOt");}
+  // preços vazios que podem montar o plano ou deixá-lo mais barato
+  if(tpOt&&(!tp||tpOt.total<tp.total-0.5)){
+    var porPoke=[];
+    tpOt.duplas.forEach(function(d){[[d.li,d.md.a],[d.di,d.md.b]].forEach(function(x){if(!x[1].ok)porPoke.push({i:x[0],o:x[1],itens:faltaOp(x[1])});});});
+    if(porPoke.length)dica={porPoke:porPoke,semPlano:!tp,itens:uniqItems([].concat.apply([],porPoke.map(function(x){return x.itens;})))};
+  }
+  if(tp)tp.duplas.forEach(function(d,k){plano[d.li]={o:d.md.a,parceiro:d.di,k:k};plano[d.di]={o:d.md.b,parceiro:d.li,k:k};});
+  var pend={},matNeed={};
+  if(dica)dica.itens.forEach(function(it){if(it.t!=="copia")pend[it.k]=it;});
+  Object.keys(pend).forEach(function(k){
+    var it=pend[k];
+    if(it.t!=="stone"||it.why!=="mat")return;
+    state.precos.materiais.forEach(function(mt,mi){
+      var q=parseNum(state.precos.stones[it.fi].qty[mi]);
+      if(valido(q)&&q>0&&!valido(parseNum(mt.preco)))matNeed["m:"+mi]=true;
+    });
+  });
+  return {ctx:ctx,rot:rot,info:info,tp:tp,tpOt:tpOt,dica:dica,plano:plano,pend:pend,matNeed:matNeed};
+}
+// Com quem este Pokémon faz dupla: no plano do time ou, sem plano, na melhor rotação de hoje
+function parceiroDe(i){
+  if(A.plano[i])return A.plano[i].parceiro;
+  if(!A.rot.pronto)return null;
+  var r=null;
+  A.rot.melhor.duplas.forEach(function(d){var l=d.lurer.slot-1,dd=d.damage.slot-1;if(l===i)r=dd;if(dd===i)r=l;});
+  return r;
+}
+
+/* ---- textos do que falta ---- */
+function linhasFalta(itens){
+  var fees={},xs=[],sts=[],dia=false,cop=false;
+  itens.forEach(function(it){
+    if(it.t==="fee")(fees[it.rar]=fees[it.rar]||[]).push(it);
+    else if(it.t==="xatk")xs.push(it);
+    else if(it.t==="stone")sts.push(it);
+    else if(it.t==="dia")dia=true;
+    else if(it.t==="copia")cop=true;
+  });
+  var L=[];
+  Object.keys(fees).forEach(function(rar){
+    var arr=fees[rar].slice().sort(function(a,b){return a.e-b.e;});
+    var es=arr.map(function(x){return (x.e-1)+"→"+x.e;});
+    L.push({txt:"Taxas da Star "+RARMAP[rar].nome+": "+(es.length>1?"etapas ":"etapa ")+juntar(es),go:arr[0]});
+  });
+  if(dia)L.push({txt:"Valor de 1 Diamond em gold",go:FDIA});
+  if(xs.length){xs.sort(function(a,b){return a.tier-b.tier;});L.push({txt:"Preço do X-Attack "+juntar(xs.map(function(x){return "Tier "+x.tier;})),go:xs[0]});}
+  if(sts.length){
+    sts.sort(function(a,b){return a.fi-b.fi;});
+    var ws=sts.map(function(x){return x.why;}),mot;
+    if(ws.every(function(w){return w==="conf";}))mot="conferir as quantidades do craft ou informar o preço da stone pronta";
+    else if(ws.every(function(w){return w==="mat";}))mot="falta preço de material do craft, ou informe o preço da stone pronta";
+    else mot="conferir o craft (quantidades e preços dos materiais) ou informar o preço da stone pronta";
+    L.push({txt:(sts.length>1?"Stones ":"Stone ")+juntar(sts.map(function(x){return FAIXAS[x.fi].nome;}))+": "+mot,go:sts[0]});
+  }
+  if(cop)L.push({txt:"Preço de uma cópia sem Star deste Pokémon",go:FCOPIA});
+  return L;
+}
+function resumoFaltas(itens){return linhasFalta(itens).map(function(l){return l.txt.charAt(0).toLowerCase()+l.txt.slice(1);}).join("; ");}
+function goBtn(it,txt,pi){
+  var a=' data-act="ir" data-t="'+it.t+'"';
+  if(it.t==="xatk")a+=' data-tier="'+it.tier+'"';
+  if(it.t==="fee")a+=' data-rar="'+it.rar+'" data-e="'+it.e+'"';
+  if(it.t==="stone")a+=' data-fi="'+it.fi+'" data-why="'+it.why+'"';
+  if(pi!=null)a+=' data-pi="'+pi+'"';
+  return '<button type="button" class="btn btn-sm"'+a+'>'+(txt||"Preencher")+'</button>';
+}
+function descCombo(m,c){
+  var p=[];
+  if(c.h>m.h0)p.push("X-Attack Tier "+c.h);
+  if(c.s>m.s0)p.push(plural(c.s,"Star","Stars"));
+  if(c.n>0)p.push("boost até +"+(m.b0+c.n));
+  return p.length?p.join(" + "):"Sem mudança";
+}
+
+/* ============================================================
+   TOPO E PASSOS
+   ============================================================ */
+function montarTopo(){
+  $("m-haz").innerHTML=HAZ.map(function(_,i){return '<option value="'+i+'">Hazard '+i+'</option>';}).join("");
+  $("m-runa").innerHTML=RUNA_TXT.map(function(t,i){return '<option value="'+i+'">'+(i===0?"Runa 0 (+0%)":t)+'</option>';}).join("");
+}
+// valor da tabela de hazard para o hazard e a runa escolhidos
+function valorTabela(){return HAZ[+state.hazard][+state.runaCol]*1000;}
+function valorTabelaTxt(){return HAZ[+state.hazard][+state.runaCol]+"k";}
+function preencherTopo(){
+  $("m-haz").value=state.hazard;$("m-runa").value=state.runaCol;
+  $("alvo").value=state.metaManual?state.alvo:valorTabelaTxt();
+}
+function atualizarTopo(){
+  var man=!!state.metaManual,src=$("alvo-src"),bt=$("btn-tabela");
+  src.textContent=man?"digitado":"da tabela";
+  src.classList.toggle("man",man);
+  bt.hidden=!man;
+  bt.textContent="Usar a tabela ("+valorTabelaTxt()+")";
+  $("meta-v").textContent=valido(A.ctx.meta)?fmt(A.ctx.meta):"—";
+}
+function setSt(id,st){var el=$(id);el.className="st"+(st[0]?" "+st[0]:"");el.textContent=st[1];}
+function atualizarPassos(){
+  var rot=A.rot,st;
+  if(!rot.alvoOk)st=["warn","Informe a meta"];
+  else if(!rot.pronto)st=["warn","Complete o time"];
+  else if(!state.metaManual)st=rot.hMax>=0?["ok","Mata até o hazard "+rot.hMax]:["bad","Não mata o hazard 0"];
+  else st=rot.melhor.batem===3?["ok","As 3 duplas batem"]:["bad",rot.melhor.batem+" de 3 duplas batem"];
+  setSt("st-time",st);
+  var np=Object.keys(A.pend).length;
+  setSt("st-precos",np?["warn",plural(np,"pendência","pendências")]:["ok","Nada pendente"]);
+  var st3;
+  if(!A.rot.alvoOk)st3=["warn","Informe a meta"];
+  else if(!A.rot.pronto)st3=["warn","Complete o time"];
+  else if(A.tp&&A.tp.total<0.5)st3=["ok","O time já mata"];
+  else if(A.tp)st3=["ok","Plano de "+gold(A.tp.total)];
+  else if(A.tpOt)st3=["warn","Sem plano: faltam preços"];
+  else st3=["bad","Não chega na meta"];
+  setSt("st-melhorar",st3);
+  var L=state.precos.lista;
+  setSt("st-compras",["","Boost +"+L.de+" até +"+L.ate]);
+}
+
+/* ============================================================
+   ECOS DOS CAMPOS (mostra o número interpretado)
+   ============================================================ */
+function refreshEchos(root){
+  var els=(root||document).querySelectorAll("[data-fmt]");
+  for(var i=0;i<els.length;i++){
+    var el=els[i],raw=el.value,kind=el.getAttribute("data-fmt");
+    var wrap=el.closest(".fld"),echo=wrap?wrap.querySelector(".echo"):null;
+    if(kind==="treino"){
+      var tv=String(raw).trim()===""?0:parseNum(raw),okt=valido(tv)&&tv>=0;
+      el.classList.toggle("invalid",!okt);
+      if(echo){echo.classList.toggle("bad",!okt);echo.textContent=okt?"= +"+fmt2.format(tv*0.1)+"% de dano":"valor inválido";}
+      continue;
+    }
+    var vazio=String(raw).trim()==="",v=parseNum(raw),ok=valido(v);
+    if(ok&&kind==="boost")ok=v>=0&&v<=BOOST_MAX;
+    if(ok&&kind==="dano")ok=v>0;
+    var erro=!vazio&&!ok;
+    el.classList.toggle("invalid",erro);
+    if(erro)el.setAttribute("aria-invalid","true");else el.removeAttribute("aria-invalid");
+    if(!echo)continue;
+    echo.classList.toggle("bad",erro);
+    if(vazio){echo.textContent=kind==="gold"?"não informado":"";continue;}
+    if(erro){echo.textContent=kind==="boost"?"use um número de 0 a 50":"valor inválido";continue;}
+    if(kind==="gold")echo.textContent="= "+gold(v);
+    else if(kind==="boost"||kind==="int")echo.textContent="";
+    else echo.textContent="= "+fmt(v);
+  }
+}
+
+/* ============================================================
+   PASSO 1: TIME E ROTAÇÃO
+   ============================================================ */
+function montarLinhas(){
+  var h="";
+  for(var i=0;i<N;i++){
+    var n=i+1;
+    h+='<div class="trow" data-i="'+i+'">'+
+      '<span class="slot" aria-hidden="true">'+n+'</span>'+
+      '<div class="c-nome"><label class="sr" for="nome-'+i+'">Nome do Pokémon '+n+'</label>'+
+        '<input type="text" id="nome-'+i+'" data-path="time.'+i+'.nome" maxlength="30" placeholder="Nome do Pokémon '+n+'" autocomplete="off" spellcheck="false"></div>'+
+      '<fieldset class="role"><legend class="sr">Função do Pokémon '+n+'</legend>'+
+        '<label class="seg lurer"><input type="radio" name="funcao-'+i+'" value="lurer" data-path="time.'+i+'.funcao"><span>Lurer</span></label>'+
+        '<label class="seg damage"><input type="radio" name="funcao-'+i+'" value="damage" data-path="time.'+i+'.funcao"><span>Damage</span></label>'+
+      '</fieldset>'+
+      '<div class="c-dano fld"><label class="sr" for="dano-'+i+'">Dano total do combo do Pokémon '+n+'</label>'+
+        '<input type="text" id="dano-'+i+'" data-path="time.'+i+'.dano" data-fmt="dano" placeholder="ex.: 320k" autocomplete="off" spellcheck="false"><span class="echo"></span></div>'+
+      '<span class="gapc" id="gap-'+i+'"></span>'+
+    '</div>';
+  }
+  $("rows").innerHTML=h;
+}
+function preencherTime(){
+  state.time.forEach(function(p,i){
+    $("nome-"+i).value=p.nome;$("dano-"+i).value=p.dano;
+    var rs=document.getElementsByName("funcao-"+i);
+    for(var r=0;r<rs.length;r++)rs[r].checked=(rs[r].value===p.funcao);
+  });
+}
+function chip(rot,n,max,cls){var e=n===max?" done":(n>max?" over":"");return '<span class="count '+cls+e+'">'+rot+' <b>'+n+'</b> de '+max+'</span>';}
+function atualizarTime(){
+  var rot=A.rot,ctx=A.ctx;
+  $("counts").innerHTML=chip("Lurer",rot.L.length,3,"lurer")+chip("Damage",rot.D.length,3,"damage");
+  state.time.forEach(function(p,i){
+    var row=$("rows").children[i];if(row)row.setAttribute("data-role",p.funcao||"");
+    var g=$("gap-"+i),d=parseNum(p.dano);
+    if(valido(d)&&valido(ctx.meta)){
+      var dif=d-ctx.meta;
+      g.className="gapc "+(dif>=0?"ok":"bad");
+      var sg=dif>=0?"+":"−";
+      g.innerHTML='<span class="g-l">'+sg+fmt(Math.abs(dif))+'</span><span class="g-s">'+sg+fmt1.format(Math.abs(dif)/1000)+'k</span>';
+      g.title=dif>=0?"Acima da meta de "+fmt(ctx.meta):"Faltam "+fmt(-dif)+" para "+fmt(ctx.meta);
+    }else{g.className="gapc";g.textContent="—";g.title="";}
+  });
+  $("rot-res").innerHTML=rotHtml(rot);
+  var t=$("todas");
+  if(rot.pronto){t.innerHTML=todasHtml(rot);t.hidden=false;}else{t.hidden=true;t.innerHTML="";}
+}
+function rotHtml(rot){
+  if(!rot.pronto){
+    var cf=rot.L.length+rot.D.length;
+    var itens=[
+      {ok:cf===N,txt:"Função dos 6 Pokémon",det:cf+" de 6"},
+      {ok:rot.L.length===3&&rot.D.length===3,txt:"3 Lurers e 3 Damage",det:"agora "+plural(rot.L.length,"Lurer","Lurers")+" e "+rot.D.length+" Damage"},
+      {ok:rot.comDano===N,txt:"Dano total do combo dos 6",det:rot.comDano+" de 6"+(rot.inval?", "+plural(rot.inval,"valor inválido","valores inválidos"):"")}
+    ];
+    if(!rot.alvoOk)itens.push({ok:false,txt:"Meta de dano",det:"informe um valor válido no topo"});
+    return '<section class="panel"><div class="panel-head"><div><h2>Melhor rotação</h2><p class="panel-sub">Para calcular, complete:</p></div></div><ul class="todo">'+
+      itens.map(function(it){return '<li class="'+(it.ok?"ok":"no")+'"><span class="ic" aria-hidden="true">'+(it.ok?"✓":"○")+'</span><span>'+it.txt+' <span class="det">('+it.det+')</span><span class="sr">'+(it.ok?", concluído":", pendente")+'</span></span></li>';}).join("")+'</ul></section>';
+  }
+  var m=rot.melhor,alvo=rot.alvo,outros=rot.combos.filter(function(c){return c.melhor;}).length-1;
+  var minimo=3*alvo,todasOk=m.batem===3;
+  var vtxt=todasOk?"As 3 duplas batem "+fmt(alvo):(m.batem===0?"Nenhuma dupla bate "+fmt(alvo):"No máximo "+m.batem+" de 3 duplas "+(m.batem===1?"bate ":"batem ")+fmt(alvo));
+  var maior=0;m.duplas.forEach(function(d){if(d.soma>maior)maior=d.soma;});
+  var escala=Math.max(alvo,maior)*1.1;
+  function pct(v){return Math.max(0,Math.min(100,v/escala*100));}
+  var pA=pct(alvo),al=pA<14?"al-l":(pA>86?"al-r":"al-c");
+  function linha(n,cls,rotulo,p){return '<div class="mem '+cls+'"><span class="n">'+n+'</span><span class="who"><span class="role-t">'+rotulo+'</span><span class="nm">'+esc(p.nome)+' <span class="slotref">#'+p.slot+'</span></span></span><span class="v">'+fmt(p.dano)+'</span></div>';}
+  var placas=m.duplas.map(function(d,i){
+    var pl=pct(d.lurer.dano),pd=pct(d.soma)-pl;
+    return '<article class="plate"><div class="plate-top"><h3>Dupla '+(i+1)+'</h3><span class="pill '+(d.bate?"ok":"bad")+'">'+(d.bate?"Mata ✓":"Não mata ✗")+'</span></div>'+
+      linha(2*i+1,"lurer","Lurer",d.lurer)+linha(2*i+2,"damage","Damage",d.damage)+
+      '<div class="plate-sum"><span class="big">'+fmt(d.soma)+'</span><span class="margin '+(d.bate?"ok":"bad")+'">'+(d.bate?"+"+fmt(d.folga)+" de folga":"faltam "+fmt(-d.folga))+'</span></div>'+
+      '<div class="bar" role="img" aria-label="Dupla '+(i+1)+': '+fmt(d.soma)+' de '+fmt(alvo)+' necessários"><span class="bl" style="width:'+pl.toFixed(2)+'%"></span><span class="bd" style="left:'+pl.toFixed(2)+'%;width:'+pd.toFixed(2)+'%"></span><span class="tick" style="left:'+pA.toFixed(2)+'%"><span class="tick-l '+al+'">'+fmt(alvo)+'</span></span></div></article>';
+  }).join("");
+  var haz="",rc=+state.runaCol,pela=state.metaManual?"Pela tabela, com a ":"Com a ";
+  // para o hazard vale a divisão em que a dupla mais fraca fica mais forte (pode não ser a do quadro abaixo)
+  if(rot.hMax<0)haz='<div class="haz-line bad">'+pela+RUNA_TXT[rc]+', nenhuma divisão do time mata o hazard 0. O mais perto é uma divisão em que a dupla mais fraca tem '+fmt(rot.maxMin)+', e o hazard 0 pede '+fmt(HAZ[0][rc]*1000)+'.</div>';
+  else{
+    haz=pela+RUNA_TXT[rc]+', o time mata até o <strong>hazard '+rot.hMax+'</strong>, na divisão em que a dupla mais fraca fica mais forte ('+fmt(rot.maxMin)+').';
+    if(rot.hMax<HAZ.length-1)haz+=' O hazard '+(rot.hMax+1)+' pede '+fmt(HAZ[rot.hMax+1][rc]*1000)+' por dupla: faltam '+fmt(HAZ[rot.hMax+1][rc]*1000-rot.maxMin)+'.';
+    haz='<div class="haz-line ok">'+haz+'</div>';
+  }
+  var emp="";
+  if(outros===1)emp='<p class="fine" style="margin-top:12px">Outra combinação dá exatamente o mesmo resultado e também aparece como melhor na tabela.</p>';
+  else if(outros>1)emp='<p class="fine" style="margin-top:12px">Outras '+outros+' combinações dão exatamente o mesmo resultado e também aparecem como melhores na tabela.</p>';
+  var diag='Soma do time: <strong>'+fmt(rot.total)+'</strong>. Para as 3 duplas baterem '+fmt(alvo)+', a soma precisa ser de pelo menos <strong>'+fmt(minimo)+'</strong>.';
+  if(rot.total<minimo)diag+=' <span class="warn-t">Faltam '+fmt(minimo-rot.total)+' no total: com esse time, nenhuma combinação faz as 3 duplas baterem. O passo 3 mostra o jeito mais barato de cobrir a falta.</span>';
+  else if(!todasOk)diag+=' <span class="warn-t">A soma dá, mas nenhuma combinação divide o dano de forma que as 3 duplas batam.</span>';
+  return '<section class="panel cq"><div class="panel-head"><div><h2>Melhor rotação</h2><p class="panel-sub">A numeração é a ordem de uso: 1 lura, 2 finaliza, e assim até o 6, quando a rotação recomeça.</p></div><span class="verdict '+(todasOk?"ok":"bad")+'">'+vtxt+'</span></div>'+
+    haz+'<div class="plates">'+placas+'</div>'+emp+'<p class="diag">'+diag+'</p></section>';
+}
+function todasHtml(rot){
+  var ls=rot.melhor.duplas.map(function(d){return d.lurer;});
+  var head='<tr><th scope="col">#</th>'+ls.map(function(l){return '<th scope="col"><span class="th-l">Lurer</span> '+esc(l.nome)+' <span class="slotref">#'+l.slot+'</span></th>';}).join("")+'<th scope="col" class="r">Duplas que batem</th><th scope="col" class="r">Dupla mais fraca</th></tr>';
+  var body=rot.combos.map(function(c,k){
+    return '<tr'+(c.melhor?' class="is-best"':'')+'><td><span class="rank">'+(k+1)+'</span>'+(c.melhor?'<span class="best">melhor</span>':'')+'</td>'+
+      c.duplas.map(function(d){return '<td><span class="cell-n">'+esc(d.damage.nome)+' <span class="slotref">#'+d.damage.slot+'</span></span><span class="cell-v '+(d.bate?"ok":"bad")+'">'+fmt(d.soma)+' '+(d.bate?"✓":"✗")+'</span></td>';}).join("")+
+      '<td class="r">'+c.batem+' de 3</td><td class="r">'+fmt(c.ordenadas[0])+'</td></tr>';
+  }).join("");
+  return '<div class="panel-head"><div><h2>Todas as combinações</h2><p class="panel-sub">Cada coluna é um Lurer. A célula mostra o Damage que finaliza com ele e o dano da dupla.</p></div></div>'+
+    '<div class="scroll"><table class="t-all"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+}
+
+/* ============================================================
+   PASSO 2: PREÇOS
+   ============================================================ */
+function renderPrecos(){
+  var P=state.precos,h='<div class="g-precos">';
+  // X-Attack
+  h+='<section class="panel" id="sec-xatk"><div class="panel-head"><div><h2>X-Attack</h2><p class="panel-sub">Preço de cada tier. Para chegar num tier é preciso passar por todos os anteriores, então o custo soma os tiers do caminho.</p></div><span id="pill-xatk"></span></div>'+
+    '<div class="scroll"><table class="t-form"><thead><tr><th scope="col">Tier</th><th scope="col" class="r">Bônus</th><th scope="col">Preço</th></tr></thead><tbody>';
+  for(var t=1;t<=7;t++){
+    h+='<tr><th scope="row" class="nw">Tier '+t+'</th><td class="r">+'+XATK[t]+'%</td><td><div class="fld"><label class="sr" for="x-'+t+'">Preço do X-Attack Tier '+t+'</label><input type="text" id="x-'+t+'" data-path="precos.xatk.'+(t-1)+'" data-fmt="gold" data-need="x:'+t+'" placeholder="ex.: 30kk" autocomplete="off"><span class="echo"></span></div></td></tr>';
+  }
+  h+='</tbody></table></div></section>';
+  // Star
+  var rar=P.starRar,g=GUIA[rar],nomeR=RARMAP[rar].nome;
+  h+='<section class="panel" id="sec-star"><div class="panel-head"><div><h2>Star Ascension</h2><p class="panel-sub">O guia mostra só o total de 0 a 5 Stars. Informe a taxa de cada etapa na forma de pagamento que você usa. O preço da cópia do Pokémon fica no passo 3.</p></div><span id="pill-star"></span></div>'+
+    '<div class="fld" style="max-width:280px"><label for="s-dia">Valor de 1 Diamond em gold</label><input type="text" id="s-dia" data-path="precos.diamante" data-fmt="gold" data-need="dia" placeholder="ex.: 340k" autocomplete="off"><span class="echo"></span></div>'+
+    '<p class="lbl-sm" id="lbl-rar">Tier do Pokémon</p><div class="chips" role="group" aria-labelledby="lbl-rar">'+
+      RAR.map(function(r){return '<button type="button" class="chip" data-act="rar" data-v="'+r.id+'" aria-pressed="'+(r.id===rar)+'">'+r.nome+'<span class="chip-dot" id="cd-'+r.id+'" hidden></span><span class="sr" id="cds-'+r.id+'"></span></button>';}).join("")+
+    '</div><p class="usado" id="star-usado"></p>'+
+    '<div class="scroll" style="margin-top:10px"><table class="t-form"><thead><tr><th scope="col">Etapa ('+esc(nomeR)+')</th><th scope="col">Diamond</th><th scope="col">Gold</th></tr></thead><tbody>';
+  for(var e=1;e<=5;e++){
+    h+='<tr><th scope="row" class="nw">'+(e-1)+' → '+e+'</th>'+
+      '<td><div class="fld"><label class="sr" for="fd-'+e+'">Diamond da etapa '+(e-1)+' para '+e+'</label><input type="text" id="fd-'+e+'" inputmode="numeric" data-path="precos.fees.'+rar+'.'+(e-1)+'.d" data-fmt="int" data-need="f:'+rar+':'+e+'" placeholder="D" autocomplete="off"><span class="echo"></span></div></td>'+
+      '<td><div class="fld"><label class="sr" for="fg-'+e+'">Gold da etapa '+(e-1)+' para '+e+'</label><input type="text" id="fg-'+e+'" data-path="precos.fees.'+rar+'.'+(e-1)+'.g" data-fmt="gold" data-need="f:'+rar+':'+e+'" placeholder="ex.: 9kk" autocomplete="off"><span class="echo"></span></div></td></tr>';
+  }
+  h+='</tbody></table></div><p class="guide" id="soma-etapas"></p>'+
+    '<details class="disc"><summary>Total de 0 a 5 Stars pelo guia ('+esc(nomeR)+')</summary><div class="scroll"><table><thead><tr><th scope="col">Forma de pagamento</th><th scope="col" class="r">Diamond</th><th scope="col" class="r">Gold</th></tr></thead><tbody>'+
+      '<tr><td>Opção Diamond</td><td class="r">'+fmt2.format(g.dia[0])+' D</td><td class="r">'+fmt2.format(g.dia[1])+' kk</td></tr>'+
+      '<tr><td>Opção Gold</td><td class="r">'+fmt2.format(g.gold[0])+' D</td><td class="r">'+fmt2.format(g.gold[1])+' kk</td></tr>'+
+      '<tr><td>Opção mista</td><td class="r">'+fmt2.format(g.misto[0])+' D</td><td class="r">'+fmt2.format(g.misto[1])+' kk</td></tr>'+
+    '</tbody></table></div></details></section>';
+  // Regras do boost
+  h+='<section class="panel" id="sec-regras"><div class="panel-head"><div><h2>Regras do boost</h2><p class="panel-sub">Como o planejador conta as stones e o ganho de cada boost.</p></div></div><div class="regras">'+
+    '<div class="fld"><label for="c-ganho">Ganho de chance por falha (pontos percentuais)</label><input type="text" id="c-ganho" inputmode="numeric" data-path="precos.ganho" data-fmt="int" autocomplete="off"><span class="hint">O guia diz 10 pontos por falha, e a chance volta à base depois de cada sucesso.</span></div>'+
+    '<div class="fld"><label for="c-cen">Quantas stones contar por boost</label><select id="c-cen" data-path="precos.cenario">'+
+      opt("mean",CEN_TXT.mean,P.cenario)+opt("p90",CEN_TXT.p90,P.cenario)+opt("p99",CEN_TXT.p99,P.cenario)+opt("worst",CEN_TXT.worst,P.cenario)+
+      '</select><span class="hint">A média é a comparação mais justa entre caminhos. As margens servem para saber quanto comprar.</span></div>'+
+    '<div class="fld"><label for="c-esc">O ganho do boost cresce com X-Attack e Star?</label><select id="c-esc" data-path="precos.escala">'+
+      opt("sim","Sim, cresce junto",P.escala)+opt("nao","Não, é sempre o mesmo valor",P.escala)+
+      '</select><span class="hint">Premissa, não confirmada no guia. O guia diz que cada boost vale 3 níveis no cálculo de dano; se o X-Attack multiplica esse dano, o ganho cresce junto.</span></div>'+
+    '</div></section>';
+  // Stones
+  h+='<section class="panel span-all" id="sec-stones"><div class="panel-head"><div><h2>Stones de boost</h2><p class="panel-sub">O custo por stone é o menor entre craftar e comprar pronta. Quanto comprar de cada material, por stone e para chegar no boost que você quer, fica no passo 4.</p>'+
+      '<div class="btn-row"><button type="button" class="btn btn-sm" data-act="tab" data-v="compras">Ver quanto comprar de cada material</button></div></div><span id="pill-stones"></span></div>'+
+    '<div class="stones-l"><div><h3>Materiais do craft</h3><p class="fine">Para material que você dropa, use o preço de venda no market: usar no craft é abrir mão desse dinheiro.</p>'+
+    '<div class="mats">'+
+    P.materiais.map(function(mt,mi){
+      return '<div class="mat"><div class="mat-top"><label class="sr" for="mn-'+mi+'">Nome do material '+(mi+1)+'</label><input type="text" id="mn-'+mi+'" data-path="precos.materiais.'+mi+'.nome" data-rebuild="cab" placeholder="Nome do material" autocomplete="off">'+
+        '<button type="button" class="btn btn-x" data-act="rm-mat" data-v="'+mi+'" aria-label="Remover material '+(mi+1)+'"'+(P.materiais.length<=1?" disabled":"")+'>✕</button></div>'+
+        '<div class="fld"><label class="mini" for="mp-'+mi+'">Preço unitário</label><input type="text" id="mp-'+mi+'" data-path="precos.materiais.'+mi+'.preco" data-fmt="gold" data-need="m:'+mi+'" placeholder="ex.: 1.500" autocomplete="off"><span class="echo"></span></div></div>';
+    }).join("")+
+    '<button type="button" class="mat-add" data-act="add-mat">+ Adicionar material</button></div></div>'+
+    '<div><h3>Stones</h3><p class="fine">Marque <b>Conferidas</b> só nas faixas cujas quantidades você conferiu na janela Criar, para o elemento do Pokémon. Sem essa marca, a faixa só usa o preço da stone pronta.</p>'+
+    '<div class="scroll"><table class="t-stones"><thead><tr id="st-head"></tr></thead><tbody>'+
+    FAIXAS.map(function(f,fi){
+      var r='<tr id="sr-'+fi+'" data-need="s:'+fi+'"><th scope="row" class="nw"><b>'+f.nome+'</b><span class="via">+'+(fi*5)+' até +'+(fi*5+5)+', chance '+f.base+'%</span></th>'+
+        '<td><label class="sr" for="sm-'+fi+'">Stone '+f.nome+' pronta no market</label><input type="text" id="sm-'+fi+'" data-path="precos.stones.'+fi+'.market" data-fmt="gold" data-need="s:'+fi+'" placeholder="—" autocomplete="off"></td>';
+      P.materiais.forEach(function(mt,mi){
+        r+='<td class="r"><label class="sr" for="sq-'+fi+'-'+mi+'">Quantidade do material '+(mi+1)+' na stone '+f.nome+'</label><input type="text" id="sq-'+fi+'-'+mi+'" inputmode="numeric" data-path="precos.stones.'+fi+'.qty.'+mi+'" data-fmt="int" autocomplete="off"></td>';
+      });
+      return r+'<td><label class="conf" for="sc-'+fi+'"><input type="checkbox" id="sc-'+fi+'" data-path="precos.stones.'+fi+'.conf">Conferidas</label></td><td class="r cost" id="cs-'+fi+'"></td></tr>';
+    }).join("")+'</tbody></table></div>'+
+    '<p class="note">As quantidades que vieram preenchidas são dos prints usados na calculadora de boost: as cinco primeiras faixas são de um elemento e as cinco últimas, de outro. Ao melhorar um Pokémon de outro elemento, atualize materiais e quantidades.</p></div></div></section>';
+  h+='</div>';
+  $("precos-body").innerHTML=h;
+  renderStHead();
+  preencherInputs($("precos-body"));
+}
+function renderStHead(){
+  var P=state.precos,el=$("st-head");if(!el)return;
+  el.innerHTML='<th scope="col">Stone</th><th scope="col">Pronta no market</th>'+
+    P.materiais.map(function(mt,mi){return '<th scope="col" class="r">'+esc(mt.nome||("Material "+(mi+1)))+'</th>';}).join("")+
+    '<th scope="col">Quantidades</th><th scope="col" class="r">Custo por stone</th>';
+}
+function pillHtml(n){return n?'<span class="pill warn">'+plural(n,"pendente","pendentes")+'</span>':'<span class="pill ok">Nada pendente</span>';}
+function atualizarPrecos(){
+  var ctx=A.ctx,pend=A.pend;
+  var els=document.querySelectorAll("#precos-body [data-need]");
+  for(var i=0;i<els.length;i++){
+    var k=els[i].getAttribute("data-need");
+    els[i].classList.toggle("need",k.indexOf("m:")===0?!!A.matNeed[k]:!!pend[k]);
+  }
+  var cnt={x:0,f:0,s:0};
+  Object.keys(pend).forEach(function(k){var t=pend[k].t;if(t==="xatk")cnt.x++;else if(t==="fee"||t==="dia")cnt.f++;else if(t==="stone")cnt.s++;});
+  $("pill-xatk").innerHTML=pillHtml(cnt.x);$("pill-star").innerHTML=pillHtml(cnt.f);$("pill-stones").innerHTML=pillHtml(cnt.s);
+  var idx=[["sec-xatk","X-Attack",cnt.x],["sec-star","Star",cnt.f],["sec-regras","Regras do boost",-1],["sec-stones","Stones",cnt.s]];
+  $("sec-index").innerHTML=idx.map(function(a){
+    return '<button type="button" class="idx" data-act="sec" data-v="'+a[0]+'">'+a[1]+(a[2]>0?'<span class="pill warn">'+a[2]+'</span>':(a[2]===0?'<span class="pill ok">ok</span>':''))+'</button>';
+  }).join("");
+  // tiers com taxa pendente e tiers usados pelo time
+  var usados={};
+  state.time.forEach(function(p,i){if(RARMAP[p.rar]&&(+p.stars||0)<5)(usados[p.rar]=usados[p.rar]||[]).push(nomeDe(i));});
+  RAR.forEach(function(r){
+    var pendT=Object.keys(pend).some(function(k){return k.indexOf("f:"+r.id+":")===0;});
+    var dot=$("cd-"+r.id);if(dot)dot.hidden=!pendT;
+    var s=$("cds-"+r.id);if(s)s.textContent=pendT?" (com taxas pendentes)":"";
+  });
+  var us=Object.keys(usados);
+  $("star-usado").textContent=us.length?"No seu time: "+juntar(us.map(function(r){return RARMAP[r].nome+" ("+usados[r].join(", ")+")";}))+".":"Nenhum Pokémon do time tem tier de Star escolhido no passo 3.";
+  // soma das etapas
+  var rar=state.precos.starRar,fs=ctx.fees[rar],d=0,g=0,ok=true;
+  fs.forEach(function(t){if(valido(t.d)&&valido(t.g)){d+=t.d;g+=t.g;}else ok=false;});
+  $("soma-etapas").innerHTML=ok?'Soma das suas 5 etapas: <b>'+fmtN.format(d)+' D + '+fmt2.format(g/1e6)+' kk</b>. Compare com o total do guia da forma de pagamento que você usa.':'Preencha as 5 etapas para comparar a soma com o total do guia.';
+  // custo por stone
+  ctx.stone.forEach(function(s,fi){
+    var c=$("cs-"+fi);if(!c)return;
+    if(!s.ok){c.innerHTML='<span class="muted">sem custo</span><span class="via2">'+(MOTIVO_TXT[s.motivo]||"")+'</span>';return;}
+    var outro;
+    if(s.via==="craft")outro=s.market!=null?"pronta: "+gold(s.market):"sem preço pronta";
+    else outro=s.craft!=null?"craft: "+gold(s.craft):(MOTIVO_TXT[s.motivo]||"craft sem custo");
+    c.innerHTML='<b>'+gold(s.unit)+'</b><span class="via">'+(s.via==="craft"?"craftando":"comprando pronta")+'</span><span class="via2">'+outro+'</span>';
+  });
+}
+
+/* ============================================================
+   PASSO 3: MELHORAR O TIME
+   ============================================================ */
+function renderPicker(){
+  var h='<h2 class="list-h">Pokémon do time</h2>';
+  A.info.forEach(function(r,i){
+    var cls="",txt="";
+    if(r.vazio)txt="Sem dados";
+    else if(r.m.falta){cls="warn";txt="Complete os dados";}
+    else if(A.plano[i]){var o=A.plano[i].o;if(semMudanca(o,r.m))txt="Sem mudança no plano";else{cls="ok";txt="Plano: "+descCombo(r.m,o);}}
+    else txt="Dados completos";
+    var g=valido(r.dano)?'<span class="pk-g">'+fmt1.format(r.dano/1000)+'k</span>':'';
+    h+='<button type="button" class="pk" data-act="pick" data-v="'+i+'" data-role="'+(r.funcao||"")+'" aria-pressed="'+(state.sel===i)+'">'+
+      '<span class="sq" aria-hidden="true">'+(i+1)+'</span><span class="pk-t"><span class="pk-n">'+esc(r.nome)+'</span><span class="pk-s '+cls+'">'+txt+'</span></span>'+g+'</button>';
+  });
+  $("poke-list").innerHTML=h;
+}
+function renderForm(){
+  var i=state.sel,p=state.time[i],pre="time."+i+".";
+  var held=opt("","Escolha",p.held)+opt("0","Sem X-Attack",p.held);
+  for(var t=1;t<=7;t++)held+=opt(String(t),"Tier "+t+" (+"+XATK[t]+"%)",p.held);
+  var st="";for(var s=0;s<=5;s++)st+=opt(String(s),s===0?"Sem Star":plural(s,"Star","Stars"),p.stars);
+  var rar=opt("","Escolha",p.rar);
+  RAR.forEach(function(r){rar+=opt(r.id,r.nome+" (+"+r.pct+"%)",p.rar);});
+  rar+=opt("nao","Não recebe Star",p.rar);
+  var fun=p.funcao==="lurer"?"Lurer":(p.funcao==="damage"?"Damage":"Sem função");
+  $("pk-form").innerHTML='<div class="panel-head"><div><h2>'+esc(nomeDe(i))+'</h2><p class="panel-sub">'+fun+'. Nome, função e dano também ficam no passo 1.</p></div></div>'+
+    '<div class="fgrid">'+
+      '<div class="fld"><label for="f-dano">Dano total do combo</label><input type="text" id="f-dano" data-path="'+pre+'dano" data-fmt="dano" placeholder="ex.: 237k" autocomplete="off"><span class="echo"></span></div>'+
+      '<div class="fld"><label for="f-held">X-Attack atual</label><select id="f-held" data-path="'+pre+'held">'+held+'</select><span class="echo"></span></div>'+
+      '<div class="fld"><label for="f-boost">Boost atual</label><input type="text" id="f-boost" inputmode="numeric" data-path="'+pre+'boost" data-fmt="boost" placeholder="0 a 50" autocomplete="off"><span class="echo"></span></div>'+
+      '<div class="fld"><label for="f-db">Dano por boost</label><input type="text" id="f-db" data-path="'+pre+'danoBoost" data-fmt="dano" placeholder="ex.: 1.100" autocomplete="off"><span class="echo"></span></div>'+
+      '<div class="fld"><label for="f-stars">Stars atuais</label><select id="f-stars" data-path="'+pre+'stars">'+st+'</select><span class="echo"></span></div>'+
+      '<div class="fld"><label for="f-rar">Tier do Pokémon</label><select id="f-rar" data-path="'+pre+'rar">'+rar+'</select><span class="echo">% = bônus por Star</span></div>'+
+      '<div class="fld"><label for="f-treino">Treino de Attack (nível)</label><input type="text" id="f-treino" inputmode="numeric" data-path="'+pre+'treino" data-fmt="treino" placeholder="0" autocomplete="off"><span class="echo"></span></div>'+
+      '<div class="fld"><label for="f-preco">Preço da cópia sem Star</label><input type="text" id="f-preco" data-path="'+pre+'preco" data-fmt="gold" placeholder="ex.: 140kk" autocomplete="off"><span class="echo"></span></div>'+
+    '</div>';
+  $("f-dano").value=p.dano;$("f-boost").value=p.boost;$("f-db").value=p.danoBoost;$("f-preco").value=p.preco;$("f-treino").value=p.treino;
+  simKey=null;
+}
+
+/* ---- simulador do Pokémon escolhido ---- */
+var simKey=null;
+function renderSim(){
+  var r=A.info[state.sel],m=r.m,box=$("pk-sim");
+  if(m.falta){
+    if(simKey!=="falta"){box.innerHTML='<div class="panel-head"><div><h2>Simular melhoria</h2><p class="panel-sub">Complete os dados acima para simular.</p></div></div>';simKey="falta";}
+    return;
+  }
+  var key=state.sel+"|"+m.h0+"|"+m.s0+"|"+m.b0+"|"+m.podeStar;
+  if(key===simKey)return;
+  simKey=key;
+  var S=state.sim;
+  if(S.i!==state.sel){S.i=state.sel;S.h=String(m.h0);S.s=String(m.s0);S.b=String(m.b0);}
+  if(!(+S.h>=m.h0))S.h=String(m.h0);
+  if(!(+S.s>=m.s0)||(!m.podeStar&&+S.s!==m.s0))S.s=String(m.s0);
+  var bb=parseNum(S.b);if(!valido(bb)||bb<m.b0||bb>BOOST_MAX)S.b=String(m.b0);
+  var ho="",so="",h,s;
+  for(h=m.h0;h<=7;h++)ho+=opt(String(h),h===0?"Sem X-Attack":"Tier "+h+" (+"+XATK[h]+"%)",S.h);
+  var sMax=m.podeStar?5:m.s0;
+  for(s=m.s0;s<=sMax;s++)so+=opt(String(s),s===0?"Sem Star":plural(s,"Star","Stars"),S.s);
+  box.innerHTML='<div class="panel-head"><div><h2>Simular melhoria</h2><p class="panel-sub">Escolha como ele ficaria e veja o dano, o custo e a dupla.</p></div></div>'+
+    '<div class="fgrid">'+
+      '<div class="fld"><label for="sim-h">X-Attack</label><select id="sim-h" data-path="sim.h">'+ho+'</select><span class="echo"></span></div>'+
+      '<div class="fld"><label for="sim-s">Stars</label><select id="sim-s" data-path="sim.s"'+(m.podeStar?'':' disabled')+'>'+so+'</select><span class="echo">'+(m.podeStar?'':'escolha o tier acima')+'</span></div>'+
+      '<div class="fld"><label for="sim-b">Boost</label><input type="text" id="sim-b" inputmode="numeric" data-path="sim.b" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
+      '<div class="fld sim-ac"><button type="button" class="btn btn-sm" data-act="sim-reset">Voltar ao atual</button></div>'+
+    '</div><div id="sim-res"></div>';
+  $("sim-b").value=S.b;
+}
+function atualizarSim(){
+  var el=$("sim-res");if(!el)return;
+  var r=A.info[state.sel],m=r.m,S=state.sim,ctx=A.ctx;
+  var h=Math.max(+S.h,m.h0),s=Math.max(+S.s,m.s0),b=parseNum(S.b);
+  if(!valido(b)||b<m.b0||b>BOOST_MAX){el.innerHTML='<p class="muted" style="margin-top:8px">O boost precisa ficar entre +'+m.b0+' e +50.</p>';return;}
+  var o=avaliar(m,h,s,b-m.b0,ctx),gan=o.dano-m.D0,pi=parceiroDe(state.sel);
+  var html='<div class="sim-out"><div><span class="lbl">Dano</span><span class="big">'+fmt(o.dano)+'</span><span class="margin '+(gan>0.5?"ok":"")+'">'+(gan>0.5?"+"+fmt(gan):"igual ao de hoje")+'</span></div>'+
+    '<div><span class="lbl">Custo</span>'+(o.custo<0.5&&!o.falta.length?'<span class="big">—</span><span class="fine">sem mudança, sem custo</span>':o.falta.length?'<span class="big">?</span><span class="fine">Falta: '+esc(resumoFaltas(o.falta))+'.</span>':'<span class="big">'+gold(o.custo)+'</span>'+(o.n>0?'<span class="fine">boost '+CEN_CURTO[ctx.cenario]+'</span>':''))+'</div></div>';
+  if(valido(ctx.alvo)&&ctx.alvo>0){
+    if(pi!=null){
+      var P=A.info[pi],du=o.dano+P.dano,f=du-ctx.alvo;
+      html+='<p class="sim-dupla '+(f>=-0.5?"ok":"bad")+'">Dupla com '+esc(P.nome)+' ('+fmt(P.dano)+'): <b>'+fmt(du)+'</b> de '+fmt(ctx.alvo)+'. '+(f>=-0.5?'Mata, com +'+fmt(Math.max(0,f))+' de folga.':'Faltam '+fmt(-f)+'.')+'</p>';
+    }else html+='<p class="sim-dupla">Metade da dupla: '+fmt(ctx.meta)+'. '+(o.dano>=ctx.meta-0.5?'Bate.':'Faltam '+fmt(ctx.meta-o.dano)+'.')+'</p>';
+  }
+  if(o.n>0)html+='<div class="btn-row"><button type="button" class="btn btn-sm" data-act="sim-compras">Ver o que comprar para o boost</button></div>';
+  el.innerHTML=html;
+}
+
+/* ---- plano do time ---- */
+function atualizarMelhorar(){
+  renderPicker();
+  renderSim();atualizarSim();
+  var fp=$("f-preco");
+  if(fp)fp.classList.toggle("need",!!(A.dica&&A.dica.porPoke.some(function(x){return x.i===state.sel&&x.itens.some(function(it){return it.t==="copia";});})));
+  $("pk-plan").innerHTML=planoTimeHtml();
+  renderProg();atualizarProg();
+  $("pk-sel").innerHTML=selecionadoHtml();
+}
+function planoTimeHtml(){
+  var rot=A.rot,ctx=A.ctx,tp=A.tp,h="";
+  if(!rot.alvoOk)return '<section class="panel"><div class="panel-head"><div><h2>Plano do time</h2><p class="panel-sub">Informe a meta de dano no topo da página.</p></div></div></section>';
+  if(!rot.pronto)return '<section class="panel"><div class="panel-head"><div><h2>Plano do time</h2><p class="panel-sub">O plano soma o dano de cada dupla, então precisa das 3 duplas montadas: complete a função e o dano dos 6 Pokémon no passo 1. Enquanto isso, dá para simular cada Pokémon ao lado.</p></div></div><div class="btn-row"><button type="button" class="btn btn-sm" data-act="tab" data-v="time">Ir para o passo 1</button></div></section>';
+  var hoje=rot.melhor,mata=hoje.batem;
+  var resumo="Hoje "+(mata===3?"as 3 duplas matam":(mata===0?"nenhuma dupla mata":mata+" de 3 duplas matam"))+" com "+fmt(ctx.alvo)+" por dupla"+
+    (mata<3?". Na melhor rotação de hoje, a dupla mais fraca tem "+fmt(hoje.ordenadas[0])+" (faltam "+fmt(ctx.alvo-hoje.ordenadas[0])+").":".");
+  if(tp&&tp.total<0.5){
+    var prox=+state.hazard<HAZ.length-1;
+    h='<section class="panel"><div class="panel-head"><div><h2>O time já mata</h2><p class="panel-sub">'+resumo+' Não precisa de melhoria.</p></div><span class="pill ok">As 3 duplas matam ✓</span></div>'+
+      (prox?'<div class="btn-row"><button type="button" class="btn btn-sm" data-act="haz-mais">Planejar o hazard '+(+state.hazard+1)+'</button></div>':'')+'</section>';
+  }else if(tp){
+    h=planoCardHtml(tp,resumo);
+  }else if(!A.tpOt){
+    h='<section class="panel alert bad"><div class="panel-head"><div><h2>Não dá para o time chegar na meta</h2><p class="panel-sub alert-p">'+resumo+' Nem com todas as melhorias possíveis nos Pokémon com dados completos (X-Attack Tier 7, 5 Stars e boost +50), as 3 duplas chegam em '+fmt(ctx.alvo)+'.</p></div></div></section>';
+  }
+  return h+dicaHtml(resumo)+incompletosHtml();
+}
+function planoCardHtml(tp,resumo){
+  var ctx=A.ctx,usaBoost=false,usaStar=false;
+  var duos=tp.duplas.map(function(d,k){
+    var L=A.info[d.li],D=A.info[d.di],a=d.md.a,b=d.md.b,hoje=L.dano+D.dano,folga=d.md.dano-ctx.alvo;
+    if(a.n>0||b.n>0)usaBoost=true;
+    if((!a.fixo&&a.s>L.m.s0)||(!b.fixo&&b.s>D.m.s0))usaStar=true;
+    return '<article class="tp-duo"><div class="tp-h"><h3>Dupla '+(k+1)+'</h3><span class="pill '+(hoje>=ctx.alvo?"ok":"bad")+'">hoje '+fmt(hoje)+'</span></div>'+
+      membroHtml(2*k+1,"lurer","Lurer",L,a)+membroHtml(2*k+2,"damage","Damage",D,b)+
+      '<div class="tp-sum"><span>Dupla: <b>'+fmt(d.md.dano)+'</b></span><span class="margin ok">+'+fmt(Math.max(0,folga))+' de folga</span><span class="tp-c">'+(d.md.custo>0.5?gold(d.md.custo):'sem custo')+'</span></div></article>';
+  }).join("");
+  var hz=hazardMax(tp.minD,+state.runaCol);
+  return '<section class="rec cq"><div class="rec-top"><div><h2>Plano mais barato para o time</h2><p class="panel-sub">'+resumo+' O planejador testa as 6 formas de montar as duplas e, em cada dupla, as melhorias dos dois Pokémon. Fica com o que faz as 3 duplas matarem gastando menos.</p></div><span class="pill ok">As 3 duplas matam ✓</span></div>'+
+    '<div class="tp-duos">'+duos+'</div>'+
+    '<div class="rec-sum"><span><span class="lbl">Custo total'+(usaBoost?' (boost '+CEN_CURTO[ctx.cenario]+')':'')+'</span><span class="big">'+gold(tp.total)+'</span></span>'+
+    '<span class="ta-r"><span class="lbl">Dupla mais fraca depois</span><span class="big">'+fmt(tp.minD)+'</span>'+(hz>=0?' <span class="margin ok">'+(state.metaManual?'pela tabela, ':'')+'mata até o hazard '+hz+'</span>':'')+'</span></div>'+
+    (!mesmaDivisao(tp)?'<p class="note"><b>As duplas mudaram.</b> Esta divisão é diferente da melhor rotação de hoje, no passo 1: com as melhorias, ela sai mais barata.</p>':'')+
+    (usaStar?'<p class="note"><b>Atenção a Mega:</b> segundo o guia, Pokémon com Stars não pode receber Mega Stone.</p>':'')+
+    '</section>';
+}
+function mesmaDivisao(tp){
+  var hoje=A.rot.melhor.duplas.map(function(d){return (d.lurer.slot-1)+"|"+(d.damage.slot-1);});
+  return tp.duplas.every(function(d){return hoje.indexOf(d.li+"|"+d.di)>=0;});
+}
+function membroHtml(n,cls,rotulo,r,o){
+  var muda=!o.fixo&&!semMudanca(o,r.m),mud;
+  if(o.fixo)mud='<li class="muted">Sem dados de melhoria: entra com o dano atual</li>';
+  else if(!muda)mud='<li class="muted">Sem mudança</li>';
+  else mud=mudancasLis(r,o);
+  return '<div class="tp-m '+cls+'"><span class="n">'+n+'</span><div class="who"><span class="role-t">'+rotulo+'</span><span class="nm">'+esc(r.nome)+' <span class="slotref">#'+(r.i+1)+'</span></span><ul class="mud">'+mud+'</ul></div>'+
+    '<span class="v">'+fmt(r.dano)+(muda?'<span class="to">→ '+fmt(o.dano)+'</span>':'')+'</span></div>';
+}
+function mudancasLis(r,o){
+  var m=r.m,L=[];
+  if(o.h>m.h0)L.push('<li><span>X-Attack Tier '+m.h0+' → '+o.h+'</span><b>'+gold(o.ch.c)+'</b></li>');
+  if(o.s>m.s0)L.push('<li><span>'+(m.s0===0?"Sem Star":plural(m.s0,"Star","Stars"))+' → '+plural(o.s,"Star","Stars")+' ('+plural(o.cs.copias,"cópia","cópias")+' e taxas)</span><b>'+gold(o.cs.c)+'</b></li>');
+  if(o.n>0)L.push('<li><span>Boost +'+m.b0+' → +'+(m.b0+o.n)+' ('+plural(o.n,"boost","boosts")+') <button type="button" class="linkbtn" data-act="lista-ir" data-poke="'+r.i+'">ver compras</button></span><b>'+gold(o.cb.c)+'</b></li>');
+  return L.join("");
+}
+function dicaHtml(resumo){
+  var d=A.dica;if(!d)return "";
+  var titulo=d.semPlano?"Ainda não dá para montar o plano":"Pode haver um plano mais barato";
+  var intro=d.semPlano?resumo+" Todo jeito de fazer as 3 duplas matarem depende de algum preço que ainda está vazio. Preencha os preços abaixo e o plano aparece.":
+    "O plano acima usa só o que tem preço. Estas melhorias podem sair mais baratas, mas dependem de preços que ainda estão vazios. Preencha e o planejador compara.";
+  return '<section class="panel alert"><div class="panel-head"><div><h2>'+titulo+'</h2><p class="panel-sub alert-p">'+intro+'</p></div></div><ul class="grupos">'+
+    d.porPoke.map(function(x){
+      var r=A.info[x.i];
+      return '<li class="grupo"><div class="g-top"><b>'+esc(r.nome)+': '+descCombo(r.m,x.o)+'</b><span class="pill na">chega em '+fmt(x.o.dano)+'</span></div>'+
+        '<ul class="g-itens">'+linhasFalta(x.itens).map(function(l){return '<li><span>'+l.txt+'</span>'+goBtn(l.go,null,x.i)+'</li>';}).join("")+'</ul></li>';
+    }).join("")+'</ul></section>';
+}
+function incompletosHtml(){
+  if(!A.rot.pronto)return "";
+  var inc=A.info.filter(function(r){return r.m.falta&&!r.vazio;});
+  if(!inc.length)return "";
+  return '<section class="panel"><div class="panel-head"><div><h2>'+(inc.length===1?"1 Pokémon sem dados de melhoria":inc.length+" Pokémon sem dados de melhoria")+'</h2><p class="panel-sub">O plano usa o dano atual deles, mas não pode sugerir melhorias para eles. Com os dados completos, o plano pode sair mais barato.</p></div></div>'+
+    '<ul class="g-itens">'+inc.map(function(r){return '<li><span>'+esc(r.nome)+'</span><button type="button" class="btn btn-sm" data-act="pick" data-v="'+r.i+'">Completar</button></li>';}).join("")+'</ul></section>';
+}
+
+/* ---- subir de hazard ---- */
+var progKey=null,progCache={key:null,res:null};
+function progBase(){
+  var rot=A.rot;
+  if(!rot.pronto)return {msg:"Para planejar a subida, complete a função e o dano dos 6 Pokémon no passo 1."};
+  var N=rot.hMax;
+  if(N>=HAZ.length-1)return {msg:"O time já mata o hazard "+(HAZ.length-1)+", o último da tabela."};
+  return {rc:+state.runaCol,N:N};
+}
+function renderProg(){
+  var box=$("pk-prog"),b=progBase();
+  var key=b.msg?"m|"+b.msg:"h|"+b.N+"|"+b.rc;
+  if(key===progKey)return;
+  progKey=key;
+  var pill=b.msg?"":(b.N<0?'<span class="pill bad">Hoje: abaixo do hazard 0</span>':'<span class="pill ok">Hoje: hazard '+b.N+'</span>');
+  var head='<div class="panel-head"><div><h2>Subir de hazard</h2><p class="panel-sub">Para subir de hazard, as 3 duplas precisam passar do dano da tabela. Escolha até qual hazard quer chegar: o planejador monta o caminho mais barato até lá, em passos, e mostra até onde o seu dinheiro vai.</p></div>'+pill+'</div>';
+  if(b.msg){box.innerHTML='<section class="panel">'+head+'<p class="muted">'+b.msg+'</p></section>';return;}
+  var ops="";
+  for(var h=b.N+1;h<HAZ.length;h++)ops+='<option value="'+h+'">Hazard '+h+' ('+HAZ[h][b.rc]+'k por dupla)</option>';
+  box.innerHTML='<section class="panel cq">'+head+
+    '<div class="fgrid">'+
+      '<div class="fld"><label for="prog-ate">Quero chegar no hazard</label><select id="prog-ate" data-path="prog.ate">'+ops+'</select><span class="echo">pela tabela, com a '+RUNA_TXT[b.rc]+'</span></div>'+
+      '<div class="fld"><label for="prog-verba">Quanto você tem para gastar</label><input type="text" id="prog-verba" data-path="prog.verba" data-fmt="gold" placeholder="ex.: 150kk" autocomplete="off"><span class="echo"></span></div>'+
+    '</div><div id="prog-res"></div></section>';
+  $("prog-verba").value=state.prog.verba;
+}
+function atualizarProg(){
+  var el=$("prog-res");if(!el)return;
+  var b=progBase();if(b.msg)return;
+  var ate=parseInt(state.prog.ate,10),auto=!(ate>b.N&&ate<HAZ.length),P=state.precos;
+  var key=JSON.stringify([state.time,P.xatk,P.diamante,P.fees,P.ganho,P.cenario,P.escala,P.materiais,P.stones,b.rc,auto?"auto":ate]);
+  var res;
+  if(progCache.key===key)res=progCache.res;
+  else{
+    if(auto)ate=alvoProgAuto(A.info,A.rot,b.rc,b.N);
+    res=progressao(A.info,A.rot,b.rc,ate);
+    progCache={key:key,res:res};
+  }
+  var sel=$("prog-ate");if(sel.value!==String(res.T))sel.value=String(res.T);
+  el.innerHTML=progHtml(res,b.N,b.rc);
+}
+function nomeItem(it){return esc(nomeDe(it.i))+": "+it.txt;}
+function progIncompletos(){
+  // a lista com os botões "Completar" já aparece no quadro de cima; aqui fica só o aviso
+  var inc=A.info.filter(function(r){return r.m.falta&&!r.vazio;});
+  if(!inc.length)return "";
+  return '<p class="note">'+(inc.length===1?esc(inc[0].nome)+" está sem dados de melhoria e entra":juntar(inc.map(function(r){return esc(r.nome);}))+" estão sem dados de melhoria e entram")+' com o dano de hoje. Com os dados completos, o caminho pode sair mais barato.</p>';
+}
+function progHtml(res,N,rc){
+  if(res.impossivel){
+    var inc=A.info.some(function(r){return r.m.falta&&!r.vazio;}),h='<div class="prog-sum bad"><p><b>Não dá para chegar no hazard '+res.T+' com os dados de hoje.</b></p>';
+    if(res.faltaPreco.length)h+='<p>O caminho depende de preços que ainda estão vazios:</p><ul class="g-itens">'+linhasFalta(res.faltaPreco).map(function(l){return '<li><span>'+l.txt+'</span>'+goBtn(l.go)+'</li>';}).join("")+'</ul>';
+    else if(inc)h+='<p>Só os Pokémon com dados completos podem receber melhorias, e eles não chegam lá sozinhos. Complete os dados dos outros para o planejador poder melhorar eles também.</p>';
+    else h+='<p>Nem com todas as melhorias no máximo (X-Attack Tier 7, 5 Stars e boost +50) as 3 duplas chegam em '+fmt(alvoHaz(res.T,rc))+'.</p>';
+    return h+'</div>'+progIncompletos();
+  }
+  var P=res.plano.passos,K=P.length,total=res.total;
+  var verba=parseNum(state.prog.verba),temVerba=valido(verba)&&verba>0;
+  var sum='<div class="prog-sum"><div class="ps-top"><span class="lbl">Caminho mais barato até o hazard '+res.T+'</span><span class="big">'+gold(total)+'</span><span class="fine">'+plural(K,"passo","passos")+'. '+(N<0?"Hoje o time ainda não mata o hazard 0.":"Hoje o time mata até o hazard "+N+".")+'</span></div>';
+  if(temVerba){
+    var c=0;P.forEach(function(p){if(p.acum<=verba+0.5)c++;});
+    if(c===K)sum+='<p class="ps-v ok">Com '+gold(verba)+', dá para fazer o caminho todo até o hazard '+res.T+'. Sobram '+gold(verba-total)+'.</p>';
+    else if(c>0)sum+='<p class="ps-v">Com '+gold(verba)+', dá para fazer '+(c===1?"o passo 1":"os passos 1 a "+c)+': o time passa a matar o hazard '+P[c-1].ate+'. Sobram '+gold(verba-P[c-1].acum)+'. O passo '+(c+1)+' custa mais '+gold(P[c].custo)+'.</p>';
+    else{
+      var p1=P[0],cab=cabeNaVerba(p1.itens,verba);
+      sum+='<p class="ps-v">'+gold(verba)+' ainda não pagam o passo 1, que custa '+gold(p1.custo)+' (faltam '+gold(p1.custo-verba)+'). '+
+        (cab.length?'Dá para adiantar '+juntar(cab.map(function(it){return nomeItem(it)+' ('+gold(it.custo)+')';}))+'. Todos os itens do passo 1 são necessários para o hazard '+p1.ate+', então a ordem entre eles não muda o custo.':'Nenhum item do passo 1 cabe nesse valor.')+'</p>';
+    }
+  }
+  sum+='</div>';
+  var lista='<ol class="pp">'+P.map(function(p,k){
+    var cabe=temVerba&&p.acum<=verba+0.5;
+    return '<li class="pp-s'+(cabe?" cabe":"")+'"><div class="pp-h"><span class="pp-n">Passo '+(k+1)+'</span><b class="pp-hz">'+(p.ate>p.de+1?"Mata até o hazard ":"Mata o hazard ")+p.ate+'</b><span class="pp-c">'+gold(p.custo)+'</span></div>'+
+      '<ul class="mud">'+p.itens.map(function(it){return '<li><span>'+nomeItem(it)+'</span><b>'+gold(it.custo)+'</b></li>';}).join("")+'</ul>'+
+      '<p class="pp-d">Duplas: '+p.div.duplas.map(function(d){return '<span class="pp-du">'+esc(nomeDe(d.li))+' + '+esc(nomeDe(d.di))+' <b>'+fmt(d.soma)+'</b></span>';}).join('<span class="pp-sep" aria-hidden="true"> · </span>')+'</p>'+
+      '<p class="pp-a">Total até aqui: '+gold(p.acum)+(temVerba?(cabe?' · <span class="ok">cabe no que você tem</span>':' · passa do que você tem'):'')+'</p></li>';
+  }).join("")+'</ol>';
+  var notas=[],M=res.miope;
+  if(!M.parou&&M.gasto>total+0.5){
+    var t='Planejando só o próximo hazard a cada vez, chegar no hazard '+res.T+' custaria '+gold(M.gasto)+', ou seja, '+gold(M.gasto-total)+' a mais.';
+    if(M.passos.length&&M.passos[0].custo<P[0].custo-0.5)t+=' Por esse jeito, o primeiro passo sairia por '+gold(M.passos[0].custo)+' ('+juntar(M.passos[0].itens.map(nomeItem))+'): mais barato agora, mais caro no caminho todo.';
+    notas.push(t);
+  }else if(K>1)notas.push("Aqui, planejar um hazard de cada vez dá no mesmo custo.");
+  var usa=function(t){return P.some(function(p){return p.itens.some(function(it){return it.t===t;});});};
+  if(usa("boost"))notas.push('O custo do boost conta as stones pelo cenário escolhido no passo 2 ('+CEN_TXT[A.ctx.cenario]+').');
+  if(usa("star"))notas.push('<b>Atenção a Mega:</b> segundo o guia, Pokémon com Stars não pode receber Mega Stone.');
+  return sum+lista+notas.map(function(n){return '<p class="note">'+n+'</p>';}).join("")+progIncompletos();
+}
+
+/* ---- o Pokémon escolhido ---- */
+function selecionadoHtml(){
+  var r=A.info[state.sel],m=r.m,ctx=A.ctx,nome=esc(r.nome);
+  if(m.falta)return '<section class="panel"><div class="panel-head"><div><h2>'+nome+'</h2><p class="panel-sub">Para analisar e simular as melhorias dele, informe:</p></div></div><ul class="g-itens">'+
+    m.falta.map(function(f){return '<li><span>'+cap(f.txt)+'</span><button type="button" class="btn btn-sm" data-act="campo" data-id="'+f.id+'">Ir para o campo</button></li>';}).join("")+'</ul></section>';
+  if(!valido(ctx.alvo)||ctx.alvo<=0)return proximoHtml(m,ctx)+comoHtml(m,ctx,null);
+  var pi=parceiroDe(state.sel),alvoSo,sub;
+  if(pi!=null){
+    var P=A.info[pi],du=m.D0+P.dano;
+    alvoSo=ctx.alvo-P.dano;
+    sub="Na dupla com "+esc(P.nome)+" ("+fmt(P.dano)+"), a soma hoje é "+fmt(du)+" de "+fmt(ctx.alvo)+". "+
+      (alvoSo>m.D0+0.5?"Para fechar a dupla só com "+nome+", sem mexer no "+esc(P.nome)+", ele precisaria chegar em "+fmt(alvoSo)+" (+"+fmt(alvoSo-m.D0)+").":"A dupla já mata com o dano atual dele.");
+  }else{
+    alvoSo=ctx.meta;
+    sub="Sem as duplas montadas, a conta usa metade da dupla ("+fmt(ctx.meta)+") como meta dele. "+(alvoSo>m.D0+0.5?"Faltam "+fmt(alvoSo-m.D0)+".":"Ele já bate.");
+  }
+  var h='<section class="panel cq"><div class="panel-head"><div><h2>'+nome+' sozinho</h2><p class="panel-sub">'+sub+'</p></div></div>';
+  if(alvoSo>m.D0+0.5){
+    h+=caminhosCards(m,ctx,alvoSo);
+    var pj=planejar(m,ctx,alvoSo);
+    h+='<p class="note">'+(pj.melhor?"Combinando melhorias só nele, o mais barato é <b>"+descCombo(m,pj.melhor)+"</b>: "+gold(pj.melhor.custo)+", chegando em "+fmt(pj.melhor.dano)+".":
+      (pj.bloqueados?"Combinando melhorias só nele, todo caminho depende de algum preço vazio.":"Nem combinando todas as melhorias só nele ele chega lá."))+'</p>';
+  }
+  h+='</section>';
+  return h+proximoHtml(m,ctx)+comoHtml(m,ctx,pi);
+}
+function caminhosCards(m,ctx,alvo){
+  var paths=[{t:"held",nome:"Só X-Attack"},{t:"star",nome:"Só Star"},{t:"boost",nome:"Só boost"}].map(function(x){x.r=caminhoSo(m,ctx,x.t,alvo);return x;});
+  var mb=null;
+  paths.forEach(function(x){if(x.r.chega&&!x.r.r.falta.length&&(!mb||x.r.r.custo<mb.r.r.custo))mb=x;});
+  return '<div class="paths">'+paths.map(function(x){
+    var r=x.r,pill,val,det,extra="";
+    if(r.semStar){
+      pill='<span class="pill na">Não se aplica</span>';val="—";
+      if(m.rar==="nao")det="Este Pokémon não recebe Star.";
+      else{det="Escolha o tier do Pokémon para testar Stars.";extra='<div><button type="button" class="btn btn-sm" data-act="campo" data-id="f-rar">Escolher o tier</button></div>';}
+    }else if(!r.chega){pill='<span class="pill bad">Não chega</span>';val=fmt(r.max);det="Dano máximo com "+r.limite+": faltariam "+fmt(alvo-r.max)+".";}
+    else{
+      var c=r.r;
+      var alvoTxt=x.t==="held"?"X-Attack Tier "+c.h:(x.t==="star"?plural(c.s,"Star","Stars"):"Boost +"+(m.b0+c.n)+" ("+plural(c.n,"boost","boosts")+")");
+      if(c.falta.length){pill='<span class="pill warn">Falta preço</span>';val="?";det=alvoTxt+" chega em "+fmt(c.dano)+". Falta: "+esc(resumoFaltas(c.falta))+".";
+        var lf=linhasFalta(c.falta);if(lf.length)extra='<div>'+goBtn(lf[0].go,null,state.sel)+'</div>';}
+      else{pill='<span class="pill ok">Chega</span>';val=gold(c.custo);det=alvoTxt+" leva a "+fmt(c.dano)+" (+"+fmt(c.dano-alvo)+" de folga).";}
+    }
+    return '<article class="path'+(mb===x?" cheapest":"")+'"><div class="ph"><h3>'+x.nome+'</h3>'+pill+'</div><span class="pv">'+val+'</span><span class="pd">'+det+'</span>'+extra+
+      (mb===x?'<span class="pd" style="color:var(--ok);font-weight:700">Mais barato dos três</span>':'')+'</article>';
+  }).join("")+'</div>';
+}
+function proximoHtml(m,ctx){
+  var prox=[];
+  if(m.h0<7)prox.push({w:"X-Attack Tier "+m.h0+" → "+(m.h0+1),r:avaliar(m,m.h0+1,m.s0,0,ctx)});
+  else prox.push({w:"X-Attack",fim:"Já está no Tier 7"});
+  if(!m.podeStar)prox.push({w:"+1 Star",fim:m.rar==="nao"?"Não recebe Star":"Escolha o tier do Pokémon"});
+  else if(m.s0<5)prox.push({w:(m.s0===0?"Sem Star":plural(m.s0,"Star","Stars"))+" → "+plural(m.s0+1,"Star","Stars"),r:avaliar(m,m.h0,m.s0+1,0,ctx)});
+  else prox.push({w:"Star",fim:"Já tem 5 Stars"});
+  if(m.b0<BOOST_MAX)prox.push({w:"Boost +"+m.b0+" → +"+(m.b0+1)+" ("+FAIXAS[faixaDoBoost(m.b0+1)].nome+")",r:avaliar(m,m.h0,m.s0,1,ctx)});
+  else prox.push({w:"Boost",fim:"Já está em +50"});
+  return '<section class="panel"><div class="panel-head"><div><h2>O que cada melhoria dá</h2><p class="panel-sub">Quanto cada melhoria dá sozinha, partindo de hoje. A última coluna mostra quanto custa cada 1.000 de dano: quanto menor, mais eficiente o gasto.</p></div></div>'+
+    '<div class="scroll"><table><thead><tr><th scope="col">Melhoria</th><th scope="col" class="r">Dano ganho</th><th scope="col" class="r">Custo</th><th scope="col" class="r">Custo por 1.000 de dano</th></tr></thead><tbody>'+
+    prox.map(function(x){
+      if(x.fim)return '<tr><td>'+x.w+'</td><td class="r muted" colspan="3">'+x.fim+'</td></tr>';
+      var g=x.r.dano-m.D0,ok=!x.r.falta.length;
+      return '<tr><td>'+x.w+'</td><td class="r">+'+fmt(g)+'</td><td class="r">'+(ok?gold(x.r.custo):'<span class="muted">sem preço</span>')+'</td><td class="r">'+(ok&&g>0?gold(x.r.custo/(g/1000)):"—")+'</td></tr>';
+    }).join("")+'</tbody></table></div>'+
+    (ctx.cenario!=="mean"?'<p class="note">O custo do boost usa o cenário escolhido no passo 2 ('+CEN_TXT[ctx.cenario]+'), que conta stones de sobra. Para comparar eficiência, a média é a medida mais justa.</p>':'')+
+    '</section>';
+}
+function comoHtml(m,ctx,pi){
+  var Mtxt="1 + "+fmt2.format(XATK[m.h0]/100)+(m.s0>0?" + "+m.s0+" × "+fmt2.format(m.r):"")+(m.t>0?" + "+fmt3.format(m.t):"");
+  var exH=m.h0<7?m.h0+1:null,pb=porBoost(m,m.h0,m.s0,ctx.escala),nome=esc(nomeDe(state.sel));
+  var metaTxt=valido(ctx.alvo)?(state.metaManual?"que você digitou (a tabela dá "+fmt(valorTabela())+" no hazard "+state.hazard+" com a "+RUNA_TXT[+state.runaCol]+")":"da tabela (hazard "+state.hazard+", "+RUNA_TXT[+state.runaCol]+")"):"";
+  return '<section class="panel"><details class="how-box"><summary>Como a conta foi feita</summary><ol>'+
+    (valido(ctx.alvo)?'<li>A meta é por dupla: <b>'+fmt(ctx.alvo)+'</b>, '+metaTxt+'. O mob morre quando a soma do dano dos dois Pokémon da dupla chega nesse valor, então a melhoria pode ir para qualquer um dos dois.</li>':'')+
+    '<li>Hoje '+nome+' dá <b>'+fmt(m.D0)+'</b>, com X-Attack '+(m.h0?"Tier "+m.h0+" (+"+XATK[m.h0]+"%)":"nenhum")+(m.s0?", "+plural(m.s0,"Star","Stars")+" (+"+fmt2.format(m.s0*m.r*100)+"%)":"")+(m.treino?", treino de Attack nível "+fmtN.format(m.treino)+" (+"+fmt2.format(m.t*100)+"%)":"")+'. Esse é o dano medido, sem a runa.</li>'+
+    '<li>Os bônus em % do X-Attack, da Star e do treino somam entre si. Então o multiplicador do dano medido é '+Mtxt+' = <b>'+fmt3.format(m.M0)+'</b>.</li>'+
+    '<li>Como os '+fmt(m.D0)+' já incluem esse multiplicador, o dano sem os bônus em % é '+fmt(m.D0)+' ÷ '+fmt3.format(m.M0)+' = <b>'+fmt(m.B0)+'</b>. É sobre esse valor que qualquer % novo é aplicado.</li>'+
+    (exH?'<li>Exemplo: com X-Attack Tier '+exH+' (+'+XATK[exH]+'%), o multiplicador vira '+fmt3.format(mult(m,exH,m.s0))+', e o dano fica '+fmt(m.B0)+' × '+fmt3.format(mult(m,exH,m.s0))+' = <b>'+fmt(danoCom(m,exH,m.s0,0,ctx.escala))+'</b>.</li>':'')+
+    (m.podeStar&&m.s0<5?'<li>Cada Star soma +'+fmt2.format(m.r*100)+'% ao multiplicador. A próxima Star leva o dano a '+fmt(m.B0)+' × '+fmt3.format(mult(m,m.h0,m.s0+1))+' = <b>'+fmt(danoCom(m,m.h0,m.s0+1,0,ctx.escala))+'</b>.</li>':'')+
+    (m.podeStar?'<li>Para subir de N para N+1 Stars, a máquina pede outra cópia que também tenha N Stars, e essa cópia é feita a partir de cópias sem Star. Por isso cada Star nova custa o dobro de cópias da anterior (1, 2, 4, 8, 16), e todas as etapas desde a 0 → 1 entram na conta, mesmo que o Pokémon já tenha Stars.</li>':'')+
+    '<li>Cada boost soma <b>'+fmt(pb)+'</b> de dano hoje. '+(ctx.escala?"Esse ganho cresce junto quando o X-Attack ou a Star aumentam, porque entra no dano base.":"Esse ganho fica igual mesmo quando o X-Attack ou a Star aumentam.")+' Isso é configurável no passo 2.</li>'+
+    '<li>O custo de cada boost vem da quantidade de stones gastas por boost (contando as falhas, com +'+fmtN.format(ctx.ganho)+' pontos percentuais por falha) vezes o preço da stone da faixa, escolhendo o mais barato entre craftar e comprar pronta.</li>'+
+    '</ol></details></section>';
+}
+
+/* ============================================================
+   PASSO 4: LISTA DE COMPRAS
+   ============================================================ */
+var lastOps=null;
+var MODOS_LISTA=[["barato","Mais barato em cada faixa"],["craft","Craftar tudo"]];
+function renderCompras(){
+  var P=state.precos,cen=P.listaCen,modo=P.listaModo==="craft"?"craft":"barato";
+  lastOps=null;
+  $("c-ctrl").innerHTML='<div class="panel-head"><div><h2>Quanto comprar para o boost</h2><p class="panel-sub">Escolha de qual boost até qual boost você vai. Cada faixa mostra quanto de cada material vai em 1 stone e no total da faixa, e se compensa craftar ou comprar a stone pronta.</p></div></div>'+
+    '<div class="fld"><label for="l-poke">Usar o plano de</label><select id="l-poke" data-path="precos.listaPoke"></select><span class="hint">Escolha um Pokémon com boost no plano, ou digite a faixa abaixo.</span></div>'+
+    '<div class="fgrid" style="margin-top:12px">'+
+      '<div class="fld"><label for="l-de">Boost atual</label><input type="text" id="l-de" inputmode="numeric" data-path="precos.lista.de" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
+      '<div class="fld"><label for="l-ate">Boost desejado</label><input type="text" id="l-ate" inputmode="numeric" data-path="precos.lista.ate" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
+    '</div>'+
+    '<p class="lbl-sm" id="lbl-cen">Quantas stones contar</p><div class="chips" role="group" aria-labelledby="lbl-cen">'+
+      [["none","Sem falhas"],["mean","Média"],["p90","Cobre 90%"],["p99","Cobre 99%"],["worst","Pior caso"]].map(function(c){
+        return '<button type="button" class="chip" data-act="lcen" data-v="'+c[0]+'" aria-pressed="'+(c[0]===cen)+'">'+c[1]+'</button>';}).join("")+
+    '</div><p class="cen-note" id="cen-note">'+NOTAS_CEN[cen]+'</p>'+
+    '<p class="lbl-sm" id="lbl-modo">Como montar a lista</p><div class="chips" role="group" aria-labelledby="lbl-modo">'+
+      MODOS_LISTA.map(function(c){return '<button type="button" class="chip" data-act="lmodo" data-v="'+c[0]+'" aria-pressed="'+(c[0]===modo)+'">'+c[1]+'</button>';}).join("")+
+    '</div><p class="cen-note">'+(modo==="craft"?"Todas as stones craftadas: a lista traz só materiais.":"Em cada faixa, o caminho mais barato entre craftar e comprar a stone pronta.")+'</p>'+
+    '<div id="c-resumo"></div>';
+  $("l-de").value=P.lista.de;$("l-ate").value=P.lista.ate;
+}
+// marca o cenário escolhido sem redesenhar o painel (usado quando o plano escolhe o cenário)
+function marcarCen(){
+  var cen=state.precos.listaCen,cs=document.querySelectorAll('.chip[data-act="lcen"]');
+  for(var i=0;i<cs.length;i++)cs[i].setAttribute("aria-pressed",String(cs[i].getAttribute("data-v")===cen));
+  var n=$("cen-note");if(n)n.textContent=NOTAS_CEN[cen];
+}
+function tileHtml(titulo,unit,faixa,disp,naTxt,win){
+  return '<div class="tile'+(win?" win":"")+(disp?"":" na")+'"><span class="tl">'+titulo+(win?' <span class="pill ok">mais barato</span>':'')+'</span>'+
+    (disp?'<span class="tv">'+gold(unit)+' por stone</span><span class="ts">'+gold(faixa)+' nesta faixa</span>':'<span class="tv">'+naTxt+'</span>')+'</div>';
+}
+function nomeMat(mt,mi){return esc(mt.nome||("Material "+(mi+1)));}
+function atualizarCompras(){
+  var P=state.precos,ctx=A.ctx,cen=P.listaCen,modo=P.listaModo==="craft"?"craft":"barato";
+  // opções do "Usar o plano de" e sincronia com o plano escolhido
+  var sel=$("l-poke");
+  var ops='<option value="">Outra faixa (digitar)</option>';
+  A.info.forEach(function(r,i){var pl=A.plano[i];if(pl&&!pl.o.fixo&&pl.o.n>0)ops+='<option value="'+i+'">'+esc(r.nome)+': +'+r.m.b0+' até +'+(r.m.b0+pl.o.n)+'</option>';});
+  if(ops!==lastOps){sel.innerHTML=ops;lastOps=ops;}
+  sel.value=P.listaPoke;
+  if(P.listaPoke!==""){
+    var a=$("l-de"),b=$("l-ate");
+    if(document.activeElement!==a)a.value=P.lista.de;
+    if(document.activeElement!==b)b.value=P.lista.ate;
+  }
+  var de=parseNum(P.lista.de),ate=parseNum(P.lista.ate),res=$("c-res"),resumo=$("c-resumo");
+  if(!valido(de)||!valido(ate)||de<0||ate>BOOST_MAX||ate<=de){
+    resumo.innerHTML='<p class="muted" style="margin-top:16px">Informe o boost atual e o desejado, de 0 a 50, com o desejado maior que o atual.</p>';
+    res.innerHTML="";return;
+  }
+  var cont={};
+  for(var n=de+1;n<=ate;n++){var fi=faixaDoBoost(n);cont[fi]=(cont[fi]||0)+1;}
+  var zeros=function(){return P.materiais.map(function(){return 0;});};
+  // modo "mais barato": cada faixa pelo caminho mais barato
+  var total=0,stonesTot=0,semRota=[],compraMat=zeros(),compraPronta=[],nPronta=0;
+  // modo "craftar tudo": todas as faixas pelo craft
+  var craftMat=zeros(),craftCusto=0,craftSemPreco=false,semConf=[],nConf=0,craftTudoOk=true;
+  var blocos=Object.keys(cont).map(Number).sort(function(a,b){return a-b;}).map(function(fi){
+    var f=FAIXAS[fi],m=cont[fi],st=P.stones[fi],s=ctx.stone[fi];
+    var stones=stonesNaFaixa(fi,m,ctx.ganho,cen),exato=cen!=="mean";
+    stonesTot+=stones;
+    var primeiro=Math.max(de+1,fi*5+1),ultimo=Math.min(ate,fi*5+5);
+    var rows="",craftFaixa=0,precoFalta=false,needs=[];
+    P.materiais.forEach(function(mt,mi){
+      var per=parseNum(st.qty[mi]);if(!valido(per))per=0;
+      var need=Math.ceil(per*stones-1e-9),pr=parseNum(mt.preco),cost=valido(pr)?need*pr:null;
+      needs[mi]=need;
+      if(per>0&&cost===null)precoFalta=true;
+      if(cost!==null)craftFaixa+=cost;
+      rows+='<tr><td>'+nomeMat(mt,mi)+'</td><td class="r">'+fmtN.format(per)+'</td><td class="r">'+fmtN.format(need)+'</td><td class="r">'+(cost===null?(per>0?'<span class="muted">sem preço</span>':'—'):gold(cost))+'</td></tr>';
+    });
+    var craftOk=st.conf&&!precoFalta&&s.craft!=null;
+    var craftUnit=craftOk?s.craft:null;
+    var mk=s.market,mkOk=mk!=null,mkFaixa=mkOk?stones*mk:null;
+    var rota=craftOk&&mkOk?(mk<craftUnit?"pronta":"craft"):(craftOk?"craft":(mkOk?"pronta":null));
+    if(rota==="craft"){total+=craftFaixa;needs.forEach(function(q,mi){compraMat[mi]+=q;});}
+    else if(rota==="pronta"){total+=mkFaixa;compraPronta.push({fi:fi,q:Math.ceil(stones-1e-9)});nPronta++;}
+    else semRota.push(f.nome);
+    if(!craftOk)craftTudoOk=false;
+    var temQtd=needs.some(function(q){return q>0;});
+    if(st.conf&&temQtd){nConf++;craftCusto+=craftFaixa;if(precoFalta)craftSemPreco=true;needs.forEach(function(q,mi){craftMat[mi]+=q;});}
+    else semConf.push(f.nome);
+    var both=craftOk&&mkOk,hi=both?Math.max(craftUnit,mk):0,lo=both?Math.min(craftUnit,mk):0,pd=both&&hi>0?(hi-lo)/hi*100:0,empate=both&&pd<0.5;
+    var naCraft=!st.conf?"quantidades não conferidas":(precoFalta?"falta preço de material":"sem quantidades");
+    var verd;
+    if(both)verd=empate?'<p class="verd quiet">Os dois caminhos dão praticamente no mesmo preço nesta faixa.</p>':
+      '<p class="verd"><b>'+(rota==="pronta"?"Comprar pronta":"Craftar")+'</b> sai '+fmt1.format(pd)+'% mais barato por stone, uma diferença de '+gold(Math.abs(craftFaixa-mkFaixa))+' nesta faixa.</p>';
+    else if(mkOk)verd='<p class="verd quiet">Sem o custo do craft ('+naCraft+'), não dá para comparar. O total usa a stone pronta.</p>';
+    else if(craftOk)verd='<p class="verd quiet">Informe o preço da stone pronta no passo 2 para comparar os dois caminhos. O total usa o craft.</p>';
+    else verd='<p class="verd quiet">Sem preço para esta faixa: '+naCraft+' e sem preço da stone pronta. Ela fica fora do total.</p>';
+    var nst=exato?fmtN.format(stones):fmt1.format(stones);
+    return '<section class="panel band"><div class="band-head"><h3>'+f.nome+'</h3><span class="fr">boost +'+primeiro+(ultimo>primeiro?' a +'+ultimo:'')+', chance base '+f.base+'%</span>'+
+      '<span class="ft"><b>'+nst+'</b> stones para '+plural(m,"boost","boosts")+'</span></div>'+
+      '<div class="compare">'+tileHtml("Craftar",craftUnit,craftFaixa,craftOk,naCraft,both&&!empate&&rota==="craft")+tileHtml("Comprar pronta",mk,mkFaixa,mkOk,"sem preço informado",both&&!empate&&rota==="pronta")+'</div>'+verd+
+      (st.conf?'<div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col" class="r">Por stone</th><th scope="col" class="r">Total na faixa ('+nst+' stones)</th><th scope="col" class="r">Custo</th></tr></thead><tbody>'+rows+'</tbody>'+
+        '<tfoot><tr><td colspan="3">Craftando esta faixa</td><td class="r">'+(precoFalta?"—":gold(craftFaixa))+'</td></tr></tfoot></table></div>':
+        '<div class="conf-falta"><p class="fine">A tabela de materiais desta faixa aparece quando as quantidades dela estão marcadas como <b>Conferidas</b> no passo 2. Sem isso o planejador não usa as quantidades, porque podem ser de outro elemento.</p>'+goBtn({t:"stone",fi:fi,why:"conf"},"Conferir as quantidades")+'</div>')+
+      '</section>';
+  });
+  var cenTxt=(cen==="mean"?fmt1.format(stonesTot):fmtN.format(stonesTot))+" stones no total.";
+  var margem=(cen==="p90"||cen==="p99")?"A margem de cada faixa foi somada, então o total cobre mais que a porcentagem escolhida no caminho inteiro.":"";
+  var linhas="",grand,listaTxt;
+  if(modo==="barato"){
+    var sub=[cenTxt];
+    if(semRota.length)sub.push("Fora do total por falta de preço: "+juntar(semRota)+".");
+    if(nPronta)sub.push("O total já escolhe o caminho mais barato de cada faixa: "+(nPronta===1?"1 faixa sai mais barata comprando pronta":nPronta+" faixas saem mais baratas comprando prontas")+".");
+    if(nPronta&&craftTudoOk&&craftCusto>total)sub.push("Craftando tudo daria "+gold(craftCusto)+", ou seja, "+gold(craftCusto-total)+" a mais.");
+    if(margem)sub.push(margem);
+    P.materiais.forEach(function(mt,mi){
+      if(compraMat[mi]>0){var pr=parseNum(mt.preco);linhas+='<tr><td>'+nomeMat(mt,mi)+'</td><td class="r">'+fmtN.format(compraMat[mi])+'</td><td class="r">'+(valido(pr)?gold(compraMat[mi]*pr):"—")+'</td></tr>';}
+    });
+    compraPronta.forEach(function(c){linhas+='<tr><td>Stone '+FAIXAS[c.fi].nome+' pronta</td><td class="r">'+fmtN.format(c.q)+'</td><td class="r">'+gold(c.q*ctx.stone[c.fi].market)+'</td></tr>';});
+    grand='<div class="grand"><span class="gl">Total de +'+de+' até +'+ate+'</span><span class="gv">'+gold(total)+'</span><span class="gs">'+sub.join(" ")+'</span></div>';
+    listaTxt="Somando todas as faixas, já pelo caminho mais barato de cada uma. Quantidades arredondadas para cima.";
+  }else{
+    var subC=[cenTxt];
+    if(semConf.length)subC.push("Fora da lista: "+juntar(semConf)+", porque as quantidades ainda não foram conferidas no passo 2.");
+    if(craftSemPreco)subC.push("Algum material está sem preço, então o custo não conta esse material.");
+    if(craftTudoOk&&!semRota.length&&total<craftCusto-0.5)subC.push("Pelo caminho mais barato de cada faixa daria "+gold(total)+", ou seja, "+gold(craftCusto-total)+" a menos.");
+    if(margem)subC.push(margem);
+    P.materiais.forEach(function(mt,mi){
+      if(craftMat[mi]>0){var pr=parseNum(mt.preco);linhas+='<tr><td>'+nomeMat(mt,mi)+'</td><td class="r">'+fmtN.format(craftMat[mi])+'</td><td class="r">'+(valido(pr)?gold(craftMat[mi]*pr):'<span class="muted">sem preço</span>')+'</td></tr>';}
+    });
+    var parcial=semConf.length||craftSemPreco;
+    grand='<div class="grand"><span class="gl">Craftando tudo de +'+de+' até +'+ate+(parcial&&nConf?' (parcial)':'')+'</span><span class="gv">'+(nConf?gold(craftCusto):"—")+'</span><span class="gs">'+(nConf?subC.join(" "):"Nenhuma faixa deste intervalo está com as quantidades conferidas no passo 2.")+'</span></div>';
+    listaTxt="Somando todas as faixas, craftando todas as stones. Quantidades arredondadas para cima.";
+  }
+  resumo.innerHTML=grand+
+    (linhas?'<h3 style="margin-top:20px">Lista de compras</h3><p class="fine" style="margin:4px 0 10px">'+listaTxt+'</p>'+
+      '<div class="scroll"><table><thead><tr><th scope="col">Item</th><th scope="col" class="r">Quantidade</th><th scope="col" class="r">Custo</th></tr></thead><tbody>'+linhas+'</tbody></table></div>':'');
+  res.innerHTML='<div class="bands">'+blocos.join("")+'</div>';
+}
+
+/* ============================================================
+   CICLO
+   ============================================================ */
+function preencherInputs(root){
+  var els=root.querySelectorAll("input[data-path]:not([type=radio]),select[data-path]");
+  for(var i=0;i<els.length;i++){
+    var v=getPath(els[i].getAttribute("data-path"));
+    if(els[i].type==="checkbox")els[i].checked=!!v;else els[i].value=v==null?"":v;
+  }
+}
+function sincronizarLista(){
+  var P=state.precos,lp=P.listaPoke;
+  if(lp==="")return;
+  var pl=A.plano[+lp],r=A.info[+lp];
+  if(pl&&!pl.o.fixo&&pl.o.n>0)P.lista={de:String(r.m.b0),ate:String(r.m.b0+pl.o.n)};
+  else P.listaPoke="";
+}
+function atualizar(){
+  A=analisar();
+  sincronizarLista();
+  atualizarTopo();
+  atualizarPassos();
+  if(state.tab==="time")atualizarTime();
+  else if(state.tab==="precos")atualizarPrecos();
+  else if(state.tab==="melhorar")atualizarMelhorar();
+  else if(state.tab==="compras")atualizarCompras();
+  refreshEchos(document);
+  $("aviso-exemplo").hidden=!state.exemplo;
+}
+function autoTier(){
+  var usados={};
+  state.time.forEach(function(p){if(RARMAP[p.rar]&&(+p.stars||0)<5)usados[p.rar]=1;});
+  if(usados[state.precos.starRar])return;
+  var ids=RAR.map(function(r){return r.id;}).filter(function(id){return usados[id];});
+  var comPend=ids.filter(function(id){return A&&Object.keys(A.pend).some(function(k){return k.indexOf("f:"+id+":")===0;});});
+  var alvo=comPend[0]||ids[0];
+  if(alvo)state.precos.starRar=alvo;
+}
+function mostrar(){
+  PASSOS.forEach(function(t){
+    $("p-"+t).hidden=state.tab!==t;
+    var b=$("tab-"+t);b.setAttribute("aria-selected",String(state.tab===t));b.tabIndex=state.tab===t?0:-1;
+  });
+  if(state.tab==="time")preencherTime();
+  if(state.tab==="precos"){if(!A)A=analisar();autoTier();renderPrecos();}
+  if(state.tab==="melhorar"){progKey=null;renderForm();}
+  if(state.tab==="compras")renderCompras();
+  atualizar();
+}
+function irParaTab(t){
+  state.tab=t;salvar();mostrar();
+  try{window.scrollTo({top:0});}catch(e){}
+}
+var reduz=false;
+try{reduz=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;}catch(e){}
+function destacar(el){
+  if(!el)return;
+  var alvo=el.type==="checkbox"?(el.closest("label")||el):el;
+  try{alvo.scrollIntoView({block:"center",behavior:reduz?"auto":"smooth"});}catch(e){try{alvo.scrollIntoView();}catch(e2){}}
+  try{el.focus({preventScroll:true});}catch(e){el.focus();}
+  alvo.classList.remove("flash");void alvo.offsetWidth;alvo.classList.add("flash");
+  setTimeout(function(){alvo.classList.remove("flash");},1600);
+}
+function irPara(d){
+  var t=d.t,id,tab="precos";
+  if(t==="xatk")id="x-"+d.tier;
+  else if(t==="fee"){state.precos.starRar=d.rar;id="fd-"+d.e;}
+  else if(t==="dia")id="s-dia";
+  else if(t==="stone"){
+    var fi=+d.fi;
+    if(d.why==="conf")id="sc-"+fi;
+    else if(d.why==="mat"){
+      id="sm-"+fi;
+      state.precos.materiais.some(function(mt,mi){var q=parseNum(state.precos.stones[fi].qty[mi]);if(valido(q)&&q>0&&!valido(parseNum(mt.preco))){id="mp-"+mi;return true;}return false;});
+    }
+    else id="sm-"+fi;
+  }
+  else if(t==="copia"){tab="melhorar";id="f-preco";if(d.pi!=null&&d.pi!=="")state.sel=+d.pi;}
+  state.tab=tab;salvar();mostrar();
+  destacar($(id));
+}
+
+function onEdit(e){
+  var t=e.target,path=t.getAttribute&&t.getAttribute("data-path");
+  if(!path)return;
+  if(t.type==="radio"&&!t.checked)return;
+  if(e.type==="input"&&(t.tagName==="SELECT"||t.type==="checkbox"||t.type==="radio"))return;
+  setPath(path,t.type==="checkbox"?t.checked:t.value);
+  // meta: escolher hazard ou runa usa a tabela; digitar no campo vale como meta própria
+  if(path==="hazard"||path==="runaCol"){state.metaManual=false;$("alvo").value=valorTabelaTxt();}
+  if(path==="alvo"){
+    if(e.type==="change"){
+      var va=parseNum(t.value);
+      // campo vazio, ou igual ao da tabela, volta a seguir a tabela
+      if(String(t.value).trim()===""||(valido(va)&&Math.abs(va-valorTabela())<0.5)){state.metaManual=false;t.value=valorTabelaTxt();}
+      else state.metaManual=true;
+    }else state.metaManual=true;
+  }
+  if(path.indexOf("precos.lista.")===0)state.precos.listaPoke="";
+  if(state.exemplo&&path.indexOf("time.")===0)state.exemplo=false;
+  salvar();
+  if(t.getAttribute("data-rebuild")==="cab")renderStHead();
+  if(path==="precos.listaPoke"&&state.precos.listaPoke!==""){state.precos.listaCen=state.precos.cenario;salvar();marcarCen();}
+  atualizar();
+}
+document.addEventListener("input",onEdit);
+document.addEventListener("change",onEdit);
+
+var limparTimer=null;
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-act]");if(!b)return;
+  var act=b.getAttribute("data-act"),v=b.getAttribute("data-v"),P=state.precos;
+  if(act==="tab"){irParaTab(v);$("tab-"+v).focus();return;}
+  if(act==="pick"){state.sel=+v;salvar();renderForm();atualizar();var nb=document.querySelector('.pk[data-v="'+v+'"]');if(nb)nb.focus();return;}
+  if(act==="rar"){P.starRar=v;salvar();renderPrecos();atualizar();var c=document.querySelector('.chip[data-act="rar"][data-v="'+v+'"]');if(c)c.focus();return;}
+  if(act==="sec"){var s=$(v);if(s){try{s.scrollIntoView({block:"start",behavior:reduz?"auto":"smooth"});}catch(err){s.scrollIntoView();}}return;}
+  if(act==="haz-mais"){state.hazard=String(Math.min(HAZ.length-1,+state.hazard+1));state.metaManual=false;salvar();preencherTopo();atualizar();return;}
+  if(act==="usar-tabela"){state.metaManual=false;salvar();preencherTopo();atualizar();$("alvo").focus();return;}
+  if(act==="sim-reset"){state.sim.i=-1;simKey=null;atualizar();var sh=$("sim-h");if(sh)sh.focus();return;}
+  if(act==="sim-compras"){var rs=A.info[state.sel];if(!rs.m.falta){P.listaPoke="";P.lista={de:String(rs.m.b0),ate:String(state.sim.b)};P.listaCen=P.cenario;irParaTab("compras");}return;}
+  if(act==="add-mat"){P.materiais.push({nome:"",preco:""});P.stones.forEach(function(s){s.qty.push("0");});salvar();renderPrecos();atualizar();return;}
+  if(act==="rm-mat"){var i=+v;if(P.materiais.length<=1)return;P.materiais.splice(i,1);P.stones.forEach(function(s){s.qty.splice(i,1);});salvar();renderPrecos();atualizar();return;}
+  if(act==="lcen"){P.listaCen=v;salvar();renderCompras();atualizar();var lc=document.querySelector('.chip[data-act="lcen"][data-v="'+v+'"]');if(lc)lc.focus();return;}
+  if(act==="lmodo"){P.listaModo=v;salvar();renderCompras();atualizar();var lm=document.querySelector('.chip[data-act="lmodo"][data-v="'+v+'"]');if(lm)lm.focus();return;}
+  if(act==="lista-ir"){P.listaPoke=b.getAttribute("data-poke");P.listaCen=P.cenario;irParaTab("compras");return;}
+  if(act==="ir"){irPara(b.dataset);return;}
+  if(act==="campo"){var id=b.getAttribute("data-id");if(id==="m-haz"||id==="alvo"){destacar($(id));return;}if(state.tab!=="melhorar")irParaTab("melhorar");destacar($(id));return;}
+  if(act==="nota"){var nota=$("meta-nota"),aberto=nota.hidden;nota.hidden=!aberto;b.setAttribute("aria-expanded",String(aberto));return;}
+  if(act==="dados"){var dlg=$("dlg-dados");$("io-msg").textContent=storageOk?"Tudo fica salvo neste navegador.":"";if(dlg.showModal){try{dlg.showModal();}catch(err){dlg.setAttribute("open","");}}else dlg.setAttribute("open","");return;}
+  if(act==="dlg-fechar"){var dl=$("dlg-dados");if(dl.close)dl.close();else dl.removeAttribute("open");return;}
+  if(act==="io-gerar"){$("io-box").value=JSON.stringify(state);$("io-msg").textContent="Texto gerado. Copie e guarde.";return;}
+  if(act==="io-copiar"){
+    var ta=$("io-box");if(!ta.value)ta.value=JSON.stringify(state);
+    var falhou=function(){ta.focus();ta.select();$("io-msg").textContent="Selecionei o texto: copie com Ctrl+C.";};
+    try{navigator.clipboard.writeText(ta.value).then(function(){$("io-msg").textContent="Texto copiado.";},falhou);}catch(err){falhou();}
+    return;
+  }
+  if(act==="io-carregar"){
+    try{var o=JSON.parse($("io-box").value);if(!o||!o.time||!o.precos)throw 0;state=normalizar(o);salvar();preencherTopo();mostrar();$("io-msg").textContent="Dados carregados.";}
+    catch(err){$("io-msg").textContent="Não deu para ler esse texto. Cole exatamente o que foi gerado em Gerar texto.";}
+    return;
+  }
+  if(act==="exemplo-limpar"){state.time=state.time.map(function(){return pokeVazio();});state.exemplo=false;state.sel=0;salvar();mostrar();return;}
+  if(act==="limpar"){
+    if(b.getAttribute("data-confirm")==="1"){
+      clearTimeout(limparTimer);b.removeAttribute("data-confirm");b.textContent="Limpar time";
+      state.time=state.time.map(function(){return pokeVazio();});state.exemplo=false;salvar();preencherTime();atualizar();$("nome-0").focus();
+    }else{
+      b.setAttribute("data-confirm","1");b.textContent="Clique de novo para limpar";
+      limparTimer=setTimeout(function(){b.removeAttribute("data-confirm");b.textContent="Limpar time";},3000);
+    }
+  }
+});
+// setas entre os passos
+document.querySelector(".steps").addEventListener("keydown",function(e){
+  var i=PASSOS.indexOf(state.tab),n=-1;
+  if(e.key==="ArrowRight")n=(i+1)%PASSOS.length;
+  else if(e.key==="ArrowLeft")n=(i+PASSOS.length-1)%PASSOS.length;
+  else if(e.key==="Home")n=0;
+  else if(e.key==="End")n=PASSOS.length-1;
+  if(n<0)return;
+  e.preventDefault();irParaTab(PASSOS[n]);$("tab-"+PASSOS[n]).focus();
+});
+
+if(/teste/.test(location.hash))window.__pl={opcoes:opcoes,fronteira:fronteira,melhorDupla:melhorDupla,planoTime:planoTime,montarModelo:montarModelo,contexto:contexto,analisar:analisar,avaliar:avaliar,progressao:progressao,melhorDivisao:melhorDivisao,alvoProgAuto:alvoProgAuto,cabeNaVerba:cabeNaVerba,getA:function(){return A;}};
+carregar();
+montarTopo();
+preencherTopo();
+montarLinhas();
+mostrar();
+})();
+</script>
+
+</body></html>

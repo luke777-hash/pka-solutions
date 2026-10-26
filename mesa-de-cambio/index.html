@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesa de câmbio — KK, diamond e lucro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116;
+    --slab:#161B23;
+    --slab-hi:#1D242E;
+    --rule:#293240;
+    --rule-soft:#1E262F;
+    --text:#DEE4EB;
+    --muted:#8593A4;
+    --gold:#E8B44C;
+    --jade:#57B894;
+    --clay:#D2694E;
+    --azure:#6BA3D6;
+    --display:"Fraunces",Georgia,"Times New Roman",serif;
+    --ui:"Public Sans","Segoe UI",Roboto,-apple-system,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:var(--ui);
+    font-size:15px;
+    line-height:1.55;
+    font-variant-numeric:tabular-nums;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 90px}
+
+  /* ---------------- cabeçalho ---------------- */
+  .masthead{
+    display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;
+    padding:34px 0 18px;
+  }
+  .masthead h1{
+    font-family:var(--display);
+    font-optical-sizing:auto;
+    font-weight:700;
+    font-size:clamp(26px,4vw,38px);
+    line-height:1.05;
+    letter-spacing:-.015em;
+    margin:0;
+  }
+  .masthead p{margin:0 0 4px;color:var(--muted);font-size:14px;max-width:46ch}
+
+  /* ---------------- abas de modo ---------------- */
+  .modes{
+    display:flex;flex-wrap:wrap;gap:0;
+    border-bottom:1px solid var(--rule);
+    margin-bottom:26px;
+  }
+  .modes button{
+    appearance:none;background:none;border:none;
+    border-bottom:2px solid transparent;
+    color:var(--muted);font-family:var(--ui);font-size:14.5px;font-weight:500;
+    padding:11px 16px;margin-bottom:-1px;cursor:pointer;
+  }
+  .modes button:hover{color:var(--text)}
+  .modes button[aria-pressed=true]{color:var(--gold);border-bottom-color:var(--gold);font-weight:600}
+  .modes button:focus-visible{outline:2px solid var(--azure);outline-offset:-3px;border-radius:3px}
+
+  /* ---------------- veredito (herói) ---------------- */
+  .verdict{
+    position:relative;
+    background:linear-gradient(158deg,#1A2029 0%,#141920 62%,#12171E 100%);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:26px 28px 24px;
+    overflow:hidden;
+  }
+  .verdict::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:var(--gold);
+  }
+  .verdict.up::before{background:var(--jade)}
+  .verdict.down::before{background:var(--clay)}
+  .verdict .kicker{color:var(--muted);font-size:13.5px;margin:0 0 6px}
+  .verdict .headline{
+    font-family:var(--display);font-optical-sizing:auto;font-weight:700;
+    font-size:clamp(30px,5.2vw,50px);line-height:1.02;letter-spacing:-.02em;
+    margin:0;color:var(--gold);
+  }
+  .verdict.up .headline{color:var(--jade)}
+  .verdict.down .headline{color:var(--clay)}
+  .verdict .route{
+    font-family:var(--ui);font-weight:600;font-size:17px;
+    margin:9px 0 0;color:var(--text);
+  }
+  .verdict .note{margin:10px 0 0;color:var(--muted);font-size:14px;max-width:62ch}
+
+  /* ---------------- entrada principal ---------------- */
+  .entry{
+    display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px;
+    margin-top:18px;padding:16px 20px;
+    background:var(--slab);border:1px solid var(--rule);border-radius:8px;
+  }
+  .entry .big-field{min-width:200px}
+  .entry .big-field label{display:block;color:var(--muted);font-size:13px;margin-bottom:5px}
+  .entry .big-field input{
+    font-family:var(--display);font-weight:500;font-size:27px;
+    padding:2px 0;background:none;border:none;border-bottom:2px solid var(--rule);
+    color:var(--text);width:100%;max-width:230px;
+  }
+  .entry .big-field input:focus{outline:none;border-bottom-color:var(--gold)}
+  .entry .aside{color:var(--muted);font-size:13.5px;max-width:58ch;padding-bottom:4px;flex:1 1 300px}
+  .entry-extra{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;padding-bottom:3px}
+  .entry-extra[hidden]{display:none}
+  .entry-extra .f{width:152px}
+  .entry-extra .f label{display:block;font-size:12.4px;color:var(--muted);margin-bottom:4px;line-height:1.35;min-height:2.7em}
+  .entry-extra .f .unit{color:var(--gold)}
+
+  /* ---------------- grade de rotas ---------------- */
+  .board{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(236px,1fr));
+    gap:14px;margin-top:22px;
+  }
+  .route-card{
+    background:var(--slab);border:1px solid var(--rule);border-radius:8px;
+    padding:16px 17px 14px;display:flex;flex-direction:column;
+  }
+  .route-card.win{background:var(--slab-hi);border-color:var(--jade)}
+  .route-card .rname{font-weight:650;font-size:15px;margin:0}
+  .route-card .rsub{color:var(--muted);font-size:12.5px;margin:3px 0 0;min-height:2.6em}
+  .route-card .rmain{
+    font-family:var(--display);font-optical-sizing:auto;font-weight:700;
+    font-size:29px;line-height:1.1;letter-spacing:-.015em;
+    margin:12px 0 2px;color:var(--gold);
+  }
+  .route-card.win .rmain{color:var(--jade)}
+  .route-card .rdelta{font-size:12.5px;color:var(--muted);margin:0 0 12px;min-height:1.4em}
+  .spread{height:3px;background:var(--rule-soft);border-radius:2px;overflow:hidden;margin-bottom:13px}
+  .spread i{display:block;height:100%;background:var(--gold);border-radius:2px}
+  .route-card.win .spread i{background:var(--jade)}
+  .route-card dl{margin:0;font-size:13px}
+  .route-card .line{display:flex;justify-content:space-between;gap:12px;padding:3.5px 0;border-top:1px solid var(--rule-soft)}
+  .route-card .line:first-child{border-top:none}
+  .route-card .line dt{color:var(--muted);margin:0}
+  .route-card .line dd{margin:0;font-weight:600}
+
+  /* ---------------- painéis do modo lucro ---------------- */
+  .ledger{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-top:22px}
+  .panel{background:var(--slab);border:1px solid var(--rule);border-radius:8px;padding:16px 18px}
+  .panel h3{margin:0 0 11px;font-size:14.5px;font-weight:650}
+  .panel .line{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:13.6px;border-top:1px solid var(--rule-soft)}
+  .panel .line:first-of-type{border-top:none}
+  .panel .line span:first-child{color:var(--muted)}
+  .panel .line span:last-child{font-weight:600}
+  .pos{color:var(--jade)}
+  .neg{color:var(--clay)}
+  .val{color:var(--gold)}
+  .panel .caption{margin:11px 0 0;color:var(--muted);font-size:12.8px;line-height:1.5}
+  .panel.pivot{border-color:var(--azure)}
+  .panel.pivot .big{
+    font-family:var(--display);font-weight:700;font-size:32px;line-height:1.1;
+    color:var(--azure);margin:2px 0 0;letter-spacing:-.015em;
+  }
+
+  /* ---------------- configuração ---------------- */
+  .config-wrap{margin-top:40px;border-top:1px solid var(--rule);padding-top:8px}
+  .config-wrap > details > summary{
+    cursor:pointer;color:var(--muted);font-size:14px;padding:12px 0;list-style:none;
+    display:flex;align-items:center;gap:9px;
+  }
+  .config-wrap > details > summary::-webkit-details-marker{display:none}
+  .config-wrap > details > summary::before{content:"▸";color:var(--gold);font-size:12px}
+  .config-wrap > details[open] > summary::before{content:"▾"}
+  .config-wrap > details > summary:hover{color:var(--text)}
+  .config-wrap > details > summary:focus-visible{outline:2px solid var(--azure);outline-offset:2px;border-radius:3px}
+
+  .group{margin:6px 0 26px}
+  .group > h3{font-size:14px;font-weight:650;margin:0 0 3px;color:var(--gold)}
+  .group > p{margin:0 0 11px;color:var(--muted);font-size:13px;max-width:70ch}
+  .fields{display:flex;flex-wrap:wrap;gap:18px;background:var(--slab);border:1px solid var(--rule);border-radius:8px;padding:15px 17px}
+  .fields .f{width:158px}
+  .fields .f.w{width:212px}
+  .fields .f label{display:block;font-size:12.4px;color:var(--muted);margin-bottom:4px;line-height:1.35}
+  .fields .check{display:flex;align-items:center;gap:9px;width:auto;align-self:flex-end;padding-bottom:7px}
+  .fields .check input{width:16px;height:16px;accent-color:var(--gold)}
+  .fields .check label{margin:0;color:var(--text);font-size:13.5px}
+
+  input[type=number]{
+    background:#111720;border:1px solid var(--rule);border-radius:5px;
+    color:var(--text);font:inherit;font-variant-numeric:tabular-nums;
+    padding:7px 9px;width:100%;
+  }
+  input[type=number]:focus{outline:2px solid var(--azure);outline-offset:1px;border-color:var(--azure)}
+  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield}
+
+  button.act{
+    background:#111720;color:var(--text);border:1px solid var(--rule);
+    border-radius:5px;font:inherit;font-size:13.5px;padding:7px 14px;cursor:pointer;
+  }
+  button.act:hover{border-color:var(--gold);color:#fff}
+  button.act:focus-visible{outline:2px solid var(--azure);outline-offset:1px}
+  .acts{display:flex;flex-wrap:wrap;gap:9px;margin-top:11px}
+
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  .scroller{overflow-x:auto;background:var(--slab);border:1px solid var(--rule);border-radius:8px}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--rule-soft)}
+  thead th{background:#121821;color:var(--muted);font-size:12.4px;font-weight:600;border-bottom:1px solid var(--rule);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td input{max-width:120px}
+  .kill{
+    background:none;border:1px solid transparent;border-radius:4px;color:var(--muted);
+    font:inherit;font-size:14px;line-height:1;padding:4px 8px;cursor:pointer;
+  }
+  .kill:hover{color:var(--clay);border-color:var(--clay)}
+  .kill:focus-visible{outline:2px solid var(--azure);outline-offset:1px}
+
+  /* ---------------- notas ---------------- */
+  .notes{margin-top:34px;color:var(--muted);font-size:13.5px;max-width:74ch}
+  .notes h3{color:var(--text);font-size:14.5px;margin:0 0 9px;font-weight:650}
+  .notes ul{padding-left:20px;margin:0 0 16px}
+  .notes li{margin-bottom:7px}
+  .notes b{color:var(--text);font-weight:600}
+  .io textarea{
+    width:100%;min-height:66px;background:#111720;border:1px solid var(--rule);
+    border-radius:5px;color:var(--text);font-family:ui-monospace,Consolas,monospace;
+    font-size:12px;padding:9px;margin-top:9px;
+  }
+
+  @media (max-width:620px){
+    .wrap{padding:0 14px 70px}
+    .verdict{padding:22px 20px}
+    .masthead{padding-top:26px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1>Mesa de câmbio</h1>
+    <p>Quanto KK cada rota entrega pelo seu dinheiro — e quanto sobra se você revender.</p>
+  </header>
+
+  <nav class="modes" id="modes" aria-label="O que calcular">
+    <button type="button" data-mode="reais">Tenho um valor em reais</button>
+    <button type="button" data-mode="kk">Preciso de tanto KK</button>
+    <button type="button" data-mode="lucro">Quero lucrar revendendo</button>
+  </nav>
+
+  <section class="verdict" id="verdict">
+    <p class="kicker" id="vKicker">—</p>
+    <p class="headline" id="vHeadline">—</p>
+    <p class="route" id="vRoute"></p>
+    <p class="note" id="vNote"></p>
+  </section>
+
+  <div class="entry" id="entry">
+    <div class="big-field">
+      <label id="amountLabel" for="amount">Valor</label>
+      <input type="number" id="amount" min="0" step="0.01" inputmode="decimal">
+    </div>
+    <div class="entry-extra" id="entryExtra" hidden>
+      <div class="f">
+        <label for="lDd">Compra do diamond <span class="unit">R$</span></label>
+        <input type="number" id="lDd" min="0" step="0.01" inputmode="decimal">
+      </div>
+      <div class="f">
+        <label for="lMkt">Venda do diamond no market <span class="unit">K</span></label>
+        <input type="number" id="lMkt" min="0" step="1000" inputmode="decimal">
+      </div>
+      <div class="f">
+        <label for="lKkSell">Venda do KK ao player <span class="unit">R$</span></label>
+        <input type="number" id="lKkSell" min="0" step="0.01" inputmode="decimal">
+      </div>
+    </div>
+    <p class="aside" id="entryAside"></p>
+  </div>
+
+  <div id="board" class="board"></div>
+  <div id="ledger" class="ledger" hidden></div>
+
+  <div class="config-wrap">
+    <details id="cfg">
+      <summary>Preços e regras do jogo</summary>
+
+      <div class="group">
+        <h3>Cotações de hoje</h3>
+        <p>O valor do diamond no market oscila, então informe a faixa em que ele costuma sair.</p>
+        <div class="fields">
+          <div class="f"><label for="pKk">KK direto — R$ por KK</label><input type="number" id="pKk" min="0" step="0.01"></div>
+          <div class="f"><label for="pDdResale">Diamond na revenda — R$ cada</label><input type="number" id="pDdResale" min="0" step="0.01"></div>
+          <div class="f"><label for="pDdOficial">Diamond na loja oficial — R$ cada</label><input type="number" id="pDdOficial" min="0" step="0.01"></div>
+          <div class="f"><label for="pDesconto">Desconto da loja oficial — %</label><input type="number" id="pDesconto" min="0" max="100" step="1"></div>
+          <div class="f"><label for="pMktMin">Diamond no market, mínimo — K</label><input type="number" id="pMktMin" min="0" step="1000"></div>
+          <div class="f"><label for="pMktMax">Diamond no market, máximo — K</label><input type="number" id="pMktMax" min="0" step="1000"></div>
+          <div class="f w"><label for="pUnit">1 KK equivale a quantos K</label><input type="number" id="pUnit" min="1" step="1"></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Doação com cartão</h3>
+        <p>Mesmo preço da loja oficial, mas o ganho vem como diamond extra, não como desconto. O bônus vale a partir da quantidade mínima de cada linha.</p>
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr>
+                <th>A partir de quantos diamonds</th>
+                <th>Bônus em diamond (%)</th>
+                <th style="width:52px"><span class="sr">Remover</span></th>
+              </tr>
+            </thead>
+            <tbody id="tierBody"></tbody>
+          </table>
+        </div>
+        <div class="acts"><button type="button" class="act" id="addTier">Adicionar faixa</button></div>
+        <div class="fields" style="margin-top:13px">
+          <div class="f"><label for="pStreamerBonus">Código de streamer — % extra</label><input type="number" id="pStreamerBonus" min="0" step="1"></div>
+          <div class="check"><input type="checkbox" id="useStreamer"><label for="useStreamer">Usar o código nesta compra</label></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Revenda para outros players</h3>
+        <p>Usado só no modo de lucro: por quanto você consegue escoar o diamond no market e por quanto vende o KK para outro player.</p>
+        <div class="fields">
+          <div class="f w"><label for="pMktProfit">Venda do diamond no market — K</label><input type="number" id="pMktProfit" min="0" step="1000"></div>
+          <div class="f w"><label for="pKkSell">Venda do KK para o player — R$</label><input type="number" id="pKkSell" min="0" step="0.01"></div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="notes">
+    <h3>Como a conta é feita</h3>
+    <ul>
+      <li><b>KK direto</b> — o valor em reais dividido pelo preço do KK, ou o preço do KK multiplicado pela quantidade que você precisa.</li>
+      <li><b>Diamond na revenda e na loja oficial</b> — os reais viram diamonds pelo preço de cada rota, e os diamonds viram KK pelo valor do market. O desconto da loja oficial entra no preço antes dessa divisão.</li>
+      <li><b>Doação com cartão</b> — o preço por diamond é o da loja oficial, mas você recebe diamond extra pela faixa em que a compra cai, somado ao bônus do código de streamer quando marcado.</li>
+      <li>Quando você pede uma quantidade de KK, cada faixa de bônus é testada e fica a compra mais barata que atinge a meta — às vezes comprar um pouco a mais para subir de faixa sai por menos.</li>
+      <li><b>Lucro revendendo</b> — o diamond é comprado em reais, vendido no market por KK, e esse KK é vendido de volta por reais a outro player. O que decide se fecha no positivo é o valor do diamond no market: abaixo do ponto de virada mostrado, a operação dá prejuízo.</li>
+      <li>A rota vencedora é escolhida pelo meio da faixa do market, não pelo melhor caso.</li>
+    </ul>
+    <details class="io">
+      <summary>Salvar ou carregar uma configuração</summary>
+      <p style="margin:0">Gere o texto para guardar os números de hoje. Para restaurar, cole o texto e carregue.</p>
+      <textarea id="ioBox" spellcheck="false"></textarea>
+      <div class="acts">
+        <button type="button" class="act" id="ioSave">Gerar texto</button>
+        <button type="button" class="act" id="ioLoad">Carregar</button>
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = {
+    pKk: 2.70,
+    pDdResale: 0.70,
+    pDdOficial: 1.00,
+    pDesconto: 10,
+    pMktMin: 263000,
+    pMktMax: 275000,
+    pUnit: 1000000,
+    tiers: [
+      {min:100, bonus:10},
+      {min:150, bonus:15},
+      {min:200, bonus:20},
+      {min:400, bonus:30}
+    ],
+    pStreamerBonus: 10,
+    useStreamer: false,
+    pMktProfit: 285000,
+    pKkSell: 2.60,
+    mode: "reais",
+    amountReais: 120,
+    amountKk: 45,
+    capital: 300
+  };
+
+  var fMoney = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+  var fInt   = new Intl.NumberFormat("pt-BR");
+  var f2     = new Intl.NumberFormat("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  var f1     = new Intl.NumberFormat("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
+  function money(v){ return fMoney.format(v); }
+  function kkTxt(v){ return f2.format(v)+" KK"; }
+  function n(v){ return fInt.format(Math.round(v)); }
+  function pct(v){ return f1.format(v)+"%"; }
+
+  function el(tag,attrs,kids){
+    var e=document.createElement(tag);
+    if(attrs) for(var k in attrs){
+      if(k==="class") e.className=attrs[k];
+      else if(k==="text") e.textContent=attrs[k];
+      else e.setAttribute(k,attrs[k]);
+    }
+    (kids||[]).forEach(function(c){ e.appendChild(c); });
+    return e;
+  }
+  function numInput(value,onInput,attrs){
+    var i=el("input",Object.assign({type:"number",step:"1",min:"0"},attrs||{}));
+    i.value=value;
+    i.addEventListener("input",function(){ onInput(i.value===""?0:parseFloat(i.value)||0); });
+    return i;
+  }
+
+  /* ---------- núcleo dos cálculos ---------- */
+  function kkPerDiamond(marketK){ return marketK/state.pUnit; }
+  function officialEff(){ return state.pDdOficial*(1-(state.pDesconto/100)); }
+  function tiersSorted(){ return state.tiers.slice().sort(function(a,b){ return a.min-b.min; }); }
+  function streamerEff(){ return state.useStreamer ? (state.pStreamerBonus||0) : 0; }
+
+  function bonusForQty(qty){
+    var applicable=0;
+    tiersSorted().forEach(function(t){ if(qty>=t.min) applicable=t.bonus; });
+    return applicable;
+  }
+
+  function cartaoFromReais(amountReais){
+    var baseQtd = state.pDdOficial>0 ? Math.floor(amountReais/state.pDdOficial) : 0;
+    var bonus = bonusForQty(baseQtd) + streamerEff();
+    return {baseQtd:baseQtd, bonus:bonus, totalDiamonds:baseQtd*(1+bonus/100)};
+  }
+
+  function cartaoMinCostForDiamonds(D){
+    var segments=[{min:0,bonus:0}].concat(tiersSorted().map(function(t){ return {min:t.min,bonus:t.bonus}; }));
+    var streamer=streamerEff();
+    var best=null;
+    segments.forEach(function(seg,idx){
+      var max = idx+1<segments.length ? segments[idx+1].min-1 : Infinity;
+      var effBonus = seg.bonus+streamer;
+      var needed = Math.ceil(D/(1+effBonus/100));
+      var candidate = Math.max(needed, seg.min);
+      if(candidate<=max){
+        var cost = candidate*state.pDdOficial;
+        if(best===null || cost<best.cost) best={qtd:candidate,cost:cost,bonus:effBonus};
+      }
+    });
+    return best || {qtd:0,cost:0,bonus:0};
+  }
+
+  function routeFromReais(amountReais, preco){
+    var qtd = preco>0 ? Math.floor(amountReais/preco) : 0;
+    return {qtd:qtd, kkMin:qtd*kkPerDiamond(state.pMktMin), kkMax:qtd*kkPerDiamond(state.pMktMax)};
+  }
+  function routeFromKk(amountKk, preco){
+    var a = kkPerDiamond(state.pMktMin), b = kkPerDiamond(state.pMktMax);
+    var needMin = a>0 ? Math.ceil(amountKk/a) : 0;
+    var needMax = b>0 ? Math.ceil(amountKk/b) : 0;
+    return {qtdPior:needMin, custoPior:needMin*preco, qtdMelhor:needMax, custoMelhor:needMax*preco};
+  }
+
+  /* ---------- render: faixas de bônus ---------- */
+  function renderTiers(){
+    var body=document.getElementById("tierBody");
+    body.innerHTML="";
+    state.tiers.forEach(function(t,idx){
+      var c1=el("td"); c1.appendChild(numInput(t.min,function(v){ t.min=v; render(); },{min:"0",step:"1"}));
+      var c2=el("td"); c2.appendChild(numInput(t.bonus,function(v){ t.bonus=v; render(); },{min:"0",step:"1"}));
+      var del=el("button",{type:"button",class:"kill",title:"Remover faixa","aria-label":"Remover faixa",text:"✕"});
+      del.addEventListener("click",function(){ state.tiers.splice(idx,1); renderTiers(); render(); });
+      body.appendChild(el("tr",null,[c1,c2,el("td",null,[del])]));
+    });
+  }
+
+  /* ---------- render: cartões de rota ---------- */
+  function routeCard(r, bestScore, lowerIsBetter){
+    var card=el("div",{class:"route-card"+(r.win?" win":"")});
+    card.appendChild(el("p",{class:"rname",text:r.title}));
+    card.appendChild(el("p",{class:"rsub",text:r.sub}));
+    card.appendChild(el("p",{class:"rmain",text:r.main}));
+    card.appendChild(el("p",{class:"rdelta",text:r.delta||""}));
+
+    var ratio = lowerIsBetter
+      ? (r.score>0 ? bestScore/r.score : 0)
+      : (bestScore>0 ? r.score/bestScore : 0);
+    ratio = Math.max(0, Math.min(1, ratio));
+    var bar=el("div",{class:"spread"});
+    bar.appendChild(el("i",{style:"width:"+(ratio*100).toFixed(1)+"%"}));
+    card.appendChild(bar);
+
+    var dl=el("dl");
+    r.rows.forEach(function(row){
+      dl.appendChild(el("div",{class:"line"},[
+        el("dt",{text:row[0]}),
+        el("dd",{text:row[1]})
+      ]));
+    });
+    card.appendChild(dl);
+    return card;
+  }
+
+  function paintVerdict(tone, kicker, headline, route, note){
+    var v=document.getElementById("verdict");
+    v.classList.remove("up","down");
+    if(tone) v.classList.add(tone);
+    document.getElementById("vKicker").textContent=kicker;
+    document.getElementById("vHeadline").textContent=headline;
+    document.getElementById("vRoute").textContent=route||"";
+    document.getElementById("vNote").textContent=note||"";
+  }
+
+  /* ---------- render principal ---------- */
+  function render(){
+    var board=document.getElementById("board");
+    var ledger=document.getElementById("ledger");
+    var entry=document.getElementById("entry");
+    board.innerHTML=""; ledger.innerHTML="";
+
+    Array.prototype.forEach.call(document.querySelectorAll("#modes button"),function(b){
+      b.setAttribute("aria-pressed", b.dataset.mode===state.mode ? "true":"false");
+    });
+
+    var amountInput=document.getElementById("amount");
+    var label=document.getElementById("amountLabel");
+    var aside=document.getElementById("entryAside");
+
+    var extra=document.getElementById("entryExtra");
+
+    if(state.mode==="lucro"){
+      board.hidden=true; ledger.hidden=false;
+      entry.hidden=false; extra.hidden=false;
+      label.textContent="Capital para investir (R$)";
+      aside.textContent="O preço de venda do KK é o que OUTRO player te paga — não confunda com o \u201cKK direto\u201d lá embaixo, que é o preço de quando VOCÊ compra.";
+      renderLucro(ledger);
+      return;
+    }
+
+    board.hidden=false; ledger.hidden=true; entry.hidden=false; extra.hidden=true;
+
+    if(state.mode==="reais"){
+      label.textContent="Quanto você tem (R$)";
+      aside.textContent="Cada rota converte esse valor em KK de um jeito. A barra mostra o quanto cada uma fica atrás da melhor.";
+      renderReais(board);
+    } else {
+      label.textContent="Quanto KK você precisa";
+      aside.textContent="Cada rota mostra quanto custa chegar nessa quantidade, no melhor e no pior valor do market.";
+      renderKk(board);
+    }
+  }
+
+  // escreve nos campos a partir do state — só na troca de aba ou ao carregar
+  function syncFields(){
+    var amountInput=document.getElementById("amount");
+    var v = state.mode==="reais" ? state.amountReais
+          : state.mode==="kk"    ? state.amountKk
+          : state.capital;
+    if(document.activeElement!==amountInput) amountInput.value=v;
+    mirror("lDd","pDdResale");
+    mirror("lMkt","pMktProfit");
+    mirror("lKkSell","pKkSell");
+  }
+  function mirror(id,key){
+    [id,key].forEach(function(elId){
+      var inp=document.getElementById(elId);
+      if(inp && document.activeElement!==inp) inp.value=state[key];
+    });
+  }
+
+  function renderReais(board){
+    var amount=state.amountReais||0;
+    var oe=officialEff();
+
+    var direto = state.pKk>0 ? amount/state.pKk : 0;
+    var rev = routeFromReais(amount, state.pDdResale);
+    var ofi = routeFromReais(amount, oe);
+    var car = cartaoFromReais(amount);
+    var carMin = car.totalDiamonds*kkPerDiamond(state.pMktMin);
+    var carMax = car.totalDiamonds*kkPerDiamond(state.pMktMax);
+
+    function perKk(sc){ return sc>0 ? money(amount/sc) : "—"; }
+
+    var revMid=(rev.kkMin+rev.kkMax)/2, ofiMid=(ofi.kkMin+ofi.kkMax)/2, carMid=(carMin+carMax)/2;
+
+    var routes=[
+      {key:"direto", title:"KK direto", sub:money(state.pKk)+" por KK, sem depender do market",
+       score:direto, main:kkTxt(direto),
+       rows:[["Custo por KK",perKk(direto)],["Diamonds para vender","nenhum"],["Exposto ao market","não"]]},
+      {key:"revenda", title:"Diamond na revenda", sub:money(state.pDdResale)+" por diamond, vendido no market",
+       score:revMid, main:kkTxt(revMid),
+       rows:[["Custo por KK",perKk(revMid)],["Diamonds para vender",n(rev.qtd)],["Market baixo",kkTxt(rev.kkMin)],["Market alto",kkTxt(rev.kkMax)]]},
+      {key:"oficial", title:"Loja oficial", sub:money(oe)+" por diamond já com "+pct(state.pDesconto)+" de desconto",
+       score:ofiMid, main:kkTxt(ofiMid),
+       rows:[["Custo por KK",perKk(ofiMid)],["Diamonds para vender",n(ofi.qtd)],["Market baixo",kkTxt(ofi.kkMin)],["Market alto",kkTxt(ofi.kkMax)]]},
+      {key:"cartao", title:"Doação com cartão", sub:money(state.pDdOficial)+" por diamond, com "+pct(car.bonus)+" de bônus em diamond",
+       score:carMid, main:kkTxt(carMid),
+       rows:[["Custo por KK",perKk(carMid)],["Diamonds na compra",n(car.baseQtd)],["Com o bônus",n(car.totalDiamonds)],["Market baixo",kkTxt(carMin)],["Market alto",kkTxt(carMax)]]}
+    ];
+
+    var best=routes.reduce(function(a,b){ return b.score>a.score ? b : a; });
+    var second=routes.filter(function(r){ return r.key!==best.key; })
+                     .reduce(function(a,b){ return b.score>a.score ? b : a; });
+    best.win=true;
+    routes.forEach(function(r){
+      if(!r.win && best.score>0){
+        r.delta = f2.format(best.score-r.score)+" KK a menos";
+      } else if(r.win){
+        r.delta = "melhor rota";
+      }
+    });
+
+    routes.forEach(function(r){ board.appendChild(routeCard(r,best.score,false)); });
+
+    var gap = best.score-second.score;
+    var gapPct = second.score>0 ? (gap/second.score)*100 : 0;
+    paintVerdict(null,
+      "Com "+money(amount)+", o melhor caminho é",
+      kkTxt(best.score),
+      best.title,
+      gap<=0.001
+        ? "Empate técnico com a segunda melhor rota — escolha pela segurança, não pelo número."
+        : "São "+f2.format(gap)+" KK a mais que a segunda melhor rota ("+second.title+"), uma vantagem de "+pct(gapPct)+"."
+    );
+  }
+
+  function renderKk(board){
+    var amount=state.amountKk||0;
+    var oe=officialEff();
+
+    var custoDireto = amount*state.pKk;
+    var rev = routeFromKk(amount, state.pDdResale);
+    var ofi = routeFromKk(amount, oe);
+    var a=kkPerDiamond(state.pMktMin), b=kkPerDiamond(state.pMktMax);
+    var carPior = cartaoMinCostForDiamonds(a>0?Math.ceil(amount/a):0);
+    var carMelhor = cartaoMinCostForDiamonds(b>0?Math.ceil(amount/b):0);
+
+    var routes=[
+      {key:"direto", title:"KK direto", sub:money(state.pKk)+" por KK, preço travado",
+       score:custoDireto, main:money(custoDireto),
+       rows:[["Custo por KK",money(state.pKk)],["Diamonds para vender","nenhum"],["Exposto ao market","não"]]},
+      {key:"revenda", title:"Diamond na revenda", sub:money(state.pDdResale)+" por diamond",
+       score:(rev.custoPior+rev.custoMelhor)/2, main:money((rev.custoPior+rev.custoMelhor)/2),
+       rows:[["Custo por KK",amount>0?money(((rev.custoPior+rev.custoMelhor)/2)/amount):"—"],["Market alto",n(rev.qtdMelhor)+" dd · "+money(rev.custoMelhor)],["Market baixo",n(rev.qtdPior)+" dd · "+money(rev.custoPior)]]},
+      {key:"oficial", title:"Loja oficial", sub:money(oe)+" por diamond já com desconto",
+       score:(ofi.custoPior+ofi.custoMelhor)/2, main:money((ofi.custoPior+ofi.custoMelhor)/2),
+       rows:[["Custo por KK",amount>0?money(((ofi.custoPior+ofi.custoMelhor)/2)/amount):"—"],["Market alto",n(ofi.qtdMelhor)+" dd · "+money(ofi.custoMelhor)],["Market baixo",n(ofi.qtdPior)+" dd · "+money(ofi.custoPior)]]},
+      {key:"cartao", title:"Doação com cartão", sub:money(state.pDdOficial)+" por diamond, bônus por faixa",
+       score:(carPior.cost+carMelhor.cost)/2, main:money((carPior.cost+carMelhor.cost)/2),
+       rows:[["Custo por KK",amount>0?money(((carPior.cost+carMelhor.cost)/2)/amount):"—"],["Market alto",n(carMelhor.qtd)+" dd · "+money(carMelhor.cost)],["Market baixo",n(carPior.qtd)+" dd · "+money(carPior.cost)]]}
+    ];
+
+    var best=routes.reduce(function(a2,b2){ return b2.score<a2.score ? b2 : a2; });
+    var second=routes.filter(function(r){ return r.key!==best.key; })
+                     .reduce(function(a2,b2){ return b2.score<a2.score ? b2 : a2; });
+    best.win=true;
+    routes.forEach(function(r){
+      r.delta = r.win ? "mais barata" : money(r.score-best.score)+" a mais";
+    });
+
+    routes.forEach(function(r){ board.appendChild(routeCard(r,best.score,true)); });
+
+    var gap=second.score-best.score;
+    var gapPct = second.score>0 ? (gap/second.score)*100 : 0;
+    paintVerdict(null,
+      "Para juntar "+f2.format(amount)+" KK, sai mais barato por",
+      money(best.score),
+      best.title,
+      gap<=0.01
+        ? "Praticamente empatada com a segunda opção — decida pela segurança."
+        : "Economiza "+money(gap)+" em relação à segunda mais barata ("+second.title+"), ou "+pct(gapPct)+"."
+    );
+  }
+
+  function renderLucro(ledger){
+    var capital=state.capital||0;
+    var buy=state.pDdResale;
+    var yieldKk=kkPerDiamond(state.pMktProfit);
+    var sell=state.pKkSell;
+
+    var qtd = buy>0 ? Math.floor(capital/buy) : 0;
+    var custo = qtd*buy;
+    var totalKk = qtd*yieldKk;
+    var receita = totalKk*sell;
+    var lucro = receita-custo;
+    var margem = custo>0 ? (lucro/custo)*100 : 0;
+
+    var porDd = yieldKk*sell - buy;
+    var breakMarketK = sell>0 ? (buy/sell)*state.pUnit : 0;
+    var maxBuy = yieldKk*sell;
+    var minSell = yieldKk>0 ? buy/yieldKk : 0;
+
+    var qtdMin = qtd;
+    var kkMin = qtdMin*kkPerDiamond(state.pMktMin);
+    var lucroMin = kkMin*sell - custo;
+
+    var tone = lucro>0 ? "up" : (lucro<0 ? "down" : null);
+    paintVerdict(tone,
+      "Investindo "+money(capital)+" nessa operação",
+      (lucro>=0?"+":"−")+money(Math.abs(lucro)).replace("R$","R$"),
+      lucro>=0 ? "de lucro, margem de "+pct(margem) : "de prejuízo, margem de "+pct(margem),
+      "Cada diamond custa "+money(buy)+" e devolve "+money(yieldKk*sell)+" quando vira KK a "+money(sell)+". Sobra "+money(porDd)+" por unidade."
+    );
+
+    var p1=el("div",{class:"panel"});
+    p1.appendChild(el("h3",{text:"A operação"}));
+    [["Diamonds comprados",n(qtd)],
+     ["Custo da compra",money(custo)],
+     ["KK obtido no market",kkTxt(totalKk)],
+     ["Receita vendendo o KK",money(receita)]].forEach(function(r){
+      p1.appendChild(el("div",{class:"line"},[el("span",{text:r[0]}),el("span",{class:"val",text:r[1]})]));
+    });
+    p1.appendChild(el("div",{class:"line"},[
+      el("span",{text:lucro>=0?"Lucro":"Prejuízo"}),
+      el("span",{class:lucro>=0?"pos":"neg",text:money(lucro)})
+    ]));
+    p1.appendChild(el("p",{class:"caption",text:"Sobram "+money(capital-custo)+" do capital, porque não dá para comprar diamond fracionado."}));
+    ledger.appendChild(p1);
+
+    var p2=el("div",{class:"panel pivot"});
+    p2.appendChild(el("h3",{text:"Ponto de virada do market"}));
+    p2.appendChild(el("p",{class:"big",text:f1.format(breakMarketK/1000)+"k"}));
+    p2.appendChild(el("p",{class:"caption",text:"Abaixo desse valor por diamond a operação passa a dar prejuízo, mantendo a compra a "+money(buy)+" e a venda do KK a "+money(sell)+"."}));
+    [["Preço máximo que o diamond pode custar",money(maxBuy)],
+     ["Preço mínimo para vender o KK",money(minSell)]].forEach(function(r){
+      p2.appendChild(el("div",{class:"line"},[el("span",{text:r[0]}),el("span",{class:"val",text:r[1]})]));
+    });
+    ledger.appendChild(p2);
+
+    var p3=el("div",{class:"panel"});
+    p3.appendChild(el("h3",{text:"Se o market cair"}));
+    p3.appendChild(el("div",{class:"line"},[
+      el("span",{text:"Diamond a "+n(state.pMktMin/1000)+"k"}),
+      el("span",{class:lucroMin>=0?"pos":"neg",text:money(lucroMin)})
+    ]));
+    p3.appendChild(el("div",{class:"line"},[
+      el("span",{text:"Diamond a "+n(state.pMktProfit/1000)+"k"}),
+      el("span",{class:lucro>=0?"pos":"neg",text:money(lucro)})
+    ]));
+    p3.appendChild(el("p",{class:"caption",text:
+      lucroMin<0
+        ? "No piso da sua faixa de market a operação vira prejuízo. Só vale se você conseguir mesmo escoar a "+n(state.pMktProfit/1000)+"k."
+        : "A operação continua positiva mesmo no piso da sua faixa de market."
+    }));
+    p3.appendChild(el("p",{class:"caption",text:"A conta assume que você vende todos os "+n(qtd)+" diamonds no preço cheio e encontra comprador para o KK inteiro."}));
+    ledger.appendChild(p3);
+  }
+
+  /* ---------- ligação dos campos ---------- */
+  function bind(id,key){
+    var input=document.getElementById(id);
+    input.value=state[key];
+    input.addEventListener("input",function(){
+      state[key]= input.value===""?0:parseFloat(input.value)||0;
+      render();
+    });
+  }
+  ["pKk","pDdOficial","pDesconto","pMktMin","pMktMax","pUnit","pStreamerBonus"]
+    .forEach(function(k){ bind(k,k); });
+
+  var chk=document.getElementById("useStreamer");
+  chk.checked=state.useStreamer;
+  chk.addEventListener("change",function(){ state.useStreamer=chk.checked; render(); });
+
+  var amountInput=document.getElementById("amount");
+  amountInput.addEventListener("input",function(){
+    var v = amountInput.value===""?0:parseFloat(amountInput.value)||0;
+    if(state.mode==="reais") state.amountReais=v;
+    else if(state.mode==="kk") state.amountKk=v;
+    else state.capital=v;
+    render();
+  });
+
+  // campos da aba de lucro espelhados com os da configuração
+  function linkPair(idA,idB,key){
+    [idA,idB].forEach(function(id){
+      var inp=document.getElementById(id);
+      if(!inp) return;
+      inp.value=state[key];
+      inp.addEventListener("input",function(){
+        state[key] = inp.value===""?0:parseFloat(inp.value)||0;
+        var other=document.getElementById(id===idA?idB:idA);
+        if(other && document.activeElement!==other) other.value=inp.value;
+        render();
+      });
+    });
+  }
+  linkPair("lDd","pDdResale","pDdResale");
+  linkPair("lMkt","pMktProfit","pMktProfit");
+  linkPair("lKkSell","pKkSell","pKkSell");
+
+  document.getElementById("modes").addEventListener("click",function(e){
+    var b=e.target.closest("button");
+    if(!b) return;
+    state.mode=b.dataset.mode;
+    syncFields();
+    render();
+  });
+
+  document.getElementById("addTier").addEventListener("click",function(){
+    state.tiers.push({min:0,bonus:0});
+    renderTiers(); render();
+  });
+
+  document.getElementById("ioSave").addEventListener("click",function(){
+    document.getElementById("ioBox").value=JSON.stringify(state);
+  });
+  document.getElementById("ioLoad").addEventListener("click",function(){
+    var box=document.getElementById("ioBox");
+    try{
+      var o=JSON.parse(box.value);
+      Object.assign(state,o);
+      ["pKk","pDdResale","pDdOficial","pDesconto","pMktMin","pMktMax","pUnit","pStreamerBonus","pMktProfit","pKkSell"]
+        .forEach(function(k){ document.getElementById(k).value=state[k]; });
+      chk.checked=state.useStreamer;
+      renderTiers(); syncFields(); render();
+      box.value="";
+    }catch(err){
+      box.value="Esse texto não foi reconhecido. Cole exatamente o que saiu em Gerar texto.";
+    }
+  });
+
+  renderTiers();
+  syncFields();
+  render();
+})();
+</script>
+</body>
+</html>

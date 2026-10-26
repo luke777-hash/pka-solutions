@@ -1,0 +1,807 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PKA Hunt Analyzer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: caderno de caça — faixa vermelha de Pokédex no topo, depois resumo → evolução → alvos → loot → sessões; detalhe em painel lateral. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eceff4; --line:#d6dbe4;
+  --fg:#141a24; --muted:#5a6475; --faint:#8a93a3;
+  --dex:#c8323a; --dex-ink:#ffffff;
+  --accent:#2a6fd0; --accent-soft:#dce8fb;
+  --good:#12814f; --bad:#c2412e; --shiny:#a9780a; --shiny-soft:#fbefcf;
+  --series:#2a78d6; --series-2:#eb6834; --grid:#e3e7ee;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f131a; --surface:#161c26; --surface-2:#1d2431; --line:#2a3344;
+  --fg:#e7ebf2; --muted:#a0a9b9; --faint:#6f7a8c;
+  --dex:#b8303a; --dex-ink:#ffffff;
+  --accent:#6fa8ff; --accent-soft:#1d2c47;
+  --good:#3ccf8e; --bad:#ff806e; --shiny:#f2c44d; --shiny-soft:#3a3016;
+  --series:#3987e5; --series-2:#d95926; --grid:#232b39; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f131a; --surface:#161c26; --surface-2:#1d2431; --line:#2a3344;
+  --fg:#e7ebf2; --muted:#a0a9b9; --faint:#6f7a8c;
+  --dex:#b8303a; --dex-ink:#ffffff;
+  --accent:#6fa8ff; --accent-soft:#1d2c47;
+  --good:#3ccf8e; --bad:#ff806e; --shiny:#f2c44d; --shiny-soft:#3a3016;
+  --series:#3987e5; --series-2:#d95926; --grid:#232b39; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+header.dex{background:var(--dex);color:var(--dex-ink)}
+header.dex .wrap{padding-block:18px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.lens{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#bfe6ff 0 18%,#3aa0ff 40%,#1456a8 100%);border:3px solid #fff;flex:none;box-shadow:0 0 0 2px rgba(0,0,0,.18)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;display:block;border:1px solid rgba(0,0,0,.25)}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(22px,3.2vw,30px);letter-spacing:-.01em;margin:0;line-height:1.1}
+header .sub{opacity:.88;font-size:13.5px;margin-top:2px}
+header .grow{flex:1;min-width:220px}
+.store-pill{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);white-space:nowrap}
+main{padding-block:20px 64px;display:grid;gap:22px}
+section.block{display:grid;gap:12px}
+h2{font-family:var(--f-display);font-weight:700;font-size:20px;margin:0;text-wrap:balance}
+.h2row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.hint{color:var(--muted);font-size:13px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.banner{border:1px dashed var(--shiny);background:var(--shiny-soft);border-radius:var(--r);padding:12px 14px;font-size:14px}
+.banner b{color:var(--fg)}
+/* import */
+.import{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px}
+@media (max-width:820px){.import{grid-template-columns:minmax(0,1fr)}}
+textarea{width:100%;min-height:118px;resize:vertical;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:10px 12px;font:13px/1.4 var(--f-mono)}
+.drop{border:2px dashed var(--line);border-radius:8px;display:grid;place-items:center;text-align:center;padding:16px;color:var(--muted);font-size:13.5px;min-height:118px;cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--fg)}
+.drop strong{color:var(--fg);display:block;font-size:14.5px;margin-bottom:4px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,.btn{font:600 13.5px var(--f-body);border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);padding:8px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] button.primary{color:#0b1220}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button.primary{color:#0b1220}}
+button.danger{color:var(--bad)}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,.drop:focus-visible,th button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select,input[type=number],input[type=text]{font:500 13.5px var(--f-body);background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.status{font-size:13px;color:var(--muted);min-height:1.2em}
+.status.ok{color:var(--good)} .status.err{color:var(--bad)}
+/* filters */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.filters label{display:grid;gap:4px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:2px;min-width:0}
+.kpi .k{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--f-display);font-weight:700;font-size:clamp(19px,2.4vw,24px);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.kpi.shiny{border-color:var(--shiny);background:linear-gradient(0deg,var(--shiny-soft),var(--surface) 70%)}
+.kpi.shiny .v{color:var(--shiny)}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+/* highlights */
+.hl{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.hl div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;font-size:13.5px;min-width:0}
+.hl b{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.hl a{color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+/* charts */
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.chart{position:relative;width:100%;min-height:240px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font:11px var(--f-body);font-variant-numeric:tabular-nums}
+.empty{display:grid;place-items:center;min-height:200px;color:var(--faint);font-size:13.5px;text-align:center;padding:12px}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12.5px;box-shadow:0 6px 18px rgba(0,0,0,.18);white-space:nowrap;z-index:5}
+.tip b{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.tip .tv{font-weight:700;font-variant-numeric:tabular-nums}
+.ctitle{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ctitle h3{margin:0;font-size:15px;font-weight:700}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;padding:6px 10px;font-size:12.5px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--surface-2);position:sticky;top:0}
+th button{all:unset;cursor:pointer}
+th button[data-dir]::after{content:" ↓";color:var(--accent)}
+th button[data-dir=asc]::after{content:" ↑"}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--surface-2)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip.shiny{border-color:var(--shiny);color:var(--shiny);background:var(--shiny-soft)}
+.chip.zero{border-style:dashed}
+.bar{height:6px;border-radius:3px;background:var(--series);min-width:2px}
+.barcell{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.barcell .track{width:90px;height:6px;border-radius:3px;background:var(--grid);overflow:hidden;display:flex}
+.delta{font-size:11.5px;font-weight:700}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(5,8,14,.5);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--bg);border-left:1px solid var(--line);z-index:21;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 16px;display:grid;gap:14px;align-content:start}
+.drawer h2{font-size:22px}
+.dgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dgrid div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.dgrid .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dgrid .v{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+.foot{border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:13px;display:grid;gap:10px}
+details summary{cursor:pointer;font-weight:600;color:var(--fg)}
+details p,details li{color:var(--muted)}
+@media (prefers-reduced-motion: no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+
+<header class="dex">
+  <div class="wrap">
+    <div class="lens" aria-hidden="true"></div>
+    <div class="dots" aria-hidden="true"><i style="background:#ff5c5c"></i><i style="background:#ffd23f"></i><i style="background:#43d17a"></i></div>
+    <div class="grow">
+      <h1>PKA Hunt Analyzer</h1>
+      <div class="sub">Métricas das suas hunts a partir do JSON exportado pelo analyzer do Poke Alliance</div>
+    </div>
+    <span class="store-pill" id="storePill">Conectando…</span>
+  </div>
+</header>
+
+<div class="wrap"><main>
+
+  <section class="block" aria-labelledby="impT">
+    <div class="h2row"><h2 id="impT">Importar hunts</h2><span class="hint">Aceita um JSON, vários JSONs colados em sequência, arquivos .json ou o backup do Critical Catch</span></div>
+    <div class="import">
+      <div class="panel" style="display:grid;gap:10px">
+        <textarea id="paste" spellcheck="false" placeholder='{ "meta": { "character": "Luke Drk", ... }, "summary": { ... } }'></textarea>
+        <div class="row">
+          <button class="primary" id="btnImport">Importar</button>
+          <span class="status" id="impStatus"></span>
+        </div>
+      </div>
+      <label class="drop" id="drop" tabindex="0">
+        <input type="file" id="file" accept=".json,application/json" multiple hidden>
+        <span><strong>Arraste arquivos .json aqui</strong>ou clique para escolher. Para trazer as 26 sessões do Critical Catch de uma vez, use o arquivo do botão Backup de lá.</span>
+      </label>
+    </div>
+  </section>
+
+  <div class="banner" id="exampleBanner" hidden><b>Exemplo.</b> Você está vendo a hunt de Glaceon de 25/10/2026 que você colou no chat, só para mostrar o analyzer funcionando. Ela não fica salva. Importe suas hunts acima para ver os seus números.</div>
+
+  <div class="banner" id="suggest" hidden></div>
+
+  <section class="block" aria-labelledby="sumT">
+    <div class="h2row"><h2 id="sumT">Resumo</h2>
+      <div class="filters">
+        <label>Período<select id="fPeriod"><option value="all">Tudo</option><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option></select></label>
+        <label>Personagem<select id="fChar"></select></label>
+        <label>Alvo<select id="fTarget"></select></label>
+      </div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="hl" id="highlights"></div>
+  </section>
+
+  <section class="block" aria-labelledby="evoT">
+    <div class="h2row"><h2 id="evoT">Evolução</h2>
+      <label class="hint">Métrica <select id="metric"></select></label>
+    </div>
+    <div class="panel">
+      <div class="ctitle"><h3 id="trendTitle">Por sessão</h3><span class="hint">linha tracejada = mediana · clique num ponto para abrir a sessão</span></div>
+      <div class="chart" id="cTrend"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="ctitle"><h3>Por dia</h3><div class="seg" id="daySeg"><button aria-pressed="true" data-v="balance">Lucro</button><button aria-pressed="false" data-v="hours">Horas</button><button aria-pressed="false" data-v="shiny">Shinys</button></div></div>
+        <div class="chart" id="cDay"></div>
+      </div>
+      <div class="panel">
+        <div class="ctitle"><h3 id="scTitle">Duração da hunt × métrica</h3></div>
+        <div class="chart" id="cScatter"></div>
+      </div>
+      <div class="panel">
+        <div class="ctitle"><h3 id="todTitle">Horário de início × métrica</h3></div>
+        <div class="chart" id="cTod"></div>
+      </div>
+      <div class="panel">
+        <div class="ctitle"><h3>Lucro acumulado</h3></div>
+        <div class="chart" id="cCum"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="alvT">
+    <div class="h2row"><h2 id="alvT">Alvos e shinys</h2><span class="hint">Espécies somadas nas sessões filtradas. "Shiny X" é contado junto da espécie X.</span></div>
+    <div class="tbl"><table id="tSpecies"></table></div>
+  </section>
+
+  <section class="block" aria-labelledby="lootT">
+    <div class="h2row"><h2 id="lootT">Loot</h2><span class="hint">Drops por 100 kills usa todas as kills das sessões filtradas. Filtre por alvo para ler a taxa de um alvo só.</span></div>
+    <div class="tbl"><table id="tItems"></table></div>
+    <div class="panel">
+      <div class="ctitle"><h3>Valor médio por unidade, sessão a sessão</h3><label class="hint">Item <select id="itemSel"></select></label></div>
+      <div class="chart" id="cPrice"></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="metaT">
+    <div class="h2row"><h2 id="metaT">Meta de lucro</h2></div>
+    <div class="panel" style="display:grid;gap:10px">
+      <div class="row"><label for="goal">Quero juntar</label><input type="number" id="goal" min="0" step="1" value="100" style="width:110px"><span>kk</span></div>
+      <div id="goalOut" class="hint"></div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="sesT">
+    <div class="h2row"><h2 id="sesT">Sessões</h2><span class="hint">Clique numa linha para ver o detalhe e comparar com a mediana do mesmo alvo</span></div>
+    <div class="tbl"><table id="tSessions"></table></div>
+  </section>
+
+  <footer class="foot">
+    <div class="row">
+      <button id="btnBackup">Baixar backup (.json)</button>
+      <button class="danger" id="btnClear">Apagar todas as hunts</button>
+      <span class="status" id="footStatus"></span>
+    </div>
+    <textarea id="backupText" hidden readonly></textarea>
+    <details>
+      <summary>Como cada número é calculado</summary>
+      <ul>
+        <li>Todos os números vêm só do JSON exportado pelo jogo. Nada é estimado.</li>
+        <li><b>Lucro</b> é o campo <span class="mono">balance</span> (loot − gasto). <b>Gasto</b> é <span class="mono">spent</span>.</li>
+        <li>Taxas por hora no resumo são <b>somas ÷ horas totais</b> (média ponderada pelo tempo), e não a média simples das taxas de cada sessão. Assim uma hunt de 4h pesa mais que uma de 1h.</li>
+        <li>Na sessão, as taxas por hora usam <span class="mono">durationSeconds</span>, igual ao analyzer do jogo.</li>
+        <li><b>Shiny</b> = criatura cujo nome começa com "Shiny". <b>% shiny</b> = kills do shiny ÷ (kills do normal + kills do shiny) da mesma espécie.</li>
+        <li><b>Alvo</b> da sessão = espécie com mais kills (normal + shiny). É uma dedução feita pelo analyzer, porque o JSON não informa o nome do local da hunt. Você pode dar um nome próprio para cada sessão no detalhe dela.</li>
+        <li><b>Dano/kill</b> é o dano que o seu time causou por criatura morta, como vem no JSON. Pode incluir dano acima da vida da criatura.</li>
+        <li>Itens com valor 0 no JSON (ex.: Medal Box) aparecem marcados: o analyzer do jogo não deu preço a eles, então não entram no loot em dinheiro.</li>
+        <li><b>Hunt em partes.</b> Se você exportar e continuar caçando, há dois jeitos de importar. (1) Se a nova exportação tem o mesmo horário de início da anterior, ela é a mesma contagem do jogo com mais tempo: a versão mais recente substitui a antiga. (2) Se o horário de início é outro, são partes diferentes: o analyzer sugere juntar quando a próxima parte começa até 20 min depois da anterior ser exportada, com o mesmo personagem e alvo. Você também pode juntar manualmente no detalhe da sessão. Partes com horários sobrepostos não são juntadas, para não contar o mesmo período duas vezes.</li>
+        <li><b>kk</b> = milhão, <b>k</b> = mil.</li>
+      </ul>
+    </details>
+  </footer>
+</main></div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-label="Detalhe da sessão"></aside>
+
+<script>
+(() => {
+"use strict";
+// ---------- exemplo (a hunt enviada no chat) ----------
+const EXAMPLE = {"meta":{"character":"Luke Drk","sessionStart":1792978246,"exportedAt":1792982049,"durationSeconds":3662,"duration":"01:01:02"},"summary":{"totalExperience":7189491.0,"loot":3261700,"spent":63510,"balance":3198190,"totalDamage":364118212},"rates":{"xpPerHour":7067768,"lootPerHour":3206477,"spentPerHour":62435,"balancePerHour":3144043,"damagePerHour":357953458},"loot":{"totalLootGp":3261700,"itemizedValueSum":3261700,"uniqueItemTypes":6,"totalItemsDropped":2055,"items":[{"itemClientId":22354,"itemName":"solid ice cube","count":1009,"totalValue":600200,"avgValue":595,"minValue":200,"maxValue":800},{"itemClientId":48842,"itemName":"ice tail","count":575,"totalValue":870500,"avgValue":1514,"minValue":1000,"maxValue":2000},{"itemClientId":20895,"itemName":"Ice Essence","count":367,"totalValue":1500000,"avgValue":4087,"minValue":2000,"maxValue":6000},{"itemClientId":37861,"itemName":"Ice Stone","count":97,"totalValue":291000,"avgValue":3000,"minValue":3000,"maxValue":3000},{"itemClientId":48196,"itemName":"Medal Box","count":6,"totalValue":0,"avgValue":0,"minValue":0,"maxValue":0},{"itemClientId":29365,"itemName":"Kanto toy box","count":1,"totalValue":0,"avgValue":0,"minValue":0,"maxValue":0}]},"damage":{"totalDamage":364118212,"uniqueCreatureTypes":3,"totalCreaturesKilled":1010,"creatures":[{"creatureName":"Glaceon","kills":996,"totalDamage":356892210,"damagePerKill":358326,"lookType":2069},{"creatureName":"Shiny Glaceon","kills":13,"totalDamage":6542184,"damagePerKill":503245,"lookType":2191},{"creatureName":"Halloween Big Pumpkin","kills":1,"totalDamage":683818,"damagePerKill":683818,"lookType":0}]}};
+
+// ---------- formatação ----------
+const nf0 = new Intl.NumberFormat("pt-BR",{maximumFractionDigits:0});
+const nf1 = new Intl.NumberFormat("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
+const nf2 = new Intl.NumberFormat("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fin = v => Number.isFinite(v);
+function compact(v){ if(!fin(v)) return "—"; const a=Math.abs(v);
+  if(a>=1e9) return nf2.format(v/1e9)+"kkk"; if(a>=1e6) return nf2.format(v/1e6)+"kk"; if(a>=1e3) return nf1.format(v/1e3)+"k"; return nf0.format(v); }
+const money = v => fin(v) ? (v<0?"−$":"$")+nf0.format(Math.abs(v)) : "—";
+const moneyC = v => fin(v) ? (v<0?"−$":"$")+compact(Math.abs(v)) : "—";
+const int = v => fin(v) ? nf0.format(v) : "—";
+const pct = (v,d=1) => fin(v) ? new Intl.NumberFormat("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d}).format(v*100)+"%" : "—";
+function hms(sec){ if(!fin(sec)) return "—"; sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60; return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`; }
+const dt = ms => new Date(ms).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const dshort = ms => new Date(ms).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+const dayKey = ms => { const d=new Date(ms); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const median = arr => { const a=arr.filter(fin).sort((x,y)=>x-y); if(!a.length) return NaN; const m=a.length>>1; return a.length%2?a[m]:(a[m-1]+a[m])/2; };
+const baseName = n => String(n||"").replace(/^shiny\s+/i,"").trim();
+const isShiny = n => /^shiny\s/i.test(String(n||""));
+
+// ---------- leitura do JSON ----------
+function scanObjects(text){ // vários objetos JSON colados em sequência
+  const out=[]; let depth=0, start=-1, inStr=false, escp=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(inStr){ if(escp) escp=false; else if(c==="\\") escp=true; else if(c==='"') inStr=false; continue; }
+    if(c==='"'){ inStr=true; continue; }
+    if(c==="{"||c==="["){ if(depth===0) start=i; depth++; }
+    else if(c==="}"||c==="]"){ depth--; if(depth===0&&start>=0){ out.push(text.slice(start,i+1)); start=-1; } if(depth<0) depth=0; }
+  }
+  return out;
+}
+function parseText(text){
+  text=String(text||"").trim(); if(!text) return {values:[],bad:0};
+  try{ return {values:[JSON.parse(text)],bad:0}; }catch(_){}
+  const parts=scanObjects(text); const values=[]; let bad=0;
+  for(const p of parts){ try{ values.push(JSON.parse(p)); }catch(_){ bad++; } }
+  if(!parts.length) bad=1;
+  return {values,bad};
+}
+function extract(v){ // -> [{data,label?,importedAt?}]
+  if(Array.isArray(v)) return v.flatMap(extract);
+  if(v && typeof v==="object"){
+    if(Array.isArray(v.sessions)) return v.sessions.flatMap(x => x && x.data ? [{data:x.data,label:x.label||"",importedAt:x.importedAt,groupId:x.groupId||""}] : extract(x));
+    if(v.meta && v.summary) return [{data:v}];
+  }
+  return [];
+}
+function valid(d){ const m=d&&d.meta; return !!(m && typeof m.character==="string" && fin(+m.sessionStart) && fin(+m.durationSeconds) && +m.durationSeconds>0 && d.summary && typeof d.summary==="object"); }
+const isNewer = (a,b) => (+a.meta.exportedAt||0) > (+b.meta.exportedAt||0) && +a.meta.durationSeconds >= +b.meta.durationSeconds;
+const keyOf = d => `${String(d.meta.character).trim().toLowerCase()}::${d.meta.sessionStart}`;
+const docIdOf = d => (String(d.meta.character).trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"char")+"_"+d.meta.sessionStart;
+
+// ---------- métricas por sessão ----------
+function derive(rec){
+  const d=rec.data, s=d.summary||{}, m=d.meta;
+  const sec=+m.durationSeconds, hours=sec/3600;
+  const creatures=(d.damage&&Array.isArray(d.damage.creatures))?d.damage.creatures:[];
+  const killsSum=creatures.reduce((a,c)=>a+(+c.kills||0),0);
+  const kills=fin(+(d.damage&&d.damage.totalCreaturesKilled))?+d.damage.totalCreaturesKilled:killsSum;
+  const shiny=creatures.filter(c=>isShiny(c.creatureName)).reduce((a,c)=>a+(+c.kills||0),0);
+  const sp={}; for(const c of creatures){ const b=baseName(c.creatureName); (sp[b] ||= {n:0,sh:0}); if(isShiny(c.creatureName)) sp[b].sh+=(+c.kills||0); else sp[b].n+=(+c.kills||0); }
+  let target="—", tk=-1; for(const [b,v] of Object.entries(sp)){ if(v.n+v.sh>tk){ tk=v.n+v.sh; target=b; } }
+  const items=(d.loot&&Array.isArray(d.loot.items))?d.loot.items:[];
+  const loot=fin(+s.loot)?+s.loot:+(d.loot&&d.loot.totalLootGp)||0;
+  const spent=+s.spent||0;
+  const balance=fin(+s.balance)?+s.balance:loot-spent;
+  const xp=+s.totalExperience||0, dmg=fin(+s.totalDamage)?+s.totalDamage:+(d.damage&&d.damage.totalDamage)||0;
+  return { id:rec.id, docId:rec.docId, label:rec.label||"", importedAt:rec.importedAt, data:d, parts:rec.parts||null,
+    char:String(m.character), start:+m.sessionStart*1000, sec, hours, xp, loot, spent, balance, dmg, kills, shiny,
+    target, targetKills:tk, creatures, items, spentPct: loot>0?spent/loot:NaN };
+}
+// ---------- partes da mesma hunt ----------
+const endOf = d => fin(+d.meta.exportedAt) ? +d.meta.exportedAt : +d.meta.sessionStart + +d.meta.durationSeconds;
+function overlapError(datas){ // datas ordenadas por início
+  for(let i=1;i<datas.length;i++){ const a=datas[i-1], b=datas[i];
+    if(+b.meta.sessionStart===+a.meta.sessionStart) return "as duas exportações têm o mesmo horário de início, então são a mesma contagem do analyzer do jogo (a mais recente já inclui a anterior). Somar contaria tudo duas vezes.";
+    if(+b.meta.sessionStart < endOf(a)) return "os horários se sobrepõem: uma parte começa antes da outra ter sido exportada. Somar contaria o mesmo período duas vezes.";
+  } return ""; }
+function mergeData(ds){
+  const sum=f=>ds.reduce((a,d)=>a+(+f(d)||0),0);
+  const S=k=>sum(d=>(d.summary||{})[k]);
+  const sec=sum(d=>d.meta.durationSeconds), h=sec/3600;
+  const items=new Map();
+  for(const d of ds) for(const i of (d.loot&&d.loot.items)||[]){ const k=itemKey(i); const o=items.get(k)||{itemClientId:i.itemClientId,itemName:i.itemName,count:0,totalValue:0,minValue:Infinity,maxValue:-Infinity}; o.count+=+i.count||0; o.totalValue+=+i.totalValue||0; if(fin(+i.minValue)) o.minValue=Math.min(o.minValue,+i.minValue); if(fin(+i.maxValue)) o.maxValue=Math.max(o.maxValue,+i.maxValue); items.set(k,o); }
+  const it=[...items.values()].map(o=>({...o, avgValue:o.count?Math.round(o.totalValue/o.count):0, minValue:fin(o.minValue)?o.minValue:0, maxValue:fin(o.maxValue)?o.maxValue:0}));
+  const cr=new Map();
+  for(const d of ds) for(const c of (d.damage&&d.damage.creatures)||[]){ const o=cr.get(c.creatureName)||{creatureName:c.creatureName,kills:0,totalDamage:0,lookType:c.lookType}; o.kills+=+c.kills||0; o.totalDamage+=+c.totalDamage||0; cr.set(c.creatureName,o); }
+  const crs=[...cr.values()].map(o=>({...o,damagePerKill:o.kills?Math.round(o.totalDamage/o.kills):0}));
+  const xp=S("totalExperience"), loot=S("loot"), spent=S("spent"), bal=S("balance"), dmg=S("totalDamage");
+  const first=ds[0].meta, last=ds[ds.length-1].meta;
+  return { meta:{character:first.character, sessionStart:first.sessionStart, exportedAt:last.exportedAt, durationSeconds:sec, duration:hms(sec)},
+    summary:{totalExperience:xp, loot, spent, balance:bal, totalDamage:dmg},
+    rates:{xpPerHour:Math.round(xp/h), lootPerHour:Math.round(loot/h), spentPerHour:Math.round(spent/h), balancePerHour:Math.round(bal/h), damagePerHour:Math.round(dmg/h)},
+    loot:{totalLootGp:sum(d=>d.loot&&d.loot.totalLootGp), itemizedValueSum:sum(d=>d.loot&&d.loot.itemizedValueSum), uniqueItemTypes:it.length, totalItemsDropped:sum(d=>d.loot&&d.loot.totalItemsDropped), items:it},
+    damage:{totalDamage:dmg, uniqueCreatureTypes:crs.length, totalCreaturesKilled:crs.reduce((a,c)=>a+c.kills,0), creatures:crs} };
+}
+function buildView(recs){
+  const groups=new Map(), out=[];
+  for(const r of recs){ if(r.groupId){ if(!groups.has(r.groupId)) groups.set(r.groupId,[]); groups.get(r.groupId).push(r); } else out.push(r); }
+  for(const [g,parts] of groups){
+    if(parts.length===1){ out.push(parts[0]); continue; }
+    parts.sort((a,b)=>a.data.meta.sessionStart-b.data.meta.sessionStart);
+    out.push({ id:"g:"+g, docId:null, label:(parts.find(p=>p.label)||{}).label||"", importedAt:parts[0].importedAt, data:mergeData(parts.map(p=>p.data)), parts:parts.map(p=>p.id) });
+  }
+  return out;
+}
+const partIds = v => v.parts || [v.id];
+async function joinViews(ids){
+  const recs=ids.flatMap(id=>{ const v=allDerived().find(x=>x.id===id); return v?partIds(v).map(p=>state.recs.get(p)).filter(Boolean):[]; });
+  recs.sort((a,b)=>a.data.meta.sessionStart-b.data.meta.sessionStart);
+  if(recs.length<2) return "Escolha duas sessões diferentes.";
+  if(new Set(recs.map(r=>r.data.meta.character)).size>1) return "Só dá para juntar sessões do mesmo personagem.";
+  const err=overlapError(recs.map(r=>r.data)); if(err) return "Não juntei porque "+err;
+  const gid=recs[0].id; const label=(recs.find(r=>r.label)||{}).label||"";
+  for(const r of recs) await store.patch(r.id,{groupId:gid, label:r===recs[0]?label:r.label||""});
+  return "";
+}
+async function splitView(v){ for(const p of partIds(v)) await store.patch(p,{groupId:""}); }
+const SUGGEST_GAP = 20*60; // segundos entre exportar uma parte e começar a próxima
+const DISMISS_KEY="pka-hunt-analyzer-dismissed";
+function dismissed(){ try{ return new Set(JSON.parse(localStorage.getItem(DISMISS_KEY)||"[]")); }catch(_){ return new Set(); } }
+function suggestions(views){
+  const out=[], dis=dismissed(); const byChar=new Map();
+  for(const v of views){ if(!byChar.has(v.char)) byChar.set(v.char,[]); byChar.get(v.char).push(v); }
+  for(const list of byChar.values()){ list.sort((a,b)=>a.start-b.start);
+    for(let i=1;i<list.length;i++){ const a=list[i-1], b=list[i]; const gap=b.start/1000-endOf(a.data);
+      const key=a.id+"|"+b.id; if(gap>=0 && gap<=SUGGEST_GAP && a.target===b.target && !dis.has(key)) out.push({a,b,gap,key}); } }
+  return out;
+}
+
+const METRICS = {
+  balanceH:{label:"Lucro/h", num:s=>s.balance, per:"h", fmt:money, fmtC:moneyC},
+  lootH:{label:"Loot/h", num:s=>s.loot, per:"h", fmt:money, fmtC:moneyC},
+  xpH:{label:"XP/h", num:s=>s.xp, per:"h", fmt:int, fmtC:compact},
+  killsH:{label:"Kills/h", num:s=>s.kills, per:"h", fmt:int, fmtC:int},
+  shinyH:{label:"Shinys/h", num:s=>s.shiny, per:"h", fmt:v=>fin(v)?nf1.format(v):"—", fmtC:v=>fin(v)?nf1.format(v):"—"},
+  dmgH:{label:"Dano/h", num:s=>s.dmg, per:"h", fmt:compact, fmtC:compact},
+  balanceK:{label:"Lucro por kill", num:s=>s.balance, per:"k", fmt:money, fmtC:moneyC},
+  xpK:{label:"XP por kill", num:s=>s.xp, per:"k", fmt:int, fmtC:compact},
+};
+const den = (s,per) => per==="h"?s.hours:s.kills;
+const mval = (s,key) => { const M=METRICS[key], d=den(s,M.per); return d>0?M.num(s)/d:NaN; };
+const magg = (list,key) => { const M=METRICS[key]; let n=0,d=0; for(const s of list){ n+=M.num(s); d+=den(s,M.per); } return d>0?n/d:NaN; };
+
+// ---------- estado ----------
+const state = { recs:new Map(), mode:"loading", example:false, sortKey:"start", sortDir:"desc", metric:"balanceH", dayMetric:"balance", item:"", openId:null };
+let store = null;
+
+// ---------- armazenamento ----------
+const LS_KEY="pka-hunt-analyzer-v1";
+function lsRead(){ try{ const t=localStorage.getItem(LS_KEY); if(!t) return []; const o=JSON.parse(t); return Array.isArray(o.sessions)?o.sessions:[]; }catch(_){ return []; } }
+function lsWrite(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({schemaVersion:1,sessions:[...state.recs.values()]})); return true; }catch(_){ return false; } }
+
+const localStore = {
+  kind:"local",
+  async init(){ for(const r of lsRead()) if(r&&r.data&&valid(r.data)) state.recs.set(r.id,r); },
+  async put(list){ for(const r of list) state.recs.set(r.id,r); if(!lsWrite()) throw new Error("O navegador não deixou salvar (armazenamento bloqueado)."); render(); },
+  async patch(id,fields){ const r=state.recs.get(id); if(!r) return; Object.assign(r,fields); lsWrite(); render(); },
+  async remove(id){ state.recs.delete(id); lsWrite(); render(); },
+  async clear(){ state.recs.clear(); lsWrite(); render(); }
+};
+function makeDbStore(db, uid){
+  const col = db.doc(`data/users/${uid}/hunts`).collection("sessions");
+  return {
+    kind:"db",
+    async init(){
+      return new Promise(resolve => {
+        let first=true;
+        col.onSnapshot(snap => {
+          state.recs.clear();
+          for(const doc of snap.docs){ const r=doc.data(); if(r&&r.data&&valid(r.data)) state.recs.set(r.id,{...r,docId:doc.id}); }
+          if(first){ first=false; resolve(); } else render();
+        }, err => { setStatus("footStatus", "A conexão com suas hunts salvas caiu. Recarregue a página.", "err"); if(first){ first=false; resolve(); } });
+      });
+    },
+    async put(list){ for(const r of list){ await col.doc(r.docId).set(r); state.recs.set(r.id,r); } render(); },
+    async patch(id,fields){ const r=state.recs.get(id); if(!r) return; await col.doc(r.docId).update(fields); Object.assign(r,fields); render(); },
+    async remove(id){ const r=state.recs.get(id); if(!r) return; await col.doc(r.docId).delete(); state.recs.delete(id); render(); },
+    async clear(){ for(const r of [...state.recs.values()]){ await col.doc(r.docId).delete(); state.recs.delete(r.id); } render(); }
+  };
+}
+async function boot(){
+  render();
+  let db=null, uid=null;
+  try{ if(window.claude && typeof window.claude.use==="function"){ db=await window.claude.use("db"); const user=await window.claude.use("user"); uid = user ? await user.id() : null; } }catch(_){ db=null; }
+  store = (db && uid) ? makeDbStore(db, uid) : localStore;
+  try{ await store.init(); }catch(_){ store=localStore; await store.init(); }
+  state.mode = store.kind;
+  render();
+}
+
+// ---------- importação ----------
+async function importValues(values, badCount){
+  const found = values.flatMap(extract);
+  let added=0, dup=0, upd=0, invalid=badCount||0; const best=new Map();
+  for(const f of found){
+    if(!valid(f.data)){ invalid++; continue; }
+    const id=keyOf(f.data); const prev=best.get(id);
+    if(!prev) best.set(id,f); else { dup++; if(isNewer(f.data,prev.data)) best.set(id,f); }
+  }
+  const batch=[];
+  for(const [id,f] of best){
+    const old=state.recs.get(id);
+    if(old){ if(isNewer(f.data,old.data)){ batch.push({...old, importedAt:new Date().toISOString(), data:f.data}); upd++; } else dup++; continue; }
+    batch.push({ id, docId:docIdOf(f.data), importedAt:f.importedAt||new Date().toISOString(), label:f.label||"", groupId:f.groupId||"", data:f.data });
+  }
+  if(!found.length && !invalid) invalid=1;
+  if(!store){ setStatus("impStatus","Ainda conectando. Tente de novo em alguns segundos.","err"); return; }
+  try{ if(batch.length){ setStatus("impStatus",`Salvando ${batch.length} hunt(s)…`); await store.put(batch); added=batch.length-upd; } }
+  catch(e){ setStatus("impStatus", "Não consegui salvar: "+(e&&e.message||"erro desconhecido")+".", "err"); return; }
+  const parts=[]; if(added) parts.push(`${added} hunt(s) importada(s)`); if(upd) parts.push(`${upd} atualizada(s) com uma exportação mais recente da mesma contagem`); if(dup) parts.push(`${dup} já existia(m) e foi(ram) ignorada(s)`); if(invalid) parts.push(`${invalid} trecho(s) não reconhecido(s) como JSON de hunt`);
+  setStatus("impStatus", parts.join(" · ") || "Nada para importar.", (added||upd)?"ok":(invalid?"err":""));
+  if(added||upd) document.getElementById("paste").value="";
+}
+function setStatus(id,msg,cls){ const el=document.getElementById(id); el.textContent=msg||""; el.className="status"+(cls?" "+cls:""); }
+document.getElementById("btnImport").addEventListener("click", () => { const r=parseText(document.getElementById("paste").value); importValues(r.values, r.bad); });
+const drop=document.getElementById("drop"), fileIn=document.getElementById("file");
+async function readFiles(files){ const values=[]; let bad=0; for(const f of files){ try{ const r=parseText(await f.text()); values.push(...r.values); bad+=r.bad; }catch(_){ bad++; } } importValues(values,bad); }
+fileIn.addEventListener("change", () => { readFiles([...fileIn.files]); fileIn.value=""; });
+drop.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileIn.click(); } });
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])]; if(fs.length) readFiles(fs); });
+
+// ---------- seleção ----------
+function allDerived(){
+  if(state.recs.size===0){ state.example=true; return [derive({id:keyOf(EXAMPLE),docId:docIdOf(EXAMPLE),label:"",data:EXAMPLE})]; }
+  state.example=false; return buildView([...state.recs.values()]).map(derive);
+}
+function filtered(all){
+  const p=document.getElementById("fPeriod").value, c=document.getElementById("fChar").value, t=document.getElementById("fTarget").value;
+  const since = p==="all"?-Infinity:Date.now()-(+p)*864e5;
+  return all.filter(s => s.start>=since && (!c||s.char===c) && (!t||s.target===t));
+}
+function fillSelect(id, values, allLabel){
+  const el=document.getElementById(id), cur=el.value;
+  el.innerHTML=`<option value="">${esc(allLabel)}</option>`+values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+  el.value = values.includes(cur)?cur:"";
+}
+
+// ---------- gráficos (SVG simples com hover) ----------
+function niceStep(raw){ const p=Math.pow(10,Math.floor(Math.log10(raw||1))); const f=raw/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p; }
+function scale(min,max,zero){
+  if(zero) min=Math.min(0,min);
+  if(min===max){ const pad=Math.abs(max)*0.1||1; min-=pad; max+=pad; }
+  const step=niceStep((max-min)/4); const lo=Math.floor(min/step)*step, hi=Math.ceil(max/step)*step;
+  const ticks=[]; for(let v=lo; v<=hi+step/2; v+=step) ticks.push(+v.toFixed(10));
+  return {lo,hi,ticks};
+}
+const SVGNS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+function chart(host, cfg){
+  host.innerHTML="";
+  const pts=cfg.data.filter(p=>fin(p.y)&&(cfg.type!=="scatter"||fin(p.x)));
+  if(pts.length<(cfg.min||1)){ host.innerHTML=`<div class="empty">${esc(cfg.emptyText||"Sem dados suficientes.")}</div>`; return; }
+  const W=Math.max(300,host.clientWidth||600), H=cfg.h||240, L=cfg.left||64, R=14, T=12, B=30;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":cfg.aria||""},host);
+  const ys=pts.map(p=>p.y).concat(fin(cfg.ref)?[cfg.ref]:[]);
+  const sy=scale(Math.min(...ys),Math.max(...ys),cfg.type==="bar"||cfg.zero);
+  const Y=v=>T+(H-T-B)*(1-(v-sy.lo)/(sy.hi-sy.lo||1));
+  let X, sxTicks=[];
+  if(cfg.type==="scatter"){ const xs=pts.map(p=>p.x); const sx=scale(Math.min(...xs),Math.max(...xs),true); X=v=>L+(W-L-R)*((v-sx.lo)/(sx.hi-sx.lo||1)); sxTicks=sx.ticks.map(v=>({x:X(v),t:cfg.xFmt?cfg.xFmt(v):int(v)})); }
+  else { const n=pts.length; const bw=(W-L-R)/n; X=i=>L+bw*(i+0.5); cfg._bw=bw; }
+  // grade
+  for(const t of sy.ticks){ el("line",{x1:L,x2:W-R,y1:Y(t),y2:Y(t),stroke:"var(--grid)","stroke-width":1},svg); const tx=el("text",{x:L-8,y:Y(t)+4,"text-anchor":"end"},svg); tx.textContent=cfg.yFmt(t); }
+  if(cfg.type==="scatter"){ for(const t of sxTicks){ const tx=el("text",{x:t.x,y:H-8,"text-anchor":"middle"},svg); tx.textContent=t.t; } }
+  else { const n=pts.length, every=Math.max(1,Math.ceil(n/Math.floor((W-L)/70))); pts.forEach((p,i)=>{ if(i%every===0||i===n-1&&n<=12){ const tx=el("text",{x:X(i),y:H-8,"text-anchor":"middle"},svg); tx.textContent=p.xl; } }); }
+  el("line",{x1:L,x2:W-R,y1:Y(Math.max(sy.lo,Math.min(0,sy.hi)))||H-B,y2:Y(Math.max(sy.lo,Math.min(0,sy.hi)))||H-B,stroke:"var(--line)","stroke-width":1},svg);
+  if(fin(cfg.ref)){ el("line",{x1:L,x2:W-R,y1:Y(cfg.ref),y2:Y(cfg.ref),stroke:"var(--muted)","stroke-dasharray":"4 4","stroke-width":1.2},svg); }
+  const color=cfg.color||"var(--series)";
+  const marks=[];
+  if(cfg.type==="line"){
+    const d=pts.map((p,i)=>`${i?"L":"M"}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join("");
+    if(cfg.area){ el("path",{d:d+`L${X(pts.length-1).toFixed(1)},${Y(sy.lo)}L${X(0).toFixed(1)},${Y(sy.lo)}Z`,fill:color,"fill-opacity":.12,stroke:"none"},svg); }
+    el("path",{d,fill:"none",stroke:color,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"},svg);
+    pts.forEach((p,i)=>marks.push(el("circle",{cx:X(i),cy:Y(p.y),r:pts.length>40?2.5:4,fill:p.shiny?"var(--shiny)":color,stroke:"var(--surface)","stroke-width":2},svg)));
+  } else if(cfg.type==="bar"){
+    const bw=Math.min(46,cfg._bw*0.7);
+    pts.forEach((p,i)=>{ const y0=Y(Math.max(0,sy.lo)), y1=Y(p.y); const h=Math.max(1,Math.abs(y0-y1)); marks.push(el("rect",{x:X(i)-bw/2,y:Math.min(y0,y1),width:bw,height:h,rx:Math.min(4,bw/2),fill:p.y<0?"var(--bad)":color},svg)); });
+  } else {
+    pts.forEach(p=>marks.push(el("circle",{cx:X(p.x),cy:Y(p.y),r:5,fill:color,"fill-opacity":.85,stroke:"var(--surface)","stroke-width":2},svg)));
+  }
+  // hover
+  const tip=document.createElement("div"); tip.className="tip"; tip.hidden=true; host.appendChild(tip);
+  let cross=null; if(cfg.type==="line") cross=el("line",{y1:T,y2:H-B,stroke:"var(--muted)","stroke-width":1,opacity:0},svg);
+  const hit=el("rect",{x:L,y:T,width:W-L-R,height:H-T-B,fill:"transparent"},svg);
+  const pick = (ev) => { const r=svg.getBoundingClientRect(); const k=W/r.width; const mx=(ev.clientX-r.left)*k, my=(ev.clientY-r.top)*k;
+    let best=-1,bd=Infinity; pts.forEach((p,i)=>{ const px=cfg.type==="scatter"?X(p.x):X(i), py=Y(p.y); const dd=cfg.type==="scatter"?Math.hypot(px-mx,py-my):Math.abs(px-mx); if(dd<bd){bd=dd;best=i;} });
+    return {i:best, mx, my, k, r}; };
+  const show = (ev) => { const {i,k}=pick(ev); if(i<0) return; const p=pts[i];
+    marks.forEach((m,j)=>m.setAttribute("opacity", j===i||cfg.type==="line"?1:.45));
+    if(cross){ cross.setAttribute("x1",X(i)); cross.setAttribute("x2",X(i)); cross.setAttribute("opacity",.6); }
+    tip.replaceChildren(); const b=document.createElement("b"); b.textContent=p.tt||p.xl||""; const v=document.createElement("div"); v.className="tv"; v.textContent=(cfg.vLabel?cfg.vLabel+": ":"")+cfg.yFmt(p.y); tip.append(b,v);
+    if(p.extra){ const e=document.createElement("div"); e.textContent=p.extra; tip.append(e); }
+    tip.hidden=false; const px=(cfg.type==="scatter"?X(p.x):X(i))/k, py=Y(p.y)/k; const tw=tip.offsetWidth, hw=host.clientWidth;
+    tip.style.left=Math.max(0,Math.min(hw-tw,px-tw/2))+"px"; tip.style.top=Math.max(0,py-tip.offsetHeight-12)+"px"; };
+  const hide = () => { tip.hidden=true; marks.forEach(m=>m.setAttribute("opacity",1)); if(cross) cross.setAttribute("opacity",0); };
+  hit.addEventListener("pointermove", show); hit.addEventListener("pointerleave", hide);
+  if(cfg.onClick){ hit.style.cursor="pointer"; hit.addEventListener("click", ev => { const {i}=pick(ev); if(i>=0) cfg.onClick(pts[i]); }); }
+}
+
+// ---------- render ----------
+function render(){
+  const pill=document.getElementById("storePill");
+  pill.textContent = state.mode==="db" ? "Salvo na sua conta Claude" : state.mode==="local" ? "Salvo só neste navegador" : "Conectando…";
+  const all=allDerived();
+  document.getElementById("exampleBanner").hidden = !state.example;
+  fillSelect("fChar", [...new Set(all.map(s=>s.char))].sort(), "Todos");
+  fillSelect("fTarget", [...new Set(all.map(s=>s.target))].sort(), "Todos");
+  const list=filtered(all).sort((a,b)=>a.start-b.start);
+  renderSuggest(all);
+  renderKpis(list); renderHighlights(list); renderCharts(list); renderSpecies(list); renderItems(list); renderGoal(list); renderSessions(list, all);
+  document.getElementById("btnBackup").disabled = state.example;
+  document.getElementById("btnClear").disabled = state.example;
+  if(state.openId){ const s=all.find(x=>x.id===state.openId); if(s) openDetail(s.id, all); else closeDetail(); }
+}
+function renderSuggest(all){
+  const host=document.getElementById("suggest");
+  const sg=state.example?[]:suggestions(all).slice(0,3);
+  host.hidden=!sg.length; if(!sg.length){ host.innerHTML=""; return; }
+  host.innerHTML=`<b>Parece a mesma hunt em partes.</b> Estas sessões são do mesmo personagem e alvo, e cada uma começou até ${SUGGEST_GAP/60} min depois da anterior ser exportada. Juntar soma tudo numa hunt só; dá para separar depois.
+    <div style="display:grid;gap:8px;margin-top:8px">${sg.map(x=>`<div class="row"><span>${esc(x.a.label||x.a.target)}: ${dt(x.a.start)} (${hms(x.a.sec)}) + ${dt(x.b.start)} (${hms(x.b.sec)}) · intervalo de ${hms(x.gap)}</span>
+      <button class="primary" data-join="${esc(x.a.id)}|${esc(x.b.id)}">Juntar</button><button data-dismiss="${esc(x.key)}">Não são a mesma</button></div>`).join("")}</div>
+    <div class="status" id="sgStatus"></div>`;
+}
+function kpi(k,v,s,cls){ return `<div class="kpi ${cls||""}"><span class="k">${k}</span><span class="v" title="${esc(v)}">${v}</span><span class="s">${s||"&nbsp;"}</span></div>`; }
+function renderKpis(list){
+  const host=document.getElementById("kpis");
+  if(!list.length){ host.innerHTML=`<div class="empty" style="grid-column:1/-1">Nenhuma sessão nesse filtro.</div>`; return; }
+  const sum=f=>list.reduce((a,s)=>a+f(s),0);
+  const sec=sum(s=>s.sec), bal=sum(s=>s.balance), loot=sum(s=>s.loot), spent=sum(s=>s.spent), xp=sum(s=>s.xp), kills=sum(s=>s.kills), sh=sum(s=>s.shiny), dmg=sum(s=>s.dmg);
+  const h=sec/3600;
+  host.innerHTML = [
+    kpi("Sessões", int(list.length), `${hms(sec)} de hunt`),
+    kpi("Lucro", money(bal), `${moneyC(bal/h)}/h · loot ${moneyC(loot)}`, bal>=0?"":"neg"),
+    kpi("Gasto", money(spent), `${pct(loot>0?spent/loot:NaN)} do loot · ${moneyC(spent/h)}/h`),
+    kpi("XP", compact(xp), `${compact(xp/h)}/h · ${int(xp/kills)} por kill`),
+    kpi("Kills", int(kills), `${int(kills/h)}/h`),
+    kpi("Shinys", int(sh), sh>0?`1 a cada ${nf1.format(kills/sh)} kills (todas as criaturas) · ${nf1.format(sh/h)}/h`:"nenhum nessas sessões", "shiny"),
+    kpi("Dano", compact(dmg), `${compact(dmg/h)}/h · ${compact(dmg/kills)} por kill`),
+    kpi("Lucro por kill", money(bal/kills), `loot ${money(loot/kills)} por kill`),
+  ].join("");
+}
+function linkTo(s,txt){ return `<a data-open="${esc(s.id)}">${txt}</a>`; }
+function renderHighlights(list){
+  const host=document.getElementById("highlights");
+  if(list.length<2){ host.innerHTML=""; return; }
+  const by=(f,dir)=>list.reduce((a,s)=>(dir*(f(s)-f(a))>0?s:a));
+  const best=by(s=>mval(s,"balanceH"),1), worst=by(s=>mval(s,"balanceH"),-1), mostSh=by(s=>s.shiny/s.hours,1), longest=by(s=>s.sec,1);
+  let trend="";
+  if(list.length>=6){ const n=Math.min(5,Math.floor(list.length/2)); const recent=list.slice(-n), before=list.slice(0,-n); const a=magg(recent,"balanceH"), b=magg(before,"balanceH"); const d=a/b-1;
+    trend=`<div><b>Últimas ${n} sessões × anteriores</b>Lucro/h ${moneyC(a)} contra ${moneyC(b)} <span class="delta ${d>=0?"pos":"neg"}">${d>=0?"+":""}${pct(d)}</span></div>`; }
+  host.innerHTML = `
+    <div><b>Melhor lucro/h</b>${linkTo(best, `${moneyC(mval(best,"balanceH"))}/h`)} em ${dt(best.start)} (${hms(best.sec)})</div>
+    <div><b>Pior lucro/h</b>${linkTo(worst, `${moneyC(mval(worst,"balanceH"))}/h`)} em ${dt(worst.start)} (${hms(worst.sec)})</div>
+    <div><b>Mais shinys por hora</b>${linkTo(mostSh, `${nf1.format(mostSh.shiny/mostSh.hours)}/h`)} · ${int(mostSh.shiny)} shinys em ${hms(mostSh.sec)}</div>
+    ${trend || `<div><b>Hunt mais longa</b>${linkTo(longest, hms(longest.sec))} em ${dt(longest.start)}</div>`}`;
+}
+function renderCharts(list){
+  const M=METRICS[state.metric];
+  document.getElementById("trendTitle").textContent = `${M.label} por sessão`;
+  document.getElementById("scTitle").textContent = `Duração da hunt × ${M.label}`;
+  document.getElementById("todTitle").textContent = `Horário de início × ${M.label}`;
+  const open=p=>openDetail(p.id);
+  chart(document.getElementById("cTrend"), { type:"line", area:true, min:2, emptyText:"A evolução aparece a partir de 2 sessões importadas.",
+    data:list.map(s=>({y:mval(s,state.metric), xl:dshort(s.start), tt:dt(s.start)+" · "+hms(s.sec), id:s.id, extra:s.label||s.target})),
+    ref:median(list.map(s=>mval(s,state.metric))), yFmt:M.fmtC, vLabel:M.label, onClick:open, aria:`${M.label} por sessão` });
+  // por dia
+  const days=new Map(); for(const s of list){ const k=dayKey(s.start); const d=days.get(k)||{balance:0,hours:0,shiny:0,start:s.start,n:0}; d.balance+=s.balance; d.hours+=s.hours; d.shiny+=s.shiny; d.n++; days.set(k,d); }
+  const dm=state.dayMetric; const dfmt = dm==="balance"?moneyC: dm==="hours"?(v=>nf1.format(v)+"h"):int;
+  chart(document.getElementById("cDay"), { type:"bar", min:1, emptyText:"Sem sessões nesse filtro.",
+    data:[...days.entries()].sort().map(([k,d])=>({y:d[dm], xl:dshort(d.start), tt:new Date(d.start).toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}), extra:`${d.n} sessão(ões) · ${hms(d.hours*3600)}`})),
+    yFmt:dfmt, aria:"Totais por dia" });
+  chart(document.getElementById("cScatter"), { type:"scatter", min:2, emptyText:"Aparece a partir de 2 sessões.",
+    data:list.map(s=>({x:s.hours, y:mval(s,state.metric), tt:dt(s.start), id:s.id, extra:"duração "+hms(s.sec)})),
+    yFmt:M.fmtC, xFmt:v=>nf1.format(v)+"h", vLabel:M.label, onClick:open, aria:"Duração × métrica" });
+  const buckets=[["Madrugada",0,6],["Manhã",6,12],["Tarde",12,18],["Noite",18,24]].map(([n,a,b])=>{ const ss=list.filter(s=>{ const h=new Date(s.start).getHours(); return h>=a&&h<b; }); return {y:ss.length?magg(ss,state.metric):NaN, xl:n, tt:`${n} (${String(a).padStart(2,"0")}h–${String(b).padStart(2,"0")}h)`, extra:`${ss.length} sessão(ões)`}; });
+  chart(document.getElementById("cTod"), { type:"bar", min:1, data:buckets.filter(b=>fin(b.y)), yFmt:M.fmtC, vLabel:M.label, emptyText:"Sem sessões nesse filtro.", aria:"Horário de início × métrica" });
+  let acc=0; chart(document.getElementById("cCum"), { type:"line", area:true, zero:true, min:2, emptyText:"Aparece a partir de 2 sessões.",
+    data:list.map(s=>({y:(acc+=s.balance), xl:dshort(s.start), tt:dt(s.start), id:s.id, extra:"nesta sessão: "+moneyC(s.balance)})), yFmt:moneyC, vLabel:"Acumulado", onClick:open, aria:"Lucro acumulado", color:"var(--good)" });
+}
+function renderSpecies(list){
+  const sp=new Map();
+  for(const s of list) for(const c of s.creatures){ const b=baseName(c.creatureName); const o=sp.get(b)||{n:0,sh:0,dn:0,dsh:0,sess:new Set()}; const k=+c.kills||0, d=+c.totalDamage||0; if(isShiny(c.creatureName)){o.sh+=k;o.dsh+=d;} else {o.n+=k;o.dn+=d;} o.sess.add(s.id); sp.set(b,o); }
+  const rows=[...sp.entries()].sort((a,b)=>(b[1].n+b[1].sh)-(a[1].n+a[1].sh));
+  const t=document.getElementById("tSpecies");
+  if(!rows.length){ t.innerHTML=`<tbody><tr><td class="empty">Sem criaturas nesse filtro.</td></tr></tbody>`; return; }
+  t.innerHTML=`<thead><tr><th class="l">Espécie</th><th>Sessões</th><th>Kills</th><th>Shinys</th><th>% shiny</th><th>1 a cada</th><th>Dano/kill normal</th><th>Dano/kill shiny</th></tr></thead><tbody>`+
+    rows.map(([b,o])=>{ const tot=o.n+o.sh; const rate=tot?o.sh/tot:NaN; const dkn=o.n?o.dn/o.n:NaN, dks=o.sh?o.dsh/o.sh:NaN;
+      return `<tr><td class="l"><b>${esc(b)}</b></td><td>${o.sess.size}</td><td>${int(tot)}</td><td>${o.sh?`<span class="chip shiny">✦ ${int(o.sh)}</span>`:"—"}</td><td>${o.sh?pct(rate,2):"—"}</td><td>${o.sh?nf1.format(tot/o.sh)+" kills":"—"}</td><td>${compact(dkn)}</td><td>${o.sh?compact(dks)+(fin(dkn)?` <span class="hint">(${nf2.format(dks/dkn)}×)</span>`:""):"—"}</td></tr>`; }).join("")+`</tbody>`;
+}
+function itemKey(i){ return i.itemClientId!=null?String(i.itemClientId):String(i.itemName); }
+function renderItems(list){
+  const it=new Map(); const kills=list.reduce((a,s)=>a+s.kills,0), lootTot=list.reduce((a,s)=>a+s.loot,0);
+  for(const s of list) for(const i of s.items){ const k=itemKey(i); const o=it.get(k)||{name:i.itemName,count:0,value:0,min:Infinity,max:-Infinity,sess:0}; o.count+=+i.count||0; o.value+=+i.totalValue||0; if(+i.count>0){ o.min=Math.min(o.min,+i.minValue); o.max=Math.max(o.max,+i.maxValue); } o.sess++; it.set(k,o); }
+  const rows=[...it.entries()].sort((a,b)=>b[1].value-a[1].value||b[1].count-a[1].count);
+  const t=document.getElementById("tItems");
+  if(!rows.length){ t.innerHTML=`<tbody><tr><td class="empty">Sem loot nesse filtro.</td></tr></tbody>`; }
+  else { const maxV=Math.max(...rows.map(r=>r[1].value),1);
+  t.innerHTML=`<thead><tr><th class="l">Item</th><th>Qtd.</th><th>Drops/100 kills</th><th>Valor total</th><th>% do loot</th><th>Preço médio/un.</th><th>Mín–máx/un.</th><th>Sessões</th></tr></thead><tbody>`+
+    rows.map(([k,o])=>{ const zero=o.value===0;
+      return `<tr><td class="l"><b>${esc(o.name)}</b>${zero?` <span class="chip zero" title="O JSON trouxe valor 0 para este item">sem preço</span>`:""}</td><td>${int(o.count)}</td><td>${kills?nf2.format(o.count/kills*100):"—"}</td>
+      <td><div class="barcell">${zero?"—":money(o.value)}<span class="track"><span class="bar" style="width:${(o.value/maxV*100).toFixed(1)}%"></span></span></div></td>
+      <td>${zero?"—":pct(lootTot?o.value/lootTot:NaN)}</td><td>${zero?"—":money(o.value/o.count)}</td><td>${zero?"—":`${money(o.min)}–${money(o.max)}`}</td><td>${o.sess}</td></tr>`; }).join("")+`</tbody>`; }
+  // seletor + gráfico de preço
+  const sel=document.getElementById("itemSel"); const priced=rows.filter(r=>r[1].value>0);
+  if(!priced.some(r=>r[0]===state.item)) state.item=priced.length?priced[0][0]:"";
+  sel.innerHTML=priced.map(([k,o])=>`<option value="${esc(k)}">${esc(o.name)}</option>`).join(""); sel.value=state.item;
+  const pts=[]; for(const s of list){ const i=s.items.find(x=>itemKey(x)===state.item); if(i&&+i.count>0) pts.push({y:+i.totalValue/ +i.count, xl:dshort(s.start), tt:dt(s.start), id:s.id, extra:`${int(i.count)} un. · mín ${money(+i.minValue)} · máx ${money(+i.maxValue)}`}); }
+  chart(document.getElementById("cPrice"), { type:"line", min:2, data:pts, ref:median(pts.map(p=>p.y)), yFmt:money, vLabel:"Média/un.", onClick:p=>openDetail(p.id), emptyText:"Aparece quando o item estiver em 2 ou mais sessões.", aria:"Valor médio por unidade" });
+}
+function renderGoal(list){
+  const out=document.getElementById("goalOut"); const goal=(+document.getElementById("goal").value||0)*1e6;
+  if(!list.length||goal<=0){ out.textContent="Informe uma meta em kk (milhões)."; return; }
+  const w=magg(list,"balanceH"), med=median(list.map(s=>mval(s,"balanceH"))), avgSec=list.reduce((a,s)=>a+s.sec,0)/list.length;
+  if(!(w>0)){ out.textContent="Com o lucro/h atual dessas sessões não dá para projetar."; return; }
+  const hw=goal/w, hm=goal/med;
+  out.innerHTML=`No ritmo do filtro atual (<b>${moneyC(w)}/h</b>, soma ÷ horas), faltam <b>${hms(hw*3600)}</b> de hunt, cerca de <b>${nf1.format(hw*3600/avgSec)}</b> sessões do tamanho médio (${hms(avgSec)}). Pela mediana das sessões (${moneyC(med)}/h): ${hms(hm*3600)}. É só uma conta com o seu histórico, não uma previsão.`;
+}
+const SCOLS=[
+  {k:"start",t:"Quando",l:true,v:s=>s.start,f:s=>dt(s.start)},
+  {k:"name",t:"Hunt",l:true,v:s=>(s.label||s.target).toLowerCase(),f:s=>`${esc(s.label||s.target)}${s.parts?` <span class="chip">${s.parts.length} partes</span>`:""}${state.recs.size&&new Set([...state.recs.values()].map(r=>r.data.meta.character)).size>1?` <span class="hint">· ${esc(s.char)}</span>`:""}`},
+  {k:"sec",t:"Duração",v:s=>s.sec,f:s=>hms(s.sec)},
+  {k:"balance",t:"Lucro",v:s=>s.balance,f:s=>`<span class="${s.balance<0?"neg":""}">${money(s.balance)}</span>`},
+  {k:"balanceH",t:"Lucro/h",v:s=>mval(s,"balanceH"),f:s=>money(mval(s,"balanceH"))},
+  {k:"xpH",t:"XP/h",v:s=>mval(s,"xpH"),f:s=>compact(mval(s,"xpH"))},
+  {k:"killsH",t:"Kills/h",v:s=>mval(s,"killsH"),f:s=>int(mval(s,"killsH"))},
+  {k:"shiny",t:"Shinys",v:s=>s.shiny,f:s=>`<span class="chip ${s.shiny?"shiny":""}">✦ ${int(s.shiny)}</span>`},
+  {k:"shinyRate",t:"1 a cada",v:s=>s.shiny?s.kills/s.shiny:Infinity,f:s=>s.shiny?nf1.format(s.kills/s.shiny):"—"},
+  {k:"spentPct",t:"Gasto/loot",v:s=>s.spentPct,f:s=>pct(s.spentPct)},
+];
+function renderSessions(list){
+  const t=document.getElementById("tSessions");
+  const col=SCOLS.find(c=>c.k===state.sortKey)||SCOLS[0]; const dir=state.sortDir==="asc"?1:-1;
+  const rows=[...list].sort((a,b)=>{ const x=col.v(a), y=col.v(b); return (x>y?1:x<y?-1:0)*dir; });
+  t.innerHTML=`<thead><tr>${SCOLS.map(c=>`<th class="${c.l?"l":""}"><button data-sort="${c.k}" ${c.k===state.sortKey?`data-dir="${state.sortDir}"`:""}>${c.t}</button></th>`).join("")}</tr></thead><tbody>`+
+    (rows.length?rows.map(s=>`<tr class="click" data-open="${esc(s.id)}" tabindex="0">${SCOLS.map(c=>`<td class="${c.l?"l":""}">${c.f(s)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${SCOLS.length}" class="empty">Nenhuma sessão nesse filtro.</td></tr>`)+`</tbody>`;
+}
+
+// ---------- detalhe ----------
+function deltaTag(v, ref, higherBetter=true){ if(!fin(v)||!fin(ref)||ref===0) return ""; const d=v/ref-1; const good=higherBetter?d>=0:d<=0; return ` <span class="delta ${good?"pos":"neg"}">${d>=0?"+":""}${pct(d)}</span>`; }
+function openDetail(id, allIn){
+  const all=allIn||allDerived(); const s=all.find(x=>x.id===id); if(!s) return;
+  state.openId=id;
+  const peers=all.filter(x=>x.target===s.target && x.id!==s.id);
+  const med=k=>median(peers.map(p=>mval(p,k)));
+  const cmp = peers.length>=1;
+  const dr=document.getElementById("drawer");
+  const crit=[...s.creatures].sort((a,b)=>(+b.kills)-(+a.kills));
+  const items=[...s.items].sort((a,b)=>(+b.totalValue)-(+a.totalValue)||(+b.count)-(+a.count));
+  const cell=(k,v,extra)=>`<div><span class="k">${k}</span><div class="v">${v}${extra||""}</div></div>`;
+  dr.innerHTML=`
+    <div class="row" style="justify-content:space-between"><span class="hint">${esc(s.char)} · ${dt(s.start)}</span><button id="dClose" aria-label="Fechar">Fechar</button></div>
+    <h2>${esc(s.label||s.target)}</h2>
+    ${state.example?"":`<div class="row"><input type="text" id="dLabel" maxlength="60" placeholder="Dar um nome a esta hunt (ex.: Glaceon canal 3)" value="${esc(s.label)}" style="flex:1;min-width:0"><button id="dSaveLabel">Salvar nome</button></div>`}
+    <div class="hint">${cmp?`Comparado com a mediana de ${peers.length} outra(s) sessão(ões) com alvo ${esc(s.target)}.`:`Ainda não há outra sessão com alvo ${esc(s.target)} para comparar.`}</div>
+    ${s.parts?`<div class="panel" style="display:grid;gap:6px"><b>Hunt composta de ${s.parts.length} partes</b>${s.parts.map(p=>{ const r=state.recs.get(p); const m=r.data.meta; return `<div class="hint">${dt(+m.sessionStart*1000)} · ${hms(+m.durationSeconds)} · lucro ${money(+r.data.summary.balance)}</div>`; }).join("")}<div class="row"><button id="dSplit">Separar as partes</button></div></div>`:""}
+    ${state.example?"":(()=>{ const cands=all.filter(x=>x.id!==s.id && x.char===s.char).sort((a,b)=>Math.abs(a.start-s.start)-Math.abs(b.start-s.start)).slice(0,20);
+      return cands.length?`<div class="row"><label for="dJoin" class="hint">Juntar com</label><select id="dJoin" style="flex:1;min-width:0">${cands.map(c=>`<option value="${esc(c.id)}">${dt(c.start)} · ${hms(c.sec)} · ${esc(c.label||c.target)}</option>`).join("")}</select><button id="dJoinBtn">Juntar</button></div>`:""; })()}
+    <div class="dgrid">
+      ${cell("Duração",hms(s.sec))}
+      ${cell("Lucro",money(s.balance))}
+      ${cell("Lucro/h",moneyC(mval(s,"balanceH")),cmp?deltaTag(mval(s,"balanceH"),med("balanceH")):"")}
+      ${cell("Loot/h",moneyC(mval(s,"lootH")),cmp?deltaTag(mval(s,"lootH"),med("lootH")):"")}
+      ${cell("Gasto",money(s.spent)+` <span class="hint">${pct(s.spentPct)} do loot</span>`)}
+      ${cell("XP/h",compact(mval(s,"xpH")),cmp?deltaTag(mval(s,"xpH"),med("xpH")):"")}
+      ${cell("Kills/h",int(mval(s,"killsH")),cmp?deltaTag(mval(s,"killsH"),med("killsH")):"")}
+      ${cell("Shinys",`✦ ${int(s.shiny)}`+(s.shiny?` <span class="hint">1 a cada ${nf1.format(s.kills/s.shiny)} kills</span>`:""))}
+      ${cell("Lucro por kill",money(mval(s,"balanceK")),cmp?deltaTag(mval(s,"balanceK"),med("balanceK")):"")}
+      ${cell("Dano/h",compact(mval(s,"dmgH")),cmp?deltaTag(mval(s,"dmgH"),med("dmgH")):"")}
+    </div>
+    <div class="tbl"><table><thead><tr><th class="l">Criatura</th><th>Kills</th><th>Dano total</th><th>Dano/kill</th></tr></thead><tbody>
+      ${crit.map(c=>`<tr><td class="l">${isShiny(c.creatureName)?`<span class="chip shiny">✦ ${esc(c.creatureName)}</span>`:esc(c.creatureName)}</td><td>${int(+c.kills)}</td><td>${compact(+c.totalDamage)}</td><td>${compact(+c.damagePerKill)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="tbl"><table><thead><tr><th class="l">Item</th><th>Qtd.</th><th>Por 100 kills</th><th>Valor</th><th>Média/un.</th></tr></thead><tbody>
+      ${items.map(i=>`<tr><td class="l">${esc(i.itemName)}${+i.totalValue===0?` <span class="chip zero">sem preço</span>`:""}</td><td>${int(+i.count)}</td><td>${s.kills?nf2.format(+i.count/s.kills*100):"—"}</td><td>${+i.totalValue?money(+i.totalValue):"—"}</td><td>${+i.totalValue?money(+i.totalValue/ +i.count):"—"}</td></tr>`).join("")}
+    </tbody></table></div>
+    ${state.example?"":`<div class="row"><button class="danger" id="dDelete">Excluir esta sessão</button><span class="status" id="dStatus"></span></div>`}`;
+  dr.hidden=false; document.getElementById("scrim").hidden=false;
+  document.getElementById("dClose").onclick=closeDetail;
+  const sv=document.getElementById("dSaveLabel"); if(sv) sv.onclick=async()=>{ try{ await store.patch(partIds(s)[0],{label:document.getElementById("dLabel").value.trim()}); setStatus("dStatus","Nome salvo.","ok"); }catch(e){ setStatus("dStatus","Não consegui salvar o nome.","err"); } };
+  wireDetailJoin(s);
+  const del=document.getElementById("dDelete"); if(del){ let armed=false, timer=null; del.onclick=async()=>{ if(!armed){ armed=true; del.textContent=s.parts?`Clique de novo para excluir as ${s.parts.length} partes`:"Clique de novo para excluir"; timer=setTimeout(()=>{armed=false; del.textContent="Excluir esta sessão";},4000); return; } clearTimeout(timer); try{ for(const p of partIds(s)) await store.remove(p); closeDetail(); }catch(e){ setStatus("dStatus","Não consegui excluir.","err"); } }; }
+}
+function wireDetailJoin(s){
+  const sp=document.getElementById("dSplit"); if(sp) sp.onclick=async()=>{ try{ const first=partIds(s)[0]; await splitView(s); openDetail(first); }catch(_){ setStatus("dStatus","Não consegui separar.","err"); } };
+  const jb=document.getElementById("dJoinBtn"); if(jb) jb.onclick=async()=>{ const other=document.getElementById("dJoin").value; try{ const err=await joinViews([s.id,other]); if(err){ setStatus("dStatus",err,"err"); return; } const first=[...partIds(s)].concat(partIds(allDerived().find(x=>x.id===other)||{id:other})); const v=allDerived().find(x=>x.parts&&x.parts.includes(partIds(s)[0])); if(v) openDetail(v.id); }catch(_){ setStatus("dStatus","Não consegui juntar.","err"); } };
+}
+function closeDetail(){ state.openId=null; document.getElementById("drawer").hidden=true; document.getElementById("scrim").hidden=true; }
+document.getElementById("scrim").addEventListener("click", closeDetail);
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeDetail(); });
+
+// ---------- eventos ----------
+document.addEventListener("click", e => {
+  const o=e.target.closest("[data-open]"); if(o && !e.target.closest(".drawer")){ openDetail(o.getAttribute("data-open")); return; }
+  const jn=e.target.closest("[data-join]"); if(jn){ (async()=>{ const err=await joinViews(jn.getAttribute("data-join").split("|")); if(err){ const st=document.getElementById("sgStatus"); if(st){ st.textContent=err; st.className="status err"; } } })(); return; }
+  const ds=e.target.closest("[data-dismiss]"); if(ds){ const d=dismissed(); d.add(ds.getAttribute("data-dismiss")); try{ localStorage.setItem(DISMISS_KEY,JSON.stringify([...d])); }catch(_){} render(); return; }
+  const sb=e.target.closest("[data-sort]"); if(sb){ const k=sb.getAttribute("data-sort"); if(state.sortKey===k) state.sortDir=state.sortDir==="asc"?"desc":"asc"; else { state.sortKey=k; state.sortDir=k==="name"?"asc":"desc"; } render(); }
+});
+document.addEventListener("keydown", e => { if(e.key==="Enter"){ const o=e.target.closest&&e.target.closest("tr[data-open]"); if(o) openDetail(o.getAttribute("data-open")); } });
+const msel=document.getElementById("metric"); msel.innerHTML=Object.entries(METRICS).map(([k,m])=>`<option value="${k}">${m.label}</option>`).join(""); msel.value=state.metric;
+msel.addEventListener("change", () => { state.metric=msel.value; render(); });
+["fPeriod","fChar","fTarget"].forEach(id=>document.getElementById(id).addEventListener("change", render));
+document.getElementById("itemSel").addEventListener("change", e => { state.item=e.target.value; render(); });
+document.getElementById("goal").addEventListener("input", () => renderGoal(filtered(allDerived())));
+document.getElementById("daySeg").addEventListener("click", e => { const b=e.target.closest("button"); if(!b) return; state.dayMetric=b.dataset.v; for(const x of e.currentTarget.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x===b)); render(); });
+let rT=null, lastW=0; new ResizeObserver(ents=>{ const w=Math.round(ents[0].contentRect.width); if(w===lastW) return; lastW=w; clearTimeout(rT); rT=setTimeout(()=>renderCharts(filtered(allDerived()).sort((a,b)=>a.start-b.start)),120); }).observe(document.querySelector("main"));
+
+// backup
+document.getElementById("btnBackup").addEventListener("click", async () => {
+  const payload=JSON.stringify({schemaVersion:1, sessions:[...state.recs.values()].map(r=>({id:r.id, importedAt:r.importedAt, label:r.label||"", groupId:r.groupId||"", data:r.data}))}, null, 2);
+  const name=`pka-hunts-${dayKey(Date.now())}.json`;
+  let dl=null; try{ dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null; }catch(_){}
+  if(dl){ try{ await dl.save({filename:name, data:payload}); setStatus("footStatus","Backup salvo.","ok"); return; }catch(e){ if(e&&e.code==="declined"){ setStatus("footStatus","Download cancelado."); return; } } }
+  const ta=document.getElementById("backupText"); ta.hidden=false; ta.value=payload; ta.select();
+  try{ await navigator.clipboard.writeText(payload); setStatus("footStatus","Não deu para baixar aqui, então copiei o backup. Cole num arquivo .json.","ok"); }catch(_){ setStatus("footStatus","Não deu para baixar aqui. O backup está no campo abaixo: copie e salve num arquivo .json."); }
+});
+let clearArmed=false, clearT=null;
+document.getElementById("btnClear").addEventListener("click", async e => {
+  const b=e.currentTarget; if(!clearArmed){ clearArmed=true; b.textContent=`Confirmar: apagar ${state.recs.size} hunt(s)`; clearT=setTimeout(()=>{clearArmed=false;b.textContent="Apagar todas as hunts";},5000); return; }
+  clearTimeout(clearT); clearArmed=false; b.textContent="Apagar todas as hunts";
+  try{ await store.clear(); setStatus("footStatus","Todas as hunts foram apagadas.","ok"); }catch(_){ setStatus("footStatus","Não consegui apagar tudo. Tente de novo.","err"); }
+});
+
+window.__hunt = { parseText, extract, valid, derive, mval, magg, keyOf, docIdOf }; // usado só para testes
+boot();
+})();
+</script>
+
+</body></html>
