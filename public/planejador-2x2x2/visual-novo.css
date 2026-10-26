@@ -49,6 +49,8 @@ h2{font-size:20px;}
 .step[aria-selected="true"] .num{transform:scale(1.08);}
 .step[aria-selected="true"]{border-bottom-color:transparent;}
 .sep{background:var(--line);}
+/* os 4 passos dividem a largura toda da barra */
+.step{flex:1 1 0;min-width:max-content;justify-content:center;padding-inline:12px;}
 .vn-ind{position:absolute;left:0;bottom:0;height:3px;width:0;border-radius:3px 3px 0 0;background:var(--vn-ind);pointer-events:none;transition:transform .35s cubic-bezier(.2,.8,.2,1),width .35s cubic-bezier(.2,.8,.2,1);}
 
 /* ---------- painéis ---------- */
@@ -118,6 +120,7 @@ dialog[open]{animation:vn-dialogo .25s cubic-bezier(.2,.8,.2,1) both;}
   .mark{width:34px;height:22px;}
   .vn-tema{width:38px;padding:0;}
   .vn-tema span{display:none;}
+  .step{min-width:0;padding-inline:4px;}
   .topbar{gap:10px 8px;}
 }
 
