@@ -208,6 +208,18 @@ tr.need>:first-child{box-shadow:inset 3px 0 0 var(--warn-line);}
 /* ---------- passo 1: time e rotação ---------- */
 .l-time{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;}
 .tcols,.trow{display:grid;grid-template-columns:36px minmax(0,1fr) 150px 140px 90px;grid-template-areas:"slot nome role dano gap";column-gap:12px;}
+.trow{grid-template-areas:"slot nome role dano gap" ". more more more more" ". det det det det";}
+.t-more{grid-area:more;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:13px;}
+.t-tog{display:inline-flex;align-items:center;gap:6px;padding:2px 0;border:0;background:none;color:var(--fg);font:600 13px/1.3 inherit;font-family:inherit;cursor:pointer;}
+.t-tog::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .2s ease;margin-right:2px;}
+.t-tog[aria-expanded="true"]::before{transform:rotate(45deg);}
+.t-tog:hover{text-decoration:underline;}
+.t-st{color:var(--muted);}
+.t-st.warn{color:var(--warn);}
+.t-st.ok{color:var(--ok);}
+.fgrid-t{grid-template-columns:repeat(4,minmax(0,1fr));}
+@media (max-width:760px){.fgrid-t{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.t-det{grid-area:det;margin-top:10px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);}
 .tcols{padding-bottom:6px;font-size:13.5px;color:var(--muted);}
 .tcols .c1{grid-area:slot;}
 .tcols .c2{grid-area:nome;}
@@ -519,7 +531,7 @@ dialog::backdrop{background:rgba(5,8,12,.55);}
   main{padding-block:18px 44px;}
   .panel{padding:14px;}
   .tcols{display:none;}
-  .trow{grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"slot nome nome gap" "role role dano dano";row-gap:8px;column-gap:10px;}
+  .trow{grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"slot nome nome gap" "role role dano dano" "more more more more" "det det det det";row-gap:8px;column-gap:10px;}
   .gapc .g-l{display:none;}
   .gapc .g-s{display:inline;}
   .poke-list{grid-template-columns:minmax(0,1fr);}
@@ -560,7 +572,7 @@ dialog::backdrop{background:rgba(5,8,12,.55);}
         <button type="button" class="linkbtn" id="btn-nota" aria-expanded="false" aria-controls="meta-nota" data-act="nota">Sobre a meta</button>
       </div>
     </div>
-    <button type="button" class="btn" data-act="dados">Dados</button>
+    <button type="button" class="btn" data-act="dados">Salvar / carregar</button>
     <div class="meta-nota" id="meta-nota" hidden>
       <p>A meta vem da tabela "Dano necessário por hazard", criada por xandin. Os testes foram feitos com prey de ataque e podem conter erro. A coluna da runa já desconta o bônus dela, então a meta é comparada com o dano medido, sem a runa. Cada Pokémon precisa de metade do dano da dupla.</p>
       <p>Ao escolher o hazard e a runa, o campo "Dano por dupla" recebe o valor da tabela. Para usar outro valor, é só digitar por cima: a meta passa a ser a que você digitou. Para voltar ao valor da tabela, clique em "Usar a tabela" ou escolha outro hazard ou outra runa.</p>
@@ -620,7 +632,7 @@ dialog::backdrop{background:rgba(5,8,12,.55);}
     <section id="p-melhorar" role="tabpanel" aria-labelledby="tab-melhorar" hidden>
       <div class="l-melhorar">
         <div class="poke-list" id="poke-list" role="group" aria-label="Pokémon do time"></div>
-        <div class="stack" id="pk-mid"><section class="panel" id="pk-form"></section><section class="panel" id="pk-sim"></section></div>
+        <div class="stack" id="pk-mid"><section class="panel" id="pk-sim"></section></div>
         <div class="res" id="pk-res"><div class="stack" id="pk-plan"></div><div class="stack" id="pk-prog"></div><div class="stack" id="pk-sel"></div></div>
       </div>
     </section>
@@ -1088,7 +1100,7 @@ function estadoPadrao(){
     precos:{
       xatk:["","","","","","",""],
       diamante:"",fees:feesVazias(),starRar:"t1",
-      ganho:"10",cenario:"mean",escala:"sim",lista:{de:"10",ate:"15"},listaCen:"mean",listaPoke:"",listaModo:"barato",
+      ganho:"10",cenario:"mean",escala:"sim",lista:{de:"",ate:""},listaCen:"mean",listaPoke:"",listaModo:"barato",
       materiais:[{nome:"Material 1",preco:""},{nome:"Material 2",preco:""},{nome:"Material 3",preco:""},{nome:"Material 4",preco:""},{nome:"Material 5",preco:""}],
       stones:FAIXAS.map(function(f,i){return {market:"",conf:false,qty:QTY_PADRAO[i].map(String)};})
     }
@@ -1334,8 +1346,8 @@ function atualizarPassos(){
   else if(!state.metaManual)st=rot.hMax>=0?["ok","Mata até o hazard "+rot.hMax]:["bad","Não mata o hazard 0"];
   else st=rot.melhor.batem===3?["ok","As 3 duplas batem"]:["bad",rot.melhor.batem+" de 3 duplas batem"];
   setSt("st-time",st);
-  var np=Object.keys(A.pend).length;
-  setSt("st-precos",np?["warn",plural(np,"pendência","pendências")]:["ok","Nada pendente"]);
+  var np=Object.keys(A.pend).length,semDados=A.info.every(function(r){return r.m.falta;});
+  setSt("st-precos",np?["warn",plural(np,"pendência","pendências")]:(semDados?["","Complete o time primeiro"]:["ok","Nada pendente"]));
   var st3;
   if(!A.rot.alvoOk)st3=["warn","Informe a meta"];
   else if(!A.rot.pronto)st3=["warn","Complete o time"];
@@ -1345,7 +1357,7 @@ function atualizarPassos(){
   else st3=["bad","Não chega na meta"];
   setSt("st-melhorar",st3);
   var L=state.precos.lista;
-  setSt("st-compras",["","Boost +"+L.de+" até +"+L.ate]);
+  setSt("st-compras",["",String(L.de).trim()===""||String(L.ate).trim()===""?"Escolha a faixa":"Boost +"+L.de+" até +"+L.ate]);
 }
 
 /* ============================================================
@@ -1396,6 +1408,8 @@ function montarLinhas(){
       '<div class="c-dano fld"><label class="sr" for="dano-'+i+'">Dano total do combo do Pokémon '+n+'</label>'+
         '<input type="text" id="dano-'+i+'" data-path="time.'+i+'.dano" data-fmt="dano" placeholder="ex.: 320k" autocomplete="off" spellcheck="false"><span class="echo"></span></div>'+
       '<span class="gapc" id="gap-'+i+'"></span>'+
+      '<div class="t-more"><button type="button" class="t-tog" id="tog-'+i+'" data-act="det" data-v="'+i+'" aria-expanded="false" aria-controls="det-'+i+'">Dados de melhoria</button><span class="t-st" id="tst-'+i+'"></span></div>'+
+      '<div class="t-det" id="det-'+i+'" hidden></div>'+
     '</div>';
   }
   $("rows").innerHTML=h;
@@ -1422,6 +1436,16 @@ function atualizarTime(){
       g.title=dif>=0?"Acima da meta de "+fmt(ctx.meta):"Faltam "+fmt(-dif)+" para "+fmt(ctx.meta);
     }else{g.className="gapc";g.textContent="—";g.title="";}
   });
+  A.info.forEach(function(r,i){
+    var el=$("tst-"+i);if(!el)return;
+    var cls="",txt;
+    if(r.vazio)txt="Para o plano sugerir melhorias";
+    else if(r.m.falta){cls="warn";txt="Incompletos";}
+    else{cls="ok";txt="Completos";}
+    el.className="t-st"+(cls?" "+cls:"");el.textContent=txt;
+  });
+  var fp=$("f-preco");
+  if(fp)fp.classList.toggle("need",!!(A.dica&&A.dica.porPoke.some(function(x){return x.i===detAberto&&x.itens.some(function(it){return it.t==="copia";});})));
   $("rot-res").innerHTML=rotHtml(rot);
   var t=$("todas");
   if(rot.pronto){t.innerHTML=todasHtml(rot);t.hidden=false;}else{t.hidden=true;t.innerHTML="";}
@@ -1496,7 +1520,7 @@ function renderPrecos(){
   h+='</tbody></table></div></section>';
   // Star
   var rar=P.starRar,g=GUIA[rar],nomeR=RARMAP[rar].nome;
-  h+='<section class="panel" id="sec-star"><div class="panel-head"><div><h2>Star Ascension</h2><p class="panel-sub">O guia mostra só o total de 0 a 5 Stars. Informe a taxa de cada etapa na forma de pagamento que você usa. O preço da cópia do Pokémon fica no passo 3.</p></div><span id="pill-star"></span></div>'+
+  h+='<section class="panel" id="sec-star"><div class="panel-head"><div><h2>Star Ascension</h2><p class="panel-sub">O guia mostra só o total de 0 a 5 Stars. Informe a taxa de cada etapa na forma de pagamento que você usa. O preço da cópia do Pokémon fica no passo 1, em Dados de melhoria.</p></div><span id="pill-star"></span></div>'+
     '<div class="fld" style="max-width:280px"><label for="s-dia">Valor de 1 Diamond em gold</label><input type="text" id="s-dia" data-path="precos.diamante" data-fmt="gold" data-need="dia" placeholder="ex.: 340k" autocomplete="off"><span class="echo"></span></div>'+
     '<p class="lbl-sm" id="lbl-rar">Tier do Pokémon</p><div class="chips" role="group" aria-labelledby="lbl-rar">'+
       RAR.map(function(r){return '<button type="button" class="chip" data-act="rar" data-v="'+r.id+'" aria-pressed="'+(r.id===rar)+'">'+r.nome+'<span class="chip-dot" id="cd-'+r.id+'" hidden></span><span class="sr" id="cds-'+r.id+'"></span></button>';}).join("")+
@@ -1514,15 +1538,15 @@ function renderPrecos(){
       '<tr><td>Opção mista</td><td class="r">'+fmt2.format(g.misto[0])+' D</td><td class="r">'+fmt2.format(g.misto[1])+' kk</td></tr>'+
     '</tbody></table></div></details></section>';
   // Regras do boost
-  h+='<section class="panel" id="sec-regras"><div class="panel-head"><div><h2>Regras do boost</h2><p class="panel-sub">Como o planejador conta as stones e o ganho de cada boost.</p></div></div><div class="regras">'+
+  h+='<section class="panel" id="sec-regras"><div class="panel-head"><div><h2>Regras do boost</h2><p class="panel-sub">Como o planejador conta as stones e o ganho de cada boost.</p></div></div><details class="disc regras-d"><summary>Ver e ajustar as regras</summary><div class="regras">'+
     '<div class="fld"><label for="c-ganho">Ganho de chance por falha (pontos percentuais)</label><input type="text" id="c-ganho" inputmode="numeric" data-path="precos.ganho" data-fmt="int" autocomplete="off"><span class="hint">O guia diz 10 pontos por falha, e a chance volta à base depois de cada sucesso.</span></div>'+
-    '<div class="fld"><label for="c-cen">Quantas stones contar por boost</label><select id="c-cen" data-path="precos.cenario">'+
+    '<div class="fld"><label for="c-cen">Quantas stones contar no plano</label><select id="c-cen" data-path="precos.cenario">'+
       opt("mean",CEN_TXT.mean,P.cenario)+opt("p90",CEN_TXT.p90,P.cenario)+opt("p99",CEN_TXT.p99,P.cenario)+opt("worst",CEN_TXT.worst,P.cenario)+
       '</select><span class="hint">A média é a comparação mais justa entre caminhos. As margens servem para saber quanto comprar.</span></div>'+
     '<div class="fld"><label for="c-esc">O ganho do boost cresce com X-Attack e Star?</label><select id="c-esc" data-path="precos.escala">'+
       opt("sim","Sim, cresce junto",P.escala)+opt("nao","Não, é sempre o mesmo valor",P.escala)+
       '</select><span class="hint">Premissa, não confirmada no guia. O guia diz que cada boost vale 3 níveis no cálculo de dano; se o X-Attack multiplica esse dano, o ganho cresce junto.</span></div>'+
-    '</div></section>';
+    '</div></details></section>';
   // Stones
   h+='<section class="panel span-all" id="sec-stones"><div class="panel-head"><div><h2>Stones de boost</h2><p class="panel-sub">O custo por stone é o menor entre craftar e comprar pronta. Quanto comprar de cada material, por stone e para chegar no boost que você quer, fica no passo 4.</p>'+
       '<div class="btn-row"><button type="button" class="btn btn-sm" data-act="tab" data-v="compras">Ver quanto comprar de cada material</button></div></div><span id="pill-stones"></span></div>'+
@@ -1556,7 +1580,8 @@ function renderStHead(){
     P.materiais.map(function(mt,mi){return '<th scope="col" class="r">'+esc(mt.nome||("Material "+(mi+1)))+'</th>';}).join("")+
     '<th scope="col">Quantidades</th><th scope="col" class="r">Custo por stone</th>';
 }
-function pillHtml(n){return n?'<span class="pill warn">'+plural(n,"pendente","pendentes")+'</span>':'<span class="pill ok">Nada pendente</span>';}
+function semDadosTime(){return !A||A.info.every(function(r){return r.m.falta;});}
+function pillHtml(n){return n?'<span class="pill warn">'+plural(n,"pendente","pendentes")+'</span>':(semDadosTime()?'<span class="pill">Complete o time primeiro</span>':'<span class="pill ok">Nada pendente</span>');}
 function atualizarPrecos(){
   var ctx=A.ctx,pend=A.pend;
   var els=document.querySelectorAll("#precos-body [data-need]");
@@ -1569,7 +1594,7 @@ function atualizarPrecos(){
   $("pill-xatk").innerHTML=pillHtml(cnt.x);$("pill-star").innerHTML=pillHtml(cnt.f);$("pill-stones").innerHTML=pillHtml(cnt.s);
   var idx=[["sec-xatk","X-Attack",cnt.x],["sec-star","Star",cnt.f],["sec-regras","Regras do boost",-1],["sec-stones","Stones",cnt.s]];
   $("sec-index").innerHTML=idx.map(function(a){
-    return '<button type="button" class="idx" data-act="sec" data-v="'+a[0]+'">'+a[1]+(a[2]>0?'<span class="pill warn">'+a[2]+'</span>':(a[2]===0?'<span class="pill ok">ok</span>':''))+'</button>';
+    return '<button type="button" class="idx" data-act="sec" data-v="'+a[0]+'">'+a[1]+(a[2]>0?'<span class="pill warn">'+a[2]+'</span>':(a[2]===0&&!semDadosTime()?'<span class="pill ok">ok</span>':''))+'</button>';
   }).join("");
   // tiers com taxa pendente e tiers usados pelo time
   var usados={};
@@ -1580,7 +1605,7 @@ function atualizarPrecos(){
     var s=$("cds-"+r.id);if(s)s.textContent=pendT?" (com taxas pendentes)":"";
   });
   var us=Object.keys(usados);
-  $("star-usado").textContent=us.length?"No seu time: "+juntar(us.map(function(r){return RARMAP[r].nome+" ("+usados[r].join(", ")+")";}))+".":"Nenhum Pokémon do time tem tier de Star escolhido no passo 3.";
+  $("star-usado").textContent=us.length?"No seu time: "+juntar(us.map(function(r){return RARMAP[r].nome+" ("+usados[r].join(", ")+")";}))+".":"Nenhum Pokémon do time tem tier de Star escolhido no passo 1.";
   // soma das etapas
   var rar=state.precos.starRar,fs=ctx.fees[rar],d=0,g=0,ok=true;
   fs.forEach(function(t){if(valido(t.d)&&valido(t.g)){d+=t.d;g+=t.g;}else ok=false;});
@@ -1613,18 +1638,19 @@ function renderPicker(){
   });
   $("poke-list").innerHTML=h;
 }
+var detAberto=-1;
 function renderForm(){
-  var i=state.sel,p=state.time[i],pre="time."+i+".";
+  for(var k=0;k<N;k++){var dk=$("det-"+k),tk=$("tog-"+k);if(!dk)continue;if(k!==detAberto){dk.hidden=true;dk.innerHTML="";}if(tk)tk.setAttribute("aria-expanded",String(k===detAberto));}
+  if(detAberto<0||!$("det-"+detAberto))return;
+  var i=detAberto,p=state.time[i],pre="time."+i+".";
   var held=opt("","Escolha",p.held)+opt("0","Sem X-Attack",p.held);
   for(var t=1;t<=7;t++)held+=opt(String(t),"Tier "+t+" (+"+XATK[t]+"%)",p.held);
   var st="";for(var s=0;s<=5;s++)st+=opt(String(s),s===0?"Sem Star":plural(s,"Star","Stars"),p.stars);
   var rar=opt("","Escolha",p.rar);
   RAR.forEach(function(r){rar+=opt(r.id,r.nome+" (+"+r.pct+"%)",p.rar);});
   rar+=opt("nao","Não recebe Star",p.rar);
-  var fun=p.funcao==="lurer"?"Lurer":(p.funcao==="damage"?"Damage":"Sem função");
-  $("pk-form").innerHTML='<div class="panel-head"><div><h2>'+esc(nomeDe(i))+'</h2><p class="panel-sub">'+fun+'. Nome, função e dano também ficam no passo 1.</p></div></div>'+
-    '<div class="fgrid">'+
-      '<div class="fld"><label for="f-dano">Dano total do combo</label><input type="text" id="f-dano" data-path="'+pre+'dano" data-fmt="dano" placeholder="ex.: 237k" autocomplete="off"><span class="echo"></span></div>'+
+  var box=$("det-"+i);box.hidden=false;
+  box.innerHTML='<div class="fgrid fgrid-t">'+
       '<div class="fld"><label for="f-held">X-Attack atual</label><select id="f-held" data-path="'+pre+'held">'+held+'</select><span class="echo"></span></div>'+
       '<div class="fld"><label for="f-boost">Boost atual</label><input type="text" id="f-boost" inputmode="numeric" data-path="'+pre+'boost" data-fmt="boost" placeholder="0 a 50" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld"><label for="f-db">Dano por boost</label><input type="text" id="f-db" data-path="'+pre+'danoBoost" data-fmt="dano" placeholder="ex.: 1.100" autocomplete="off"><span class="echo"></span></div>'+
@@ -1633,7 +1659,7 @@ function renderForm(){
       '<div class="fld"><label for="f-treino">Treino de Attack (nível)</label><input type="text" id="f-treino" inputmode="numeric" data-path="'+pre+'treino" data-fmt="treino" placeholder="0" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld"><label for="f-preco">Preço da cópia sem Star</label><input type="text" id="f-preco" data-path="'+pre+'preco" data-fmt="gold" placeholder="ex.: 140kk" autocomplete="off"><span class="echo"></span></div>'+
     '</div>';
-  $("f-dano").value=p.dano;$("f-boost").value=p.boost;$("f-db").value=p.danoBoost;$("f-preco").value=p.preco;$("f-treino").value=p.treino;
+  $("f-boost").value=p.boost;$("f-db").value=p.danoBoost;$("f-preco").value=p.preco;$("f-treino").value=p.treino;
   simKey=null;
 }
 
@@ -1642,7 +1668,7 @@ var simKey=null;
 function renderSim(){
   var r=A.info[state.sel],m=r.m,box=$("pk-sim");
   if(m.falta){
-    if(simKey!=="falta"){box.innerHTML='<div class="panel-head"><div><h2>Simular melhoria</h2><p class="panel-sub">Complete os dados acima para simular.</p></div></div>';simKey="falta";}
+    if(simKey!=="falta"){box.innerHTML='<div class="panel-head"><div><h2>Simular melhoria</h2><p class="panel-sub">Complete os dados de melhoria dele no passo 1 para simular.</p></div></div><div class="btn-row"><button type="button" class="btn btn-sm" data-act="editar" data-v="'+state.sel+'">Completar no passo 1</button></div>';simKey="falta";}
     return;
   }
   var key=state.sel+"|"+m.h0+"|"+m.s0+"|"+m.b0+"|"+m.podeStar;
@@ -1660,7 +1686,7 @@ function renderSim(){
   box.innerHTML='<div class="panel-head"><div><h2>Simular melhoria</h2><p class="panel-sub">Escolha como ele ficaria e veja o dano, o custo e a dupla.</p></div></div>'+
     '<div class="fgrid">'+
       '<div class="fld"><label for="sim-h">X-Attack</label><select id="sim-h" data-path="sim.h">'+ho+'</select><span class="echo"></span></div>'+
-      '<div class="fld"><label for="sim-s">Stars</label><select id="sim-s" data-path="sim.s"'+(m.podeStar?'':' disabled')+'>'+so+'</select><span class="echo">'+(m.podeStar?'':'escolha o tier acima')+'</span></div>'+
+      '<div class="fld"><label for="sim-s">Stars</label><select id="sim-s" data-path="sim.s"'+(m.podeStar?'':' disabled')+'>'+so+'</select><span class="echo">'+(m.podeStar?'':'escolha o tier no passo 1')+'</span></div>'+
       '<div class="fld"><label for="sim-b">Boost</label><input type="text" id="sim-b" inputmode="numeric" data-path="sim.b" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld sim-ac"><button type="button" class="btn btn-sm" data-act="sim-reset">Voltar ao atual</button></div>'+
     '</div><div id="sim-res"></div>';
@@ -1688,8 +1714,6 @@ function atualizarSim(){
 function atualizarMelhorar(){
   renderPicker();
   renderSim();atualizarSim();
-  var fp=$("f-preco");
-  if(fp)fp.classList.toggle("need",!!(A.dica&&A.dica.porPoke.some(function(x){return x.i===state.sel&&x.itens.some(function(it){return it.t==="copia";});})));
   $("pk-plan").innerHTML=planoTimeHtml();
   renderProg();atualizarProg();
   $("pk-sel").innerHTML=selecionadoHtml();
@@ -1767,7 +1791,7 @@ function incompletosHtml(){
   var inc=A.info.filter(function(r){return r.m.falta&&!r.vazio;});
   if(!inc.length)return "";
   return '<section class="panel"><div class="panel-head"><div><h2>'+(inc.length===1?"1 Pokémon sem dados de melhoria":inc.length+" Pokémon sem dados de melhoria")+'</h2><p class="panel-sub">O plano usa o dano atual deles, mas não pode sugerir melhorias para eles. Com os dados completos, o plano pode sair mais barato.</p></div></div>'+
-    '<ul class="g-itens">'+inc.map(function(r){return '<li><span>'+esc(r.nome)+'</span><button type="button" class="btn btn-sm" data-act="pick" data-v="'+r.i+'">Completar</button></li>';}).join("")+'</ul></section>';
+    '<ul class="g-itens">'+inc.map(function(r){return '<li><span>'+esc(r.nome)+'</span><button type="button" class="btn btn-sm" data-act="editar" data-v="'+r.i+'">Completar</button></li>';}).join("")+'</ul></section>';
 }
 
 /* ---- subir de hazard ---- */
@@ -1957,7 +1981,7 @@ function renderCompras(){
       '<div class="fld"><label for="l-de">Boost atual</label><input type="text" id="l-de" inputmode="numeric" data-path="precos.lista.de" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld"><label for="l-ate">Boost desejado</label><input type="text" id="l-ate" inputmode="numeric" data-path="precos.lista.ate" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
     '</div>'+
-    '<p class="lbl-sm" id="lbl-cen">Quantas stones contar</p><div class="chips" role="group" aria-labelledby="lbl-cen">'+
+    '<p class="lbl-sm" id="lbl-cen">Quantas stones contar nesta lista</p><div class="chips" role="group" aria-labelledby="lbl-cen">'+
       [["none","Sem falhas"],["mean","Média"],["p90","Cobre 90%"],["p99","Cobre 99%"],["worst","Pior caso"]].map(function(c){
         return '<button type="button" class="chip" data-act="lcen" data-v="'+c[0]+'" aria-pressed="'+(c[0]===cen)+'">'+c[1]+'</button>';}).join("")+
     '</div><p class="cen-note" id="cen-note">'+NOTAS_CEN[cen]+'</p>'+
@@ -2122,9 +2146,9 @@ function mostrar(){
     $("p-"+t).hidden=state.tab!==t;
     var b=$("tab-"+t);b.setAttribute("aria-selected",String(state.tab===t));b.tabIndex=state.tab===t?0:-1;
   });
-  if(state.tab==="time")preencherTime();
+  if(state.tab==="time"){preencherTime();renderForm();}
   if(state.tab==="precos"){if(!A)A=analisar();autoTier();renderPrecos();}
-  if(state.tab==="melhorar"){progKey=null;renderForm();}
+  if(state.tab==="melhorar"){progKey=null;simKey=null;}
   if(state.tab==="compras")renderCompras();
   atualizar();
 }
@@ -2156,7 +2180,7 @@ function irPara(d){
     }
     else id="sm-"+fi;
   }
-  else if(t==="copia"){tab="melhorar";id="f-preco";if(d.pi!=null&&d.pi!=="")state.sel=+d.pi;}
+  else if(t==="copia"){tab="time";id="f-preco";if(d.pi!=null&&d.pi!=="")state.sel=+d.pi;detAberto=state.sel;}
   state.tab=tab;salvar();mostrar();
   destacar($(id));
 }
@@ -2192,7 +2216,7 @@ document.addEventListener("click",function(e){
   var b=e.target.closest("[data-act]");if(!b)return;
   var act=b.getAttribute("data-act"),v=b.getAttribute("data-v"),P=state.precos;
   if(act==="tab"){irParaTab(v);$("tab-"+v).focus();return;}
-  if(act==="pick"){state.sel=+v;salvar();renderForm();atualizar();var nb=document.querySelector('.pk[data-v="'+v+'"]');if(nb)nb.focus();return;}
+  if(act==="pick"){state.sel=+v;salvar();simKey=null;atualizar();var nb=document.querySelector('.pk[data-v="'+v+'"]');if(nb)nb.focus();return;}
   if(act==="rar"){P.starRar=v;salvar();renderPrecos();atualizar();var c=document.querySelector('.chip[data-act="rar"][data-v="'+v+'"]');if(c)c.focus();return;}
   if(act==="sec"){var s=$(v);if(s){try{s.scrollIntoView({block:"start",behavior:reduz?"auto":"smooth"});}catch(err){s.scrollIntoView();}}return;}
   if(act==="haz-mais"){state.hazard=String(Math.min(HAZ.length-1,+state.hazard+1));state.metaManual=false;salvar();preencherTopo();atualizar();return;}
@@ -2205,7 +2229,9 @@ document.addEventListener("click",function(e){
   if(act==="lmodo"){P.listaModo=v;salvar();renderCompras();atualizar();var lm=document.querySelector('.chip[data-act="lmodo"][data-v="'+v+'"]');if(lm)lm.focus();return;}
   if(act==="lista-ir"){P.listaPoke=b.getAttribute("data-poke");P.listaCen=P.cenario;irParaTab("compras");return;}
   if(act==="ir"){irPara(b.dataset);return;}
-  if(act==="campo"){var id=b.getAttribute("data-id");if(id==="m-haz"||id==="alvo"){destacar($(id));return;}if(state.tab!=="melhorar")irParaTab("melhorar");destacar($(id));return;}
+  if(act==="det"){var di=+v;detAberto=detAberto===di?-1:di;if(detAberto>=0)state.sel=di;salvar();renderForm();atualizar();if(detAberto>=0){var fh=$("f-held");if(fh)fh.focus();}else b.focus();return;}
+  if(act==="editar"){state.sel=+v;detAberto=+v;irParaTab("time");destacar($("f-held"));return;}
+  if(act==="campo"){var id=b.getAttribute("data-id");if(id==="m-haz"||id==="alvo"){destacar($(id));return;}if(id==="f-dano")id="dano-"+state.sel;detAberto=state.sel;irParaTab("time");destacar($(id));return;}
   if(act==="nota"){var nota=$("meta-nota"),aberto=nota.hidden;nota.hidden=!aberto;b.setAttribute("aria-expanded",String(aberto));return;}
   if(act==="dados"){var dlg=$("dlg-dados");$("io-msg").textContent=storageOk?"Tudo fica salvo neste navegador.":"";if(dlg.showModal){try{dlg.showModal();}catch(err){dlg.setAttribute("open","");}}else dlg.setAttribute("open","");return;}
   if(act==="dlg-fechar"){var dl=$("dlg-dados");if(dl.close)dl.close();else dl.removeAttribute("open");return;}

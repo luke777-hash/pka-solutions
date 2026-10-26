@@ -30,7 +30,15 @@
     try{ localStorage.setItem(CHAVE_TEMA, novo); }catch(e){}
     pintarBotao();
   });
-  if(btnDados){ btnDados.parentNode.insertBefore(btnTema, btnDados); pintarBotao(); }
+  if(btnDados){
+    // "Salvar / carregar" e o tema ficam juntos no canto do topo
+    var acoes = document.createElement("div");
+    acoes.className = "vn-acoes";
+    btnDados.parentNode.insertBefore(acoes, btnDados);
+    acoes.appendChild(btnDados);
+    acoes.appendChild(btnTema);
+    pintarBotao();
+  }
 
   // ---------- indicador que desliza sob o passo escolhido ----------
   var nav = document.querySelector(".steps");

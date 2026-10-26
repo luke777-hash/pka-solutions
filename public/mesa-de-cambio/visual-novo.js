@@ -110,6 +110,9 @@
     cfgWrap.classList.add("vn-cfg");
     cfgWrap.insertBefore(titulo, cfg);
     board.parentNode.insertBefore(cfgWrap, board);
+    // o resultado principal vem depois do que você preenche, junto dos cards
+    var veredito = document.getElementById("verdict");
+    if(veredito) board.parentNode.insertBefore(veredito, board);
   }
 
   // ---------- "Como a conta é feita" recolhido ----------

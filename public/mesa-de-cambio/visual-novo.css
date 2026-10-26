@@ -59,7 +59,9 @@ body{font-size:15.5px;}
 .spread i{transition:width .35s ease;}
 input[type=number]{background:var(--field);border-radius:8px;transition:border-color .2s ease;}
 input[type=number]:hover{border-color:var(--muted);}
-.entry .big-field input{font-weight:700;}
+.entry .big-field input{font-weight:700;border:1px solid var(--rule);border-radius:10px;padding:6px 12px;background:var(--field);transition:border-color .2s ease;}
+.entry .big-field input:hover{border-color:var(--muted);}
+.entry .big-field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft);}
 button.act{background:var(--field);border-radius:8px;transition:border-color .2s ease,transform .15s ease;}
 button.act:hover{color:var(--text);}
 button.act:active,.modes button:active{transform:scale(.98);}
@@ -88,7 +90,9 @@ thead th{background:var(--head);}
 .vn-cfg .scroller{background:var(--slab-hi);}
 .vn-cfg thead th{white-space:normal;}
 .vn-cfg th,.vn-cfg td{padding:8px 10px;}
-.config-wrap.vn-cfg + #board{margin-top:22px;}
+.config-wrap.vn-cfg + .verdict{margin-top:22px;}
+.verdict + #board{margin-top:22px;}
+.modes + .entry{margin-top:22px;}
 details#cfg[open] > :not(summary){animation:none;}
 
 /* "Como a conta é feita" vira uma seção que abre e fecha */
