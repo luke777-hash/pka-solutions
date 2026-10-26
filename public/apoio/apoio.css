@@ -1,0 +1,46 @@
+/* Janela e botão "Apoiar", iguais no hub e nas ferramentas. */
+:root{--pa-bg:#ffffff;--pa-fg:#141a24;--pa-muted:#566274;--pa-line:#d5dbe3;--pa-campo:#f1f4f8;--pa-rosa:#d6336c;--pa-rosa-suave:rgba(214,51,108,.28);--pa-ok:#1f8a4c;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pa-bg:#171e28;--pa-fg:#e4e9ef;--pa-muted:#9aa6b6;--pa-line:#2a3441;--pa-campo:#0f141b;--pa-rosa:#f06595;--pa-rosa-suave:rgba(240,101,149,.3);--pa-ok:#4ccb83;}}
+:root[data-theme="dark"]{--pa-bg:#171e28;--pa-fg:#e4e9ef;--pa-muted:#9aa6b6;--pa-line:#2a3441;--pa-campo:#0f141b;--pa-rosa:#f06595;--pa-rosa-suave:rgba(240,101,149,.3);--pa-ok:#4ccb83;}
+
+.pa-janela{width:min(440px,calc(100% - 32px));max-height:calc(100% - 32px);padding:0;border:1px solid var(--pa-line);border-radius:16px;background:var(--pa-bg);color:var(--pa-fg);box-shadow:0 20px 60px rgba(0,0,0,.28);font-family:"Figtree","Segoe UI",system-ui,sans-serif;}
+.pa-janela::backdrop{background:rgba(10,14,20,.55);}
+.pa-janela[open]{animation:pa-entra .22s ease both;}
+@keyframes pa-entra{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
+.pa-dentro{position:relative;padding:24px;}
+.pa-icone{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--pa-rosa-suave);color:var(--pa-rosa);margin-bottom:12px;}
+.pa-icone svg{width:24px;height:24px;fill:currentColor;}
+.pa-janela h2{margin:0 0 8px;font-family:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;font-weight:800;font-size:24px;letter-spacing:-.01em;color:var(--pa-fg);}
+.pa-janela p{margin:0;color:var(--pa-muted);line-height:1.5;font-size:15px;}
+.pa-texto{margin-bottom:16px!important;}
+.pa-x{position:absolute;top:12px;right:12px;width:32px;height:32px;padding:0;border:1px solid var(--pa-line);border-radius:50%;background:var(--pa-bg);color:var(--pa-muted);font:inherit;font-size:14px;cursor:pointer;}
+.pa-x:hover{color:var(--pa-fg);border-color:var(--pa-fg);}
+.pa-rotulo{display:block;margin-bottom:6px;font-size:13px;font-weight:700;color:var(--pa-fg);}
+.pa-linha{display:flex;gap:8px;}
+.pa-linha input{flex:1;min-width:0;height:44px;padding:0 12px;border:1px solid var(--pa-line);border-radius:10px;background:var(--pa-campo);color:var(--pa-fg);font:600 13.5px/1 ui-monospace,Consolas,monospace;}
+.pa-copiar{height:44px;padding:0 18px;border:0;border-radius:10px;background:var(--pa-fg);color:var(--pa-bg);font:inherit;font-weight:700;font-size:15px;cursor:pointer;transition:transform .15s ease;}
+.pa-copiar:active{transform:scale(.97);}
+.pa-quem{margin-top:14px!important;font-size:14px!important;}
+.pa-quem b{color:var(--pa-fg);}
+.pa-titular{font-size:13px!important;}
+.pa-msg{min-height:1.5em;margin-top:6px!important;font-size:14px!important;font-weight:600;color:var(--pa-ok)!important;}
+.pa-acoes{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding-top:14px;border-top:1px solid var(--pa-line);}
+.pa-nao{padding:6px 0;border:0;background:none;color:var(--pa-muted);font:inherit;font-size:14px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.pa-nao:hover{color:var(--pa-fg);}
+.pa-fechar{min-height:40px;padding:0 18px;border:1px solid var(--pa-line);border-radius:10px;background:var(--pa-bg);color:var(--pa-fg);font:inherit;font-weight:700;font-size:15px;cursor:pointer;margin-left:auto;}
+.pa-fechar:hover{border-color:var(--pa-fg);}
+.pa-janela button:focus-visible{outline:3px solid var(--pa-fg);outline-offset:2px;}
+
+/* faixa "← Todas as ferramentas" com o Apoiar do outro lado */
+.pkahub-volta.pa-faixa{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.pa-botao{gap:6px;cursor:pointer;font-family:inherit;}
+.pa-botao svg,[data-apoio] svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linejoin:round;}
+
+/* depois do "Não mostrar novamente": brilho discreto no botão, sem cobrir nada */
+.pa-lembrar [data-apoio]:not(.link-apoio){position:relative;border-color:var(--pa-rosa)!important;animation:pa-pulsa 3.2s ease-in-out infinite;}
+.pa-lembrar [data-apoio]:not(.link-apoio) svg{color:var(--pa-rosa);fill:var(--pa-rosa);stroke:var(--pa-rosa);}
+@keyframes pa-pulsa{0%,100%{box-shadow:0 0 0 0 var(--pa-rosa-suave);}50%{box-shadow:0 0 0 5px var(--pa-rosa-suave);}}
+@media (prefers-reduced-motion:reduce){
+  .pa-janela[open],.pa-lembrar [data-apoio]{animation:none;}
+  .pa-copiar{transition:none;}
+}

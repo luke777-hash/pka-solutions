@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ferramentas } from './ferramentas.js'
-import { apoio } from './apoio.js'
 
 const CHAVE_TEMA = 'pkahub-tema'
 
@@ -56,55 +55,6 @@ function Coracao() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 20s-7.5-4.6-9.3-9.2C1.4 7.4 3.6 4 7 4c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8C19.5 15.4 12 20 12 20Z" />
     </svg>
-  )
-}
-
-// Janela com a chave Pix e o botão de copiar.
-function JanelaApoio({ aberta, fechar }) {
-  const ref = useRef(null)
-  const [copiado, setCopiado] = useState(false)
-
-  useEffect(() => {
-    const d = ref.current
-    if (!d) return
-    if (aberta && !d.open) d.showModal()
-    if (!aberta && d.open) d.close()
-    if (!aberta) setCopiado(false)
-  }, [aberta])
-
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(apoio.chave)
-      setCopiado(true)
-    } catch (_) {
-      const campo = document.getElementById('chave-pix')
-      if (campo) campo.select()
-    }
-  }
-
-  return (
-    <dialog
-      ref={ref}
-      className="apoio"
-      aria-labelledby="apoio-titulo"
-      onClose={fechar}
-      onClick={(e) => { if (e.target === ref.current) fechar() }}
-    >
-      <div className="apoio-dentro">
-        <button type="button" className="apoio-fechar" onClick={fechar} aria-label="Fechar">✕</button>
-        <h2 id="apoio-titulo">Apoie o PKA-HUB</h2>
-        <p>O hub é gratuito. Se ele te ajuda, você pode apoiar com qualquer valor pelo Pix.</p>
-        <label className="apoio-rotulo" htmlFor="chave-pix">Chave Pix</label>
-        <div className="apoio-chave">
-          <input id="chave-pix" type="text" readOnly value={apoio.chave} onFocus={(e) => e.target.select()} />
-          <button type="button" className="apoio-copiar" onClick={copiar}>
-            {copiado ? 'Copiada' : 'Copiar'}
-          </button>
-        </div>
-        {apoio.nome && <p className="apoio-nome">Em nome de <b>{apoio.nome}</b></p>}
-        <p className="apoio-obrigado" aria-live="polite">{copiado ? 'Chave copiada. Obrigado pelo apoio!' : ''}</p>
-      </div>
-    </dialog>
   )
 }
 
@@ -167,8 +117,6 @@ function Card({ ferramenta }) {
 }
 
 export default function App() {
-  const [apoioAberto, setApoioAberto] = useState(false)
-  const temApoio = Boolean(apoio.chave)
   return (
     <div className="pagina">
       <header className="topo">
@@ -176,12 +124,11 @@ export default function App() {
           <div className="barra">
             <span className="contagem">{ferramentas.length} ferramentas</span>
             <div className="acoes">
-              {temApoio && (
-                <button type="button" className="tema apoiar" onClick={() => setApoioAberto(true)}>
-                  <Coracao />
-                  <span>Apoiar</span>
-                </button>
-              )}
+              {/* abre a janela de apoio (public/apoio/apoio.js) */}
+              <button type="button" className="tema apoiar" data-apoio="">
+                <Coracao />
+                <span>Apoiar</span>
+              </button>
               <BotaoTema />
             </div>
           </div>
@@ -199,20 +146,17 @@ export default function App() {
       </main>
 
       <footer className="rodape">
-        {temApoio && (
-          <p className="rodape-apoio">
-            O PKA-HUB é gratuito.{' '}
-            <button type="button" className="link-apoio" onClick={() => setApoioAberto(true)}>
-              Apoie pelo Pix
-            </button>
-          </p>
-        )}
+        <p className="rodape-apoio">
+          O PKA-HUB é gratuito.{' '}
+          <button type="button" className="link-apoio" data-apoio="">
+            Apoie pelo Pix
+          </button>
+        </p>
         <p>
           Site feito por fã. Não é afiliado ao Poke Alliance nem à Nintendo, Creatures Inc. ou
           GAME FREAK inc. Pokémon e os nomes relacionados pertencem aos seus respectivos donos.
         </p>
       </footer>
-      {temApoio && <JanelaApoio aberta={apoioAberto} fechar={() => setApoioAberto(false)} />}
     </div>
   )
 }

@@ -173,44 +173,6 @@ body {
 .acoes { display: flex; align-items: center; gap: 8px; }
 .apoiar svg { fill: none; }
 .apoiar:hover svg { fill: #e5484d; stroke: #e5484d; }
-.apoio {
-  width: min(440px, calc(100% - 32px));
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
-  color: var(--fg);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-.apoio::backdrop { background: rgba(10, 14, 20, 0.55); }
-.apoio[open] { animation: apoio-entra 0.22s ease both; }
-@keyframes apoio-entra { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
-.apoio-dentro { position: relative; padding: 24px; }
-.apoio h2 { margin: 0 0 8px; font-family: var(--font-display); font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
-.apoio p { margin: 0 0 16px; color: var(--muted); line-height: 1.5; }
-.apoio-fechar {
-  position: absolute; top: 12px; right: 12px; width: 32px; height: 32px;
-  border: 1px solid var(--line); border-radius: 50%; background: var(--surface);
-  color: var(--muted); font: inherit; cursor: pointer;
-}
-.apoio-fechar:hover { color: var(--fg); border-color: var(--fg); }
-.apoio-rotulo { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
-.apoio-chave { display: flex; gap: 8px; }
-.apoio-chave input {
-  flex: 1; min-width: 0; height: 44px; padding: 0 12px;
-  border: 1px solid var(--line); border-radius: 10px; background: var(--chip);
-  color: var(--fg); font: 600 15px/1 ui-monospace, Consolas, monospace;
-}
-.apoio-copiar {
-  height: 44px; padding: 0 18px; border: 0; border-radius: 10px;
-  background: var(--fg); color: var(--surface); font: inherit; font-weight: 700; cursor: pointer;
-  transition: transform 0.15s ease;
-}
-.apoio-copiar:active { transform: scale(0.97); }
-.apoio-copiar:focus-visible, .apoio-fechar:focus-visible, .link-apoio:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
-.apoio-nome { margin: 12px 0 0 !important; font-size: 14px; }
-.apoio-nome b { color: var(--fg); }
-.apoio-obrigado { margin: 8px 0 0 !important; min-height: 1.5em; font-size: 14px; color: #1f8a4c !important; font-weight: 600; }
 .rodape-apoio { margin-bottom: 8px !important; color: var(--fg); }
 .link-apoio {
   padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700;

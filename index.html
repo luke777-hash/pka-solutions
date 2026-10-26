@@ -13,6 +13,8 @@
   // Aplica o tema salvo antes de a página aparecer, para não piscar.
   try { var t = localStorage.getItem('pkahub-tema'); if (t === 'escuro') document.documentElement.dataset.theme = 'dark'; if (t === 'claro') document.documentElement.dataset.theme = 'light'; } catch (e) {}
 </script>
+<link rel="stylesheet" href="/apoio/apoio.css">
+<script src="/apoio/apoio.js" defer></script>
 </head>
 <body>
 <div id="root"></div>
