@@ -1,0 +1,27 @@
+/* Campo de pokémon do time com busca, lista para escolher e imagem animada.
+   Só muda o campo de nome. O nome continua indo para o mesmo lugar, e os cálculos não usam o nome. */
+
+.c-nome.ep{position:relative;display:flex;align-items:center;gap:8px;}
+.c-nome.ep input{flex:1;min-width:0;}
+.ep-foto{flex:none;width:46px;height:46px;margin-block:-4px;display:grid;place-items:center;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;}
+.ep-foto img{max-width:44px;max-height:44px;object-fit:contain;}
+.ep-foto .ep-vazio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line-strong);position:relative;}
+.ep-foto .ep-vazio::after{content:"";position:absolute;left:-2px;right:-2px;top:8px;height:2px;background:var(--line-strong);}
+.ep-foto.ep-desconhecido{border-style:dashed;}
+.ep-foto.ep-novo img{animation:ep-entra .35s ease;}
+@keyframes ep-entra{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+
+.ep-lista{position:absolute;z-index:40;left:54px;right:0;top:calc(100% + 4px);margin:0;padding:4px;list-style:none;max-height:min(340px,60vh);overflow-y:auto;background:var(--plate);border:1px solid var(--line-strong);border-radius:9px;box-shadow:0 10px 28px rgba(15,23,42,.18);}
+.ep-lista[hidden]{display:none;}
+.ep-op{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:7px;cursor:pointer;color:var(--text);font-size:15px;}
+.ep-op img{width:40px;height:40px;object-fit:contain;flex:none;image-rendering:auto;}
+.ep-op .ep-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ep-op .ep-n b{font-weight:700;}
+.ep-op .ep-t{flex:none;font-size:12px;color:var(--muted);}
+.ep-op .ep-sh{color:var(--damage);}
+.ep-op[aria-selected="true"]{background:var(--lurer-soft);}
+.ep-msg{padding:8px 10px;font-size:13.5px;color:var(--muted);}
+
+/* celular: a lista ocupa o campo todo e o nome pode quebrar linha */
+@media (max-width:760px){.ep-lista{left:0;}.ep-op .ep-n{white-space:normal;line-height:1.2;}}
+@media (prefers-reduced-motion:reduce){.ep-foto.ep-novo img{animation:none;}}
