@@ -23,4 +23,11 @@ export const ferramentas = [
     frase: 'Importe suas hunts e acompanhe lucro, loot e shinys.',
     etiquetas: ['Lucro/h', 'Loot', 'Shinys'],
   },
+  {
+    nome: 'Pokelog para ATK 5',
+    endereco: '/pokelog/',
+    tema: 'pokelog',
+    frase: 'Marque os pokelogs feitos e veja quanto falta para o ATK 5.',
+    etiquetas: ['Pokelog', 'ATK 5', 'Shinys'],
+  },
 ]

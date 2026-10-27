@@ -79,6 +79,19 @@ function Icone({ tema }) {
       </svg>
     )
   }
+  if (tema === 'pokelog') {
+    return (
+      <svg className="icone" viewBox="0 0 70 44" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <g key={i}>
+            <circle cx="8" cy={7 + i * 15} r="6" className={i < 2 ? 'i-check' : 'i-check-vazio'} />
+            {i < 2 && <path d={`M5 ${7 + i * 15}l2 2 4-4`} className="i-check-traco" />}
+            <rect x="20" y={4 + i * 15} width={i === 1 ? 34 : 48} height="6" rx="3" className="i-linha" />
+          </g>
+        ))}
+      </svg>
+    )
+  }
   return (
     <svg className="icone" viewBox="0 0 76 44" aria-hidden="true">
       <circle cx="22" cy="22" r="18" className="i-lente-borda" />

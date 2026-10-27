@@ -1,4 +1,4 @@
-/* Layout: faixa de título com fundo de pontos, três cards com a "capa" de cada ferramenta e rodapé no fim da tela. */
+/* Layout: faixa de título com fundo de pontos, um card por ferramenta com a "capa" de cada ferramenta e rodapé no fim da tela. */
 :root {
   --bg: #eef1f5;
   --surface: #ffffff;
@@ -21,6 +21,9 @@
   --borda-planejador: #2f49b8;
   --borda-mesa: #b07f1c;
   --borda-hunt: #c8323a;
+  --pokelog: #127a62;
+  --pokelog-capa: #d6efe7;
+  --borda-pokelog: #127a62;
   color-scheme: light;
 }
 
@@ -38,6 +41,9 @@
     --borda-planejador: #7b93f0;
     --borda-mesa: #e8b44c;
     --borda-hunt: #ef6b6f;
+    --pokelog: #3cc9a2;
+    --pokelog-capa: #173a31;
+    --borda-pokelog: #3cc9a2;
     color-scheme: dark;
   }
 }
@@ -55,6 +61,9 @@
   --borda-planejador: #7b93f0;
   --borda-mesa: #e8b44c;
   --borda-hunt: #ef6b6f;
+  --pokelog: #3cc9a2;
+  --pokelog-capa: #173a31;
+  --borda-pokelog: #3cc9a2;
   color-scheme: dark;
 }
 
@@ -194,7 +203,10 @@ body {
   padding: 0;
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1040px) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .card {
@@ -216,6 +228,7 @@ body {
 .card--planejador { --borda: var(--borda-planejador); }
 .card--mesa { --borda: var(--borda-mesa); }
 .card--hunt { --borda: var(--borda-hunt); }
+.card--pokelog { --borda: var(--borda-pokelog); }
 
 .capa {
   height: 132px;
@@ -227,6 +240,7 @@ body {
 .card--planejador .capa { background: var(--planejador-capa); }
 .card--mesa .capa { background: var(--mesa-capa); }
 .card--hunt .capa { background: var(--hunt-capa); }
+.card--pokelog .capa { background: var(--pokelog-capa); }
 
 .icone { height: 52px; width: auto; transition: transform 0.2s ease; }
 .i-lurer { fill: var(--planejador); }
@@ -234,6 +248,10 @@ body {
 .i-traco { fill: none; stroke: var(--mesa); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
 .i-lente-borda { fill: #ffffff; }
 .i-lente { fill: #2a78d6; }
+.i-check { fill: var(--pokelog); }
+.i-check-vazio { fill: none; stroke: var(--pokelog); stroke-width: 2; }
+.i-check-traco { fill: none; stroke: var(--pokelog-capa); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.i-linha { fill: var(--pokelog); opacity: 0.45; }
 
 .corpo {
   flex: 1;
