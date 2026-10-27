@@ -189,7 +189,7 @@ details p,details li{color:var(--muted)}
   <section class="block" aria-labelledby="sumT">
     <div class="h2row"><h2 id="sumT">Resumo</h2>
       <div class="filters">
-        <label>Período<select id="fPeriod"><option value="all">Tudo</option><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option></select></label>
+        <label>Período<select id="fPeriod"><option value="all">Tudo</option><option value="hoje">Hoje</option><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option></select></label>
         <label>Personagem<select id="fChar"></select></label>
         <label>Alvo<select id="fTarget"></select></label>
       </div>
@@ -518,7 +518,7 @@ function allDerived(){
 }
 function filtered(all){
   const p=document.getElementById("fPeriod").value, c=document.getElementById("fChar").value, t=document.getElementById("fTarget").value;
-  const since = p==="all"?-Infinity:Date.now()-(+p)*864e5;
+  const since = p==="all"?-Infinity:p==="hoje"?new Date().setHours(0,0,0,0):Date.now()-(+p)*864e5;
   return all.filter(s => s.start>=since && (!c||s.char===c) && (!t||s.target===t));
 }
 function fillSelect(id, values, allLabel){
