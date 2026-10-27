@@ -480,23 +480,24 @@ async function boot(){
 // ---------- importação ----------
 async function importValues(values, badCount){
   const found = values.flatMap(extract);
-  let added=0, dup=0, upd=0, invalid=badCount||0; const best=new Map();
+  let added=0, dup=0, upd=0, incl=0, invalid=badCount||0; const best=new Map();
+  const mesmaExp=(a,b)=>(+a.meta.exportedAt||0)===(+b.meta.exportedAt||0);
   for(const f of found){
     if(!valid(f.data)){ invalid++; continue; }
     const id=keyOf(f.data); const prev=best.get(id);
-    if(!prev) best.set(id,f); else { dup++; if(isNewer(f.data,prev.data)) best.set(id,f); }
+    if(!prev) best.set(id,f); else { if(mesmaExp(f.data,prev.data)) dup++; else incl++; if(isNewer(f.data,prev.data)) best.set(id,f); }
   }
   const batch=[];
   for(const [id,f] of best){
     const old=state.recs.get(id);
-    if(old){ if(isNewer(f.data,old.data)){ batch.push({...old, importedAt:new Date().toISOString(), data:f.data}); upd++; } else dup++; continue; }
+    if(old){ if(isNewer(f.data,old.data)){ batch.push({...old, importedAt:new Date().toISOString(), data:f.data}); upd++; } else if(mesmaExp(f.data,old.data)) dup++; else incl++; continue; }
     batch.push({ id, docId:docIdOf(f.data), importedAt:f.importedAt||new Date().toISOString(), label:f.label||"", groupId:f.groupId||"", data:f.data });
   }
   if(!found.length && !invalid) invalid=1;
   if(!store){ setStatus("impStatus","Ainda conectando. Tente de novo em alguns segundos.","err"); return; }
   try{ if(batch.length){ setStatus("impStatus",`Salvando ${batch.length} hunt(s)…`); await store.put(batch); added=batch.length-upd; } }
   catch(e){ setStatus("impStatus", "Não consegui salvar: "+(e&&e.message||"erro desconhecido")+".", "err"); return; }
-  const parts=[]; if(added) parts.push(`${added} hunt(s) importada(s)`); if(upd) parts.push(`${upd} atualizada(s) com uma exportação mais recente da mesma contagem`); if(dup) parts.push(`${dup} já existia(m) e foi(ram) ignorada(s)`); if(invalid) parts.push(`${invalid} trecho(s) não reconhecido(s) como JSON de hunt`);
+  const parts=[]; if(added) parts.push(`${added} hunt(s) importada(s)`); if(upd) parts.push(`${upd} atualizada(s) com a exportação mais recente da mesma hunt, que já inclui o tempo da anterior`); if(incl) parts.push(`${incl} exportação(ões) mais antiga(s) da mesma hunt não somada(s), porque a mais recente já inclui esse tempo`); if(dup) parts.push(`${dup} já existia(m) e foi(ram) ignorada(s)`); if(invalid) parts.push(`${invalid} trecho(s) não reconhecido(s) como JSON de hunt`);
   setStatus("impStatus", parts.join(" · ") || "Nada para importar.", (added||upd)?"ok":(invalid?"err":""));
   if(added||upd) document.getElementById("paste").value="";
 }
