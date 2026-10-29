@@ -191,7 +191,14 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
 .cform .de{font-size:11.5px;font-weight:500;color:var(--faint)}
 .cform fieldset{grid-column:1/-1;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;min-width:0}
 .cform legend{font-size:13px;font-weight:700;padding:0 4px}
-.cform fieldset .de.full{grid-column:1/-1}
+.cform fieldset .full{grid-column:1/-1}
+.cc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cc-usar{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer}
+.cc-usar input{width:16px;height:16px;accent-color:var(--accent)}
+#ccAtualizar{padding:5px 10px;font-size:12.5px}
+.cform input[readonly]{color:var(--muted);border-style:dashed}
+.cform a{color:var(--accent)}
+.cmb{font-family:var(--f-display);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;padding:4px 0}
 .cres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .cres .cheia{grid-column:1/-1}
 @media (max-width:560px){.cres,.cform{grid-template-columns:minmax(0,1fr)}.cform fieldset{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -356,12 +363,12 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
   </section>
 
   <section class="block" aria-labelledby="catchT">
-    <div class="h2row"><h2 id="catchT">Projeto de catch</h2><span class="hint">Tudo nesta seção vem do que você digita, porque o JSON do jogo não traz nada de pokébola. As regras de ball usadas aqui vêm da comunidade. Os campos ficam salvos neste navegador, separados por shiny.</span></div>
+    <div class="h2row"><h2 id="catchT">Projeto de catch</h2><span class="hint">O JSON do jogo não traz nada de pokébola. Os brokes e o estoque vêm do que você digita; as estatísticas da comunidade vêm do site Critical Catch (ou do que você digitar); a tabela de max broke e as regras de ball vêm da comunidade. Os campos ficam salvos neste navegador, separados por shiny.</span></div>
     <div class="catch">
       <div class="panel cform">
         <label class="campo full">Shiny que está projetando
           <input type="text" id="cNome" list="cLista" autocomplete="off" placeholder="Nome do shiny">
-          <span class="de">Escolha entre os alvos importados ou digite o nome</span>
+          <span class="de">Escolha da lista ou digite o nome</span>
         </label>
         <datalist id="cLista"></datalist>
         <label class="campo">Brokes atuais (mérito)
@@ -380,9 +387,20 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
             <option value="mix">Misturado</option>
           </select>
         </label>
+        <label class="campo">Tier do shiny
+          <select id="cTier">
+            <option value="">Escolha…</option>
+            <option>Mythic</option><option>Legendary</option><option>Ultra Rare</option><option>Super Rare</option>
+            <option>T1</option><option>T2</option><option>T3</option><option>T4</option><option>T5</option><option>T6</option><option>T7</option><option>ULTIMATE</option>
+          </select>
+          <span class="de" id="cTierDe">Vem da Pokédex do hub quando ela tem o tier</span>
+        </label>
+        <div class="campo"><span>Max broke do tier</span><span class="cmb" id="cMaxBroke">—</span><span class="de">Tabela da comunidade. Vale só para quem joga Ultra/Elemental.</span></div>
         <fieldset>
           <legend>Estatísticas da comunidade para esse shiny</legend>
-          <span class="de full">Site Critical Catch, janela do pokémon. P80 = 80% das capturas fecharam até esse número de balls; P95 = 95%.</span>
+          <div class="full cc-row"><label class="cc-usar"><input type="checkbox" id="cAuto" checked> Preencher sozinho com os dados do Critical Catch</label><button type="button" id="ccAtualizar">Atualizar</button></div>
+          <span class="de full" id="ccStatus"></span>
+          <span class="de full">P80 = 80% das capturas fecharam até esse número de balls; P95 = 95%. Máximo = o maior número de balls registrado numa captura.</span>
           <label class="campo">Média<input type="text" inputmode="decimal" id="cMedia"></label>
           <label class="campo">Mediana<input type="text" inputmode="decimal" id="cMediana"></label>
           <label class="campo">P80<input type="text" inputmode="decimal" id="cP80"></label>
@@ -406,6 +424,7 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
           <div class="ins-ajuda" id="ajC1" hidden>
             <p><b>O que é.</b> Compara os seus brokes com as capturas registradas pela comunidade para esse shiny.</p>
             <p><b>Conta.</b> A curva sai de 5 pontos: com 0 balls ninguém capturou; na mediana, metade capturou; no P80, 80%; no P95, 95%; no máximo, só 1 em cada N (nº de capturas) ainda não tinha capturado. Entre dois pontos, supõe chance constante por ball. Percentil = fração que já tinha capturado com os seus brokes. Com "Só Alliance/Premier", usa a taxa base (a mesma chance a cada ball) no lugar da curva.</p>
+            <p><b>Max broke.</b> O máximo da curva é o maior número de balls registrado numa captura desse shiny. O max broke do tier é outra coisa: um valor da comunidade que serve de teto prático para quem joga Ultra/Elemental. Ele aparece à parte e não entra na curva.</p>
             <p><b>Limite.</b> A curva mistura todos os tipos de ball. Acima do máximo registrado não há dado, e a página não inventa. A média aparece no site, mas não entra na conta: poucos casos enormes puxam a média para cima.</p>
           </div>
         </article>
@@ -507,6 +526,8 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
         <li><b>As sessões têm a mesma taxa?</b>: teste qui-quadrado de homogeneidade entre as sessões do alvo, e de novo juntando por horário de início. Com menos de 3 sessões, ou com menos de 5 shinys esperados em alguma, a amostra é pequena para concluir.</li>
         <li><b>Sorte</b> da sessão: percentil binomial dos shinys da sessão, usando como referência a taxa das outras sessões com o mesmo alvo (sem contar a própria).</li>
         <li><b>Projeto de catch</b>: tudo vem do que você digita. A curva da comunidade liga S(0) = 1, S(mediana) = 0,5, S(P80) = 0,2, S(P95) = 0,05 e S(máximo) = 1 ÷ nº de capturas, onde S é a fração que ainda não tinha capturado; entre dois pontos, supõe chance constante por ball. Acima do máximo, não há número. A taxa base é ln(2) ÷ mediana e é usada para a chance de aura e para quem joga só Alliance/Premier. Pela regra da comunidade, só Ultra e Elemental usam o mérito, e só Alliance e Premier dão aura.</li>
+        <li><b>Dados do Critical Catch</b>: com a opção marcada, média, mediana, P80, P95, máximo e nº de capturas vêm do site Critical Catch (criticalcatch-pkatools.app), que junta as capturas de shiny postadas no Discord de catch da comunidade. O hub busca esses números no máximo a cada 30 minutos e guarda uma cópia neste navegador por 6 horas. São dados da comunidade, não oficiais do jogo, e podem ter erros.</li>
+        <li><b>Tier e max broke</b>: o tier vem da Pokédex do hub quando ela tem, e você pode trocar. O max broke vem da tabela da comunidade (Legendary 22.535, Ultra Rare 9.400, Super Rare 3.500, T1 1.280, T2 900, T3 700, T4 600, T5 400, T6 120; Mythic sem valor). Só aparece para quem vai jogar Ultra/Elemental.</li>
         <li><b>kk</b> = milhão, <b>k</b> = mil.</li>
       </ul>
     </details>
@@ -516,6 +537,7 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" hidden aria-label="Detalhe da sessão"></aside>
 
+<script src="/dados/pokedex.js"></script>
 <script src="/hunt-analyzer/estatisticas.js"></script>
 <script>
 (() => {
@@ -929,20 +951,67 @@ function renderRateChart(list){
 
 // ---------- projeto de catch (só entradas manuais, salvas neste navegador) ----------
 const CATCH_KEY="pka-hunt-analyzer-catch-v1";
-const CAMPOS=["cBrokes","cEstoque","cModo","cMedia","cMediana","cP80","cP95","cMax","cCapt","cBps","cShh","cLivre"];
+const CAMPOS=["cBrokes","cEstoque","cModo","cTier","cMedia","cMediana","cP80","cP95","cMax","cCapt","cBps","cShh","cLivre"];
+const CAMPOS_DO_SHINY=["cBrokes","cEstoque","cTier","cMedia","cMediana","cP80","cP95","cMax","cCapt","cShh"];
+// max broke por tier, da tabela da comunidade (imagem "Tabela de brokes"); só vale para quem joga Ultra/Elemental
+const MAX_BROKE={"Mythic":null,"Legendary":22535,"Ultra Rare":9400,"Super Rare":3500,"T1":1280,"T2":900,"T3":700,"T4":600,"T5":400,"T6":120};
+const normNome = t => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/^shiny\s+/,"").replace(/[^a-z0-9]/g,"");
+// tier dos shinies na Pokédex do hub (/dados/pokedex.js): "1" vira "T1"
+const TIER_DEX = new Map((window.PKA_POKEDEX||[]).filter(r=>r[2]===1&&r[4]).map(r=>[normNome(r[0]), /^\d+$/.test(r[4])?"T"+r[4]:r[4]]));
+// estatísticas do Critical Catch: buscadas pelo próprio hub (/api/critical-catch) e guardadas neste navegador por 6 horas
+const CC_KEY="pka-hunt-analyzer-cc-v1", CC_URL="/api/critical-catch", CC_VALIDADE=6*3600e3;
+let CC=null, ccErro="", ccBuscando=false;
+function ccMontar(d){ const m=new Map(); for(const r of d.shiny||[]) if(Array.isArray(r)) m.set(normNome(r[0]), r); return {...d, porNome:m}; }
+async function ccCarregar(forcar){
+  let cache=null; try{ cache=JSON.parse(localStorage.getItem(CC_KEY)||"null"); }catch(_){}
+  if(cache&&cache.dados&&!CC) CC=ccMontar(cache.dados);
+  if(cache&&cache.dados&&!forcar&&Date.now()-cache.buscadoEm<CC_VALIDADE){ ccErro=""; renderCatch(); return; }
+  ccBuscando=true; renderCatch();
+  try{ const r=await fetch(CC_URL+(forcar?"?_="+Date.now():""),{cache:forcar?"no-store":"default"}); if(!r.ok) throw new Error(String(r.status));
+    const d=await r.json(); if(!d||!Array.isArray(d.shiny)) throw new Error("formato");
+    CC=ccMontar(d); ccErro=""; try{ localStorage.setItem(CC_KEY, JSON.stringify({buscadoEm:Date.now(), dados:d})); }catch(_){} }
+  catch(_){ if(window.PKA_CC_PREVIA){ CC=ccMontar(window.PKA_CC_PREVIA); ccErro=""; }
+    else ccErro = CC ? "Não consegui atualizar agora; estes são os últimos dados guardados." : "Não consegui buscar os dados do Critical Catch agora. Preencha à mão ou clique em Atualizar mais tarde."; }
+  ccBuscando=false; renderCatch();
+}
 const chaveSp = t => String(t||"").trim().toLowerCase();
 function catchLer(){ try{ const o=JSON.parse(localStorage.getItem(CATCH_KEY)||"{}"); return o&&typeof o==="object"?o:{}; }catch(_){ return {}; } }
-function catchSalvar(){ const o=catchLer(); const nome=document.getElementById("cNome").value.trim(); const v={nome};
+function catchSalvar(){ const o=catchLer(); const nome=document.getElementById("cNome").value.trim(); const v={nome, cAuto:document.getElementById("cAuto").checked};
   for(const id of CAMPOS) v[id]=document.getElementById(id).value;
   o.atual=nome; o.esp=o.esp&&typeof o.esp==="object"?o.esp:{}; o.esp[chaveSp(nome)]=v;
   try{ localStorage.setItem(CATCH_KEY, JSON.stringify(o)); }catch(_){} }
 function catchCarregar(nome){ const o=catchLer(); const d=o.esp&&o.esp[chaveSp(nome)]; if(!d) return false;
-  for(const id of CAMPOS) if(d[id]!=null) document.getElementById(id).value=d[id]; return true; }
+  for(const id of CAMPOS) if(d[id]!=null) document.getElementById(id).value=d[id];
+  if(typeof d.cAuto==="boolean") document.getElementById("cAuto").checked=d.cAuto; return true; }
 function renderCatch(allIn){
   const all=allIn||allDerived(); const g=id=>document.getElementById(id), N=id=>numBR(g(id).value);
   const alvos=[...new Set(all.map(s=>s.target))].filter(t=>t&&t!=="—").sort();
-  g("cLista").innerHTML=alvos.map(t=>`<option value="Shiny ${esc(t)}"></option>`).join("");
+  const nomesCC=CC?[...CC.porNome.values()].map(r=>String(r[0])):[];
+  const lista=[...new Set(alvos.concat(nomesCC.filter(n=>!alvos.includes(n)).sort()))];
+  if(g("cLista").childElementCount!==lista.length) g("cLista").innerHTML=lista.map(t=>`<option value="Shiny ${esc(t)}"></option>`).join("");
   const nome=g("cNome").value.trim(), sp=baseName(nome).toLowerCase();
+  // estatísticas da comunidade: preenche sozinho com o Critical Catch, se a pessoa deixou marcado
+  const auto=g("cAuto").checked, cc=nome&&CC?CC.porNome.get(normNome(nome))||null:null;
+  const CCC=[["cMedia",2],["cMediana",3],["cP80",4],["cP95",5],["cMax",6],["cCapt",1]];
+  for(const [id,i] of CCC){ g(id).readOnly=!!(auto&&cc); if(auto&&cc) g(id).value=fin(+cc[i])?nfN(Math.round(cc[i]*10)/10):""; }
+  const desde=CC&&CC.mediasDesde?new Date(CC.mediasDesde).toLocaleDateString("pt-BR"):"", quando=CC&&CC.atualizadoEm?dt(Date.parse(CC.atualizadoEm)):"";
+  const linkCC=`<a href="https://criticalcatch-pkatools.app/averages" target="_blank" rel="noopener">Critical Catch</a>`;
+  g("ccStatus").innerHTML = !auto ? `Preenchimento à mão: copie os números da janela do pokémon no site ${linkCC}.`
+    : ccBuscando&&!CC ? "Buscando os dados do Critical Catch…"
+    : !CC ? esc(ccErro)
+    : !nome ? `Escolha o shiny para preencher com os dados do ${linkCC}.`
+    : !cc ? `O ${linkCC} não tem capturas de ${esc(nome)}${desde?` desde ${desde}`:""}. Preencha à mão.${ccErro?" "+esc(ccErro):""}`
+    : `Do ${linkCC}: ${int(+cc[1])} capturas de ${esc(nome)}${desde?` desde ${desde}`:""}${quando?`, dados de ${quando}`:""}. São dados da comunidade e podem ter erros.${ccErro?" "+esc(ccErro):""}`;
+  g("ccAtualizar").disabled=ccBuscando||!auto;
+  // tier: vem da Pokédex do hub quando ela tem; a pessoa pode trocar
+  const tierDex=nome?TIER_DEX.get(normNome(nome))||"":"";
+  if(!g("cTier").value&&tierDex) g("cTier").value=tierDex;
+  const tier=g("cTier").value;
+  g("cTierDe").textContent = !nome ? "Vem da Pokédex do hub quando ela tem o tier"
+    : !tierDex ? "A Pokédex do hub não tem o tier desse shiny: escolha aqui."
+    : tier===tierDex ? "Da Pokédex do hub. Confira." : `Escolhido por você. A Pokédex do hub diz ${tierDex}.`;
+  const mb=tier&&MAX_BROKE[tier]!=null?MAX_BROKE[tier]:NaN;
+  g("cMaxBroke").textContent = !tier ? "—" : fin(mb) ? `${int(mb)} balls` : "sem valor na tabela";
   const brokes=N("cBrokes"), estoque=N("cEstoque"), modo=g("cModo").value, med=N("cMediana"), bps=N("cBps"), livre=N("cLivre");
   const h0=ES.taxaBase(med);
   const curva=ES.curvaComunidade({mediana:med, p80:N("cP80"), p95:N("cP95"), maximo:N("cMax"), capturas:N("cCapt")});
@@ -952,16 +1021,20 @@ function renderCatch(allIn){
     : curva.erro==="capturas" ? "Preencha o nº de capturas junto com o máximo." : "";
   const notaCurva = !erroCurva && curva.aviso==="poucas-capturas" ? "Com 20 capturas ou menos, o máximo não cabe na curva: ela vai até o P95."
     : !erroCurva && curva.x.length===4 ? "Sem máximo e nº de capturas, a curva vai só até o P95." : "";
+  // max broke do tier: só para quem vai jogar Ultra/Elemental (Alliance e Premier não usam o mérito)
+  const usaMB = modo&&modo!=="ab"&&fin(mb)&&brokes>=0;
+  const linhaMB = !usaMB ? "" : brokes>=mb ? `Você já passou do max broke do tier ${esc(tier)} (${int(mb)} balls).`
+    : `Max broke do tier ${esc(tier)}: ${int(mb)} balls. Você está em ${pct(brokes/mb,0)} dele (faltam ${int(mb-brokes)}).`;
   // 1. onde está
   let c1;
   if(!modo) c1=bloco("","Escolha que balls você vai jogar daqui pra frente.");
   else if(!(brokes>=0)) c1=bloco("","Preencha os brokes atuais.");
   else if(modo==="ab"){ if(!(h0>0)) c1=bloco("","Preencha a mediana da comunidade para estimar a taxa base.");
     else { const v=(1-ES.sobrevivenciaBase(h0,brokes))*100; c1=bloco(`Percentil ${pctlTxt(v)}`, `Pela taxa base, você está no percentil ${pctlTxt(v)}: ${fracao(v)} pessoas já teriam capturado com essa quantidade de balls.`); } }
-  else if(erroCurva) c1=bloco("",erroCurva);
+  else if(erroCurva) c1=bloco("",erroCurva,linhaMB);
   else { const S=ES.sobrevivencia(curva,brokes);
-    c1 = S==null ? bloco("Fora da curva", `Você passou do maior valor registrado (${int(curva.fim)} balls); a curva da comunidade não cobre esse ponto.`)
-      : (v => bloco(`Percentil ${pctlTxt(v)}`, `Você está no percentil ${pctlTxt(v)}: ${fracao(v)} pessoas já tinham capturado com essa quantidade de balls.`, notaCurva))((1-S)*100); }
+    c1 = S==null ? bloco("Fora da curva", `Você passou do maior valor registrado (${int(curva.fim)} balls); a curva da comunidade não cobre esse ponto.`, linhaMB)
+      : (v => bloco(`Percentil ${pctlTxt(v)}`, `Você está no percentil ${pctlTxt(v)}: ${fracao(v)} pessoas já tinham capturado com essa quantidade de balls.`, notaCurva, linhaMB?`<div class="ins-l">${linhaMB}</div>`:""))((1-S)*100); }
   g("oC1").innerHTML=c1;
   // 2. próximas N balls
   let c2;
@@ -993,10 +1066,10 @@ function renderCatch(allIn){
   if(!(bps>0)) c4=bloco("","Preencha quantas balls você joga por shiny morto.");
   else if(!(shh>0)) c4=bloco("", ss.length?"As sessões com esse alvo não têm shiny: não dá para estimar o ritmo.":"Informe seus shinys por hora para estimar o tempo.");
   else c4=bloco(`${nf1.format(bh)} balls/h`, `${nf1.format(shh)} shinys/h (${origem}) × ${nfN(bps)} ${bps===1?"ball":"balls"} por shiny.`,
-    `250 balls: ${tempoTxt(250/bh)} · 500: ${tempoTxt(500/bh)} · 1.000: ${tempoTxt(1000/bh)}${livre>0?` · ${int(livre)}: ${tempoTxt(livre/bh)}`:""}${estoque>0?` · estoque de ${int(estoque)}: ${tempoTxt(estoque/bh)}`:""}`);
+    `250 balls: ${tempoTxt(250/bh)} · 500: ${tempoTxt(500/bh)} · 1.000: ${tempoTxt(1000/bh)}${livre>0?` · ${int(livre)}: ${tempoTxt(livre/bh)}`:""}${estoque>0?` · estoque de ${int(estoque)}: ${tempoTxt(estoque/bh)}`:""}${usaMB&&brokes<mb?` · até o max broke: ${tempoTxt((mb-brokes)/bh)}`:""}`);
   g("oC4").innerHTML=c4;
   g("cModoNota").textContent = modo==="ab" ? "Sem limiar e sem teto: cada ball tem a mesma chance, não importa quantas você já jogou."
-    : modo==="ue" ? "Captura em Ultra ou Elemental vira insumo, sem aura. O máximo registrado é um recorde da comunidade, não uma regra do jogo."
+    : modo==="ue" ? "Captura em Ultra ou Elemental vira insumo, sem aura. O max broke é um valor da comunidade, não uma regra do jogo."
     : modo==="mix" ? "Misturando, cada Ultra ou Elemental jogada no meio de um grind de aura pode fechar o shiny sem aura." : "";
 }
 
@@ -1221,8 +1294,15 @@ document.getElementById("itemSel").addEventListener("change", e => { state.item=
 document.getElementById("goal").addEventListener("input", () => renderGoal(filtered(allDerived())));
 ["iHoras","iSeca","iMargem"].forEach(id=>document.getElementById(id).addEventListener("input", () => renderIns(filtered(allDerived()))));
 document.getElementById("insSp").addEventListener("change", e => { state.statSp=e.target.value; render(); });
-(() => { const o=catchLer(); if(o.atual!=null){ document.getElementById("cNome").value=o.atual; catchCarregar(o.atual); } })();
-document.getElementById("cNome").addEventListener("change", e => { catchCarregar(e.target.value); catchSalvar(); renderCatch(); });
+let nomeAnterior="";
+(() => { const o=catchLer(); if(o.atual!=null){ document.getElementById("cNome").value=o.atual; catchCarregar(o.atual); nomeAnterior=o.atual; } })();
+document.getElementById("cNome").addEventListener("change", e => {
+  // shiny novo, sem nada salvo: limpa os números do shiny anterior (se a pessoa digitou os números antes do nome, eles ficam)
+  if(!catchCarregar(e.target.value) && nomeAnterior.trim()) for(const id of CAMPOS_DO_SHINY) document.getElementById(id).value="";
+  nomeAnterior=e.target.value; catchSalvar(); renderCatch(); });
+document.getElementById("cAuto").addEventListener("change", () => { catchSalvar(); renderCatch(); });
+document.getElementById("ccAtualizar").addEventListener("click", () => ccCarregar(true));
+ccCarregar(false);
 CAMPOS.forEach(id=>document.getElementById(id).addEventListener(id==="cModo"?"change":"input", () => { catchSalvar(); renderCatch(); }));
 document.getElementById("daySeg").addEventListener("click", e => { const b=e.target.closest("button"); if(!b) return; state.dayMetric=b.dataset.v; for(const x of e.currentTarget.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x===b)); render(); });
 let rT=null, lastW=0; new ResizeObserver(ents=>{ const w=Math.round(ents[0].contentRect.width); if(w===lastW) return; lastW=w; clearTimeout(rT); rT=setTimeout(()=>renderCharts(filtered(allDerived()).sort((a,b)=>a.start-b.start)),120); }).observe(document.querySelector("main"));
