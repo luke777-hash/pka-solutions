@@ -356,6 +356,13 @@ td.cost .cost-craft,td.cost .cost-pronta{color:var(--ok);}
 .conf{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;border-radius:6px;}
 .conf input{width:18px;height:18px;margin:0;accent-color:var(--ok);}
 .conf input:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.tal-l{display:grid;gap:8px;margin:12px 0 0;padding:0;list-style:none;}
+.tal-i{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,200px);align-items:center;gap:6px 14px;padding:10px 12px;border-radius:8px;background:var(--surface-2);}
+.tal-t{display:grid;gap:2px;min-width:0;}
+.tal-e{font-weight:700;}
+.tal-q{font-size:14px;}
+.tal-i .fine{font-size:13px;}
+@media (max-width:520px){.tal-i{grid-template-columns:minmax(0,1fr);}}
 .note{margin-top:12px;font-size:14px;color:var(--muted);max-width:90ch;}
 .note b{color:var(--text);}
 
@@ -663,7 +670,7 @@ dialog::backdrop{background:rgba(5,8,12,.55);}
       <div class="l-melhorar">
         <div class="poke-list" id="poke-list" role="group" aria-label="Pokémon do time"></div>
         <div class="stack" id="pk-mid"><section class="panel" id="pk-sim"></section></div>
-        <div class="res" id="pk-res"><div class="stack" id="pk-plan"></div><div class="stack" id="pk-prog"></div><div class="stack" id="pk-sel"></div></div>
+        <div class="res" id="pk-res"><div class="stack" id="pk-plan"></div><div class="stack" id="pk-tal"></div><div class="stack" id="pk-prog"></div><div class="stack" id="pk-sel"></div></div>
       </div>
     </section>
 
@@ -708,6 +715,13 @@ dialog::backdrop{background:rgba(5,8,12,.55);}
    ============================================================ */
 // X-Attack: % por tier (tabela de held). Tier máximo 7.
 var XATK=[0,8,12,16,19,22,25,28];
+// Talento do nível 500: +5% no dano total dos Pokémon do elemento (informado por Lucas).
+// Conta: multiplica o dano final do Pokémon (X-Attack, Stars, treino e boost) por 1,05.
+var TAL_PCT=5;
+var ELEM=[["normal","Normal"],["fire","Fire"],["water","Water"],["grass","Grass"],["electric","Electric"],["ice","Ice"],
+  ["fighting","Fighting"],["poison","Poison"],["ground","Ground"],["flying","Flying"],["psychic","Psychic"],["bug","Bug"],
+  ["rock","Rock"],["ghost","Ghost"],["dragon","Dragon"],["dark","Dark"],["steel","Steel"],["fairy","Fairy"]];
+var ELEMMAP={};ELEM.forEach(function(e){ELEMMAP[e[0]]=e[1];});
 // Star: % de dano por Star conforme o tier do Pokémon (guia Star Ascension)
 var RAR=[
   {id:"leg",nome:"Legendary",pct:15},
@@ -872,7 +886,8 @@ function custoBoost(b0,n,ctx){
    Bônus em % do X-Attack, da Star e do treino SOMAM: dano = base × (1 + X-Attack + Stars × %Star + treino).
    O dano medido inclui X-Attack, Stars e treino, mas não a runa: a runa entra pela coluna da tabela de hazard.
    O boost soma "dano por boost"; se o ganho acompanha os bônus em %, cresce junto com eles. */
-function montarModelo(p,ctx){
+function montarModelo(p,ctx,F){
+  if(!(F>0))F=1;
   var D0=parseNum(p.dano),b0=parseNum(p.boost),k=parseNum(p.danoBoost),P=parseNum(p.preco);
   var h0=p.held===""?null:+p.held,s0=+p.stars||0,rar=p.rar;
   var tl=String(p.treino||"").trim()===""?0:parseNum(p.treino);
@@ -886,16 +901,17 @@ function montarModelo(p,ctx){
   if(falta.length)return {falta:falta};
   var r=RARMAP[rar]?RARMAP[rar].pct/100:0,t=tl*0.001;
   var M0=1+XATK[h0]/100+s0*r+t;
-  return {D0:D0,h0:h0,b0:b0,s0:s0,k:k,P:valido(P)?P:null,rar:rar,r:r,podeStar:!!RARMAP[rar],
+  // D0 = dano de hoje na conta (com o talento simulado, se houver); Dmed = dano medido no jogo
+  return {D0:D0*F,Dmed:D0,F:F,h0:h0,b0:b0,s0:s0,k:k,P:valido(P)?P:null,rar:rar,r:r,podeStar:!!RARMAP[rar],
     treino:tl,t:t,M0:M0,B0:D0/M0};
 }
 function mult(m,h,s){return 1+XATK[h]/100+s*m.r+m.t;}
 function porBoost(m,h,s,esc){return esc?m.k*mult(m,h,s)/m.M0:m.k;}
-function danoCom(m,h,s,n,esc){return m.B0*mult(m,h,s)+n*porBoost(m,h,s,esc);}
+function danoCom(m,h,s,n,esc){return (m.B0*mult(m,h,s)+n*porBoost(m,h,s,esc))*m.F;}
 function boostsNecessarios(m,h,s,esc,alvo){
-  var base=m.B0*mult(m,h,s);
+  var base=m.B0*mult(m,h,s)*m.F;
   if(base>=alvo-1e-6)return 0;
-  return Math.ceil((alvo-base)/porBoost(m,h,s,esc)-1e-9);
+  return Math.ceil((alvo-base)/(porBoost(m,h,s,esc)*m.F)-1e-9);
 }
 function avaliar(m,h,s,n,ctx){
   var ch=custoHeld(m.h0,h,ctx),cs=custoStar(m.s0,s,m.rar,m.P,ctx),cb=custoBoost(m.b0,n,ctx);
@@ -1124,12 +1140,12 @@ function opt(v,txt,cur){return '<option value="'+v+'"'+(String(cur)===String(v)?
    ============================================================ */
 var N=6,KEY="pka-planejador-2x2x2:v1";
 var PASSOS=["time","precos","melhorar","compras"];
-function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0"};}
+function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0",elem:""};}
 function feesVazias(){var o={};RAR.forEach(function(r){o[r.id]=[0,1,2,3,4].map(function(){return {d:"",g:""};});});return o;}
 function estadoPadrao(){
   var time=[];for(var i=0;i<N;i++)time.push(pokeVazio());
   return {
-    exemplo:false,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",time:time,sel:0,tab:"time",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
+    exemplo:false,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",talento:{},time:time,sel:0,tab:"time",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
     precos:{
       xatk:["","","","","","",""],
       diamante:"",fees:feesVazias(),starRar:"t1",
@@ -1158,9 +1174,11 @@ function normalizar(o){
       var v=pokeVazio();p=p||{};
       Object.keys(v).forEach(function(k){v[k]=str(p[k],v[k]);});
       if(v.funcao!=="lurer"&&v.funcao!=="damage")v.funcao="";
+      if(!ELEMMAP[v.elem])v.elem="";
       return v;
     });
   }
+  if(o.talento&&typeof o.talento==="object")ELEM.forEach(function(e){var v=o.talento[e[0]];if(v==="tem"||v==="sim")s.talento[e[0]]=v;});
   if(typeof o.sel==="number"&&o.sel>=0&&o.sel<N)s.sel=o.sel;
   if(o.prog&&typeof o.prog==="object"){
     if(/^(\d|1[0-7])?$/.test(String(o.prog.ate)))s.prog.ate=String(o.prog.ate);
@@ -1207,6 +1225,9 @@ function salvar(){if(!storageOk)return;try{localStorage.setItem(KEY,JSON.stringi
 function getPath(path){var o=state;path.split(".").forEach(function(k){o=o==null?undefined:o[k];});return o;}
 function setPath(path,v){var ks=path.split("."),o=state;for(var i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v;}
 function nomeDe(i){return state.time[i].nome.trim()||("Pokémon "+(i+1));}
+// talento do elemento: "" = não tem, "tem" = já tem (já está no dano medido), "sim" = simular que tem
+function talDe(e){return e?(state.talento[e]||""):"";}
+function fatorTal(i){return talDe(state.time[i].elem)==="sim"?1+TAL_PCT/100:1;}
 
 /* ============================================================
    ANÁLISE (recalculada a cada mudança)
@@ -1247,7 +1268,7 @@ function analisarRotacao(ctx){
   var pokes=state.time.map(function(p,i){
     var d=parseNum(p.dano);
     if(String(p.dano).trim()!==""&&!valido(d))inval++;
-    return {slot:i+1,nome:nomeDe(i),funcao:p.funcao,dano:d};
+    return {slot:i+1,nome:nomeDe(i),funcao:p.funcao,dano:valido(d)?d*fatorTal(i):d};
   });
   var L=pokes.filter(function(p){return p.funcao==="lurer";}),D=pokes.filter(function(p){return p.funcao==="damage";});
   var comDano=pokes.filter(function(p){return valido(p.dano);}).length;
@@ -1264,8 +1285,9 @@ var A=null;
 function analisar(){
   var ctx=contexto(),rot=analisarRotacao(ctx);
   var info=state.time.map(function(p,i){
-    var r={i:i,nome:nomeDe(i),funcao:p.funcao,dano:parseNum(p.dano),vazio:!p.nome.trim()&&!String(p.dano).trim()};
-    var m=montarModelo(p,ctx);r.m=m;
+    var dm=parseNum(p.dano),F=fatorTal(i);
+    var r={i:i,nome:nomeDe(i),funcao:p.funcao,dano:valido(dm)?dm*F:dm,vazio:!p.nome.trim()&&!String(p.dano).trim()};
+    var m=montarModelo(p,ctx,F);r.m=m;
     if(m.falta){r.fr=r.frOt=valido(r.dano)?[fixo(r.dano)]:null;return r;}
     var ops=opcoes(m,ctx);
     r.ops=ops;r.fr=fronteira(ops,false);r.frOt=fronteira(ops,true);
@@ -1458,7 +1480,7 @@ function atualizarTime(){
   $("counts").innerHTML=chip("Lurer",rot.L.length,3,"lurer")+chip("Damage",rot.D.length,3,"damage");
   state.time.forEach(function(p,i){
     var row=$("rows").children[i];if(row)row.setAttribute("data-role",p.funcao||"");
-    var g=$("gap-"+i),d=parseNum(p.dano);
+    var g=$("gap-"+i),d=parseNum(p.dano);if(valido(d))d*=fatorTal(i);
     if(valido(d)&&valido(ctx.meta)){
       var dif=d-ctx.meta;
       g.className="gapc "+(dif>=0?"ok":"bad");
@@ -1477,9 +1499,16 @@ function atualizarTime(){
   });
   var fp=$("f-preco");
   if(fp)fp.classList.toggle("need",!!(A.dica&&A.dica.porPoke.some(function(x){return x.i===detAberto&&x.itens.some(function(it){return it.t==="copia";});})));
-  $("rot-res").innerHTML=rotHtml(rot);
+  $("rot-res").innerHTML=talAvisoHtml()+rotHtml(rot);
   var t=$("todas");
   if(rot.pronto){t.innerHTML=todasHtml(rot);t.hidden=false;}else{t.hidden=true;t.innerHTML="";}
+}
+// aviso no passo 1 quando algum talento está simulado
+function talAvisoHtml(){
+  var por={};
+  state.time.forEach(function(p,i){if(fatorTal(i)>1)(por[p.elem]=por[p.elem]||[]).push(esc(nomeDe(i)));});
+  var ks=Object.keys(por);if(!ks.length)return "";
+  return '<section class="panel"><p class="fine" style="max-width:none">Contando o talento simulado (+'+TAL_PCT+'%) de '+juntar(ks.map(function(e){return ELEMMAP[e]+" ("+juntar(por[e])+")";}))+'. Para tirar, mude no passo 3, em "Talento de elemento".</p></section>';
 }
 function rotHtml(rot){
   if(!rot.pronto){
@@ -1682,6 +1711,8 @@ function renderForm(){
   var rar=opt("","Escolha",p.rar);
   RAR.forEach(function(r){rar+=opt(r.id,r.nome+" (+"+r.pct+"%)",p.rar);});
   rar+=opt("nao","Não recebe Star",p.rar);
+  var el=opt("","Escolha",p.elem);
+  ELEM.forEach(function(e){el+=opt(e[0],e[1],p.elem);});
   var box=$("det-"+i);box.hidden=false;
   box.innerHTML='<div class="fgrid fgrid-t">'+
       '<div class="fld"><label for="f-held">X-Attack atual</label><select id="f-held" data-path="'+pre+'held">'+held+'</select><span class="echo"></span></div>'+
@@ -1691,6 +1722,7 @@ function renderForm(){
       '<div class="fld"><label for="f-rar">Tier do Pokémon</label><select id="f-rar" data-path="'+pre+'rar">'+rar+'</select><span class="echo">% = bônus por Star</span></div>'+
       '<div class="fld"><label for="f-treino">Treino de Attack (nível)</label><input type="text" id="f-treino" inputmode="numeric" data-path="'+pre+'treino" data-fmt="treino" placeholder="0" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld"><label for="f-preco">Preço da cópia sem Star</label><input type="text" id="f-preco" data-path="'+pre+'preco" data-fmt="gold" placeholder="ex.: 140kk" autocomplete="off"><span class="echo"></span></div>'+
+      '<div class="fld"><label for="f-elem">Elemento</label><select id="f-elem" data-path="'+pre+'elem">'+el+'</select><span class="echo">para o talento do nível 500</span></div>'+
     '</div>';
   $("f-boost").value=p.boost;$("f-db").value=p.danoBoost;$("f-preco").value=p.preco;$("f-treino").value=p.treino;
   simKey=null;
@@ -1747,7 +1779,10 @@ function atualizarSim(){
 function atualizarMelhorar(){
   renderPicker();
   renderSim();atualizarSim();
+  var foco=document.activeElement&&document.activeElement.id;
   $("pk-plan").innerHTML=planoTimeHtml();
+  $("pk-tal").innerHTML=talentoHtml();
+  if(foco&&/^tal-/.test(foco)&&$(foco))$(foco).focus();
   renderProg();atualizarProg();
   $("pk-sel").innerHTML=selecionadoHtml();
 }
@@ -1827,6 +1862,60 @@ function incompletosHtml(){
     '<ul class="g-itens">'+inc.map(function(r){return '<li><span>'+esc(r.nome)+'</span><button type="button" class="btn btn-sm" data-act="editar" data-v="'+r.i+'">Completar</button></li>';}).join("")+'</ul></section>';
 }
 
+/* ---- talento de elemento (nível 500) ---- */
+// hazard que o time mata, sem outras melhorias, com os talentos dos elementos em "com" contados
+function hazardComTal(com){
+  var rot=A.rot;if(!rot.pronto)return null;
+  var danos=state.time.map(function(p,i){
+    var d=parseNum(p.dano),e=p.elem;
+    return d*((e&&talDe(e)!=="tem"&&com[e])?1+TAL_PCT/100:1);
+  });
+  var div=melhorDivisao(danos,rot);
+  return {h:hazardMax(div.min,+state.runaCol),min:div.min};
+}
+function talentoHtml(){
+  var grupos={},ordem=[],semElem=[];
+  state.time.forEach(function(p,i){
+    if(A.info[i].vazio)return;
+    if(!p.elem){semElem.push(i);return;}
+    if(!grupos[p.elem]){grupos[p.elem]=[];ordem.push(p.elem);}
+    grupos[p.elem].push(i);
+  });
+  var pct=TAL_PCT/100;
+  var h='<section class="panel cq"><div class="panel-head"><div><h2>Talento de elemento (nível 500)</h2><p class="panel-sub">Cada talento dá +'+TAL_PCT+'% no dano dos Pokémon daquele elemento. Marque o que você já tem. Em "Simular que tenho", todo este passo (plano, subir de hazard e simulador) e o passo 1 já contam os +'+TAL_PCT+'%.</p></div></div>';
+  if(ordem.length){
+    h+='<ul class="tal-l">'+ordem.map(function(e){
+      var st=talDe(e),ids=grupos[e],sid="tal-"+e;
+      var quem=ids.map(function(i){
+        var dm=parseNum(state.time[i].dano),nm=esc(nomeDe(i));
+        if(!valido(dm))return nm;
+        if(st==="tem")return nm+' <b>'+fmt(dm)+'</b>';
+        return nm+' '+fmt(dm)+' → <b>'+fmt(dm*(1+pct))+'</b> <span class="margin ok">+'+fmt(dm*pct)+'</span>';
+      }).join('<br>');
+      var nota="";
+      if(st==="tem")nota="Já está no dano medido.";
+      else{
+        var c={},outros=0;
+        ordem.forEach(function(x){if(talDe(x)==="sim"){c[x]=1;if(x!==e)outros++;}});
+        c[e]=1;var hz=hazardComTal(c);
+        if(hz)nota=(st==="sim"?(outros?"Contando os talentos simulados":"Contando este talento"):(outros?"Com este talento e os simulados":"Com este talento"))+", sem outra melhoria, o time mata "+(hz.h<0?"abaixo do hazard 0":"até o hazard "+hz.h)+(state.metaManual?" (pela tabela)":"")+".";
+      }
+      return '<li class="tal-i"><div class="tal-t"><span class="tal-e">'+ELEMMAP[e]+'</span><span class="tal-q">'+quem+'</span>'+(nota?'<span class="fine">'+nota+'</span>':'')+'</div>'+
+        '<div class="fld"><label class="sr" for="'+sid+'">Talento de '+ELEMMAP[e]+'</label><select id="'+sid+'" data-path="talento.'+e+'">'+
+          opt("","Não tenho",st)+opt("tem","Já tenho",st)+opt("sim","Simular que tenho",st)+'</select></div></li>';
+    }).join("")+'</ul>';
+    var falta=ordem.filter(function(e){return talDe(e)!=="tem";});
+    if(falta.length>1&&A.rot.pronto){
+      var todos={};falta.forEach(function(e){todos[e]=1;});
+      var hz0=hazardComTal({}),hzT=hazardComTal(todos);
+      h+='<p class="note">Sem simular talento, o time mata '+(hz0.h<0?"abaixo do hazard 0":"até o hazard "+hz0.h)+'. Com todos os que faltam ('+juntar(falta.map(function(e){return ELEMMAP[e];}))+'), sem outra melhoria, mata '+(hzT.h<0?"abaixo do hazard 0":"até o hazard "+hzT.h)+(state.metaManual?" (pela tabela)":"")+'.</p>';
+    }
+  }
+  if(semElem.length)h+=(ordem.length?'<p class="note">Sem elemento escolhido:</p>':'<p class="muted">Escolha o elemento de cada Pokémon no passo 1, em "Dados de melhoria".</p>')+
+    '<ul class="g-itens">'+semElem.map(function(i){return '<li><span>'+esc(nomeDe(i))+'</span><button type="button" class="btn btn-sm" data-act="elem" data-v="'+i+'">Escolher o elemento</button></li>';}).join("")+'</ul>';
+  return h+'</section>';
+}
+
 /* ---- subir de hazard ---- */
 var progKey=null,progCache={key:null,res:null};
 function progBase(){
@@ -1857,7 +1946,7 @@ function atualizarProg(){
   var el=$("prog-res");if(!el)return;
   var b=progBase();if(b.msg)return;
   var ate=parseInt(state.prog.ate,10),auto=!(ate>b.N&&ate<HAZ.length),P=state.precos;
-  var key=JSON.stringify([state.time,P.xatk,P.diamante,P.fees,P.ganho,P.cenario,P.escala,P.materiais,P.stones,b.rc,auto?"auto":ate]);
+  var key=JSON.stringify([state.time,state.talento,P.xatk,P.diamante,P.fees,P.ganho,P.cenario,P.escala,P.materiais,P.stones,b.rc,auto?"auto":ate]);
   var res;
   if(progCache.key===key)res=progCache.res;
   else{
@@ -1973,10 +2062,16 @@ function proximoHtml(m,ctx){
   else prox.push({w:"Star",fim:"Já tem 5 Stars"});
   if(m.b0<BOOST_MAX)prox.push({w:"Boost +"+m.b0+" → +"+(m.b0+1)+" ("+FAIXAS[faixaDoBoost(m.b0+1)].nome+")",r:avaliar(m,m.h0,m.s0,1,ctx)});
   else prox.push({w:"Boost",fim:"Já está em +50"});
+  var el=state.time[state.sel].elem,ts=talDe(el),tw="Talento de "+(el?ELEMMAP[el]:"elemento")+" (nível 500, +"+TAL_PCT+"%)";
+  if(!el)prox.push({w:tw,fim:"Escolha o elemento dele no passo 1"});
+  else if(ts==="tem")prox.push({w:tw,fim:"Já tem: está no dano medido"});
+  else if(ts==="sim")prox.push({w:tw,fim:"Simulado: já está contado no dano acima"});
+  else prox.push({w:tw,tal:true,g:m.D0*TAL_PCT/100});
   return '<section class="panel"><div class="panel-head"><div><h2>O que cada melhoria dá</h2><p class="panel-sub">Quanto cada melhoria dá sozinha, partindo de hoje. A última coluna mostra quanto custa cada 1.000 de dano: quanto menor, mais eficiente o gasto.</p></div></div>'+
     '<div class="scroll"><table><thead><tr><th scope="col">Melhoria</th><th scope="col" class="r">Dano ganho</th><th scope="col" class="r">Custo</th><th scope="col" class="r">Custo por 1.000 de dano</th></tr></thead><tbody>'+
     prox.map(function(x){
       if(x.fim)return '<tr><td>'+x.w+'</td><td class="r muted" colspan="3">'+x.fim+'</td></tr>';
+      if(x.tal)return '<tr><td>'+x.w+'</td><td class="r">+'+fmt(x.g)+'</td><td class="r muted">sem gold</td><td class="r">—</td></tr>';
       var g=x.r.dano-m.D0,ok=!x.r.falta.length;
       return '<tr><td>'+x.w+'</td><td class="r">+'+fmt(g)+'</td><td class="r">'+(ok?gold(x.r.custo):'<span class="muted">sem preço</span>')+'</td><td class="r">'+(ok&&g>0?gold(x.r.custo/(g/1000)):"—")+'</td></tr>';
     }).join("")+'</tbody></table></div>'+
@@ -1985,17 +2080,19 @@ function proximoHtml(m,ctx){
 }
 function comoHtml(m,ctx,pi){
   var Mtxt="1 + "+fmt2.format(XATK[m.h0]/100)+(m.s0>0?" + "+m.s0+" × "+fmt2.format(m.r):"")+(m.t>0?" + "+fmt3.format(m.t):"");
-  var exH=m.h0<7?m.h0+1:null,pb=porBoost(m,m.h0,m.s0,ctx.escala),nome=esc(nomeDe(state.sel));
+  var exH=m.h0<7?m.h0+1:null,pb=porBoost(m,m.h0,m.s0,ctx.escala)*m.F,nome=esc(nomeDe(state.sel));
+  var tf=m.F>1?" × "+fmt2.format(m.F):"",elN=ELEMMAP[state.time[state.sel].elem]||"";
   var metaTxt=valido(ctx.alvo)?(state.metaManual?"que você digitou (a tabela dá "+fmt(valorTabela())+" no hazard "+state.hazard+" com a "+RUNA_TXT[+state.runaCol]+")":"da tabela (hazard "+state.hazard+", "+RUNA_TXT[+state.runaCol]+")"):"";
   return '<section class="panel"><details class="how-box"><summary>Como a conta foi feita</summary><ol>'+
     (valido(ctx.alvo)?'<li>A meta é por dupla: <b>'+fmt(ctx.alvo)+'</b>, '+metaTxt+'. O mob morre quando a soma do dano dos dois Pokémon da dupla chega nesse valor, então a melhoria pode ir para qualquer um dos dois.</li>':'')+
-    '<li>Hoje '+nome+' dá <b>'+fmt(m.D0)+'</b>, com X-Attack '+(m.h0?"Tier "+m.h0+" (+"+XATK[m.h0]+"%)":"nenhum")+(m.s0?", "+plural(m.s0,"Star","Stars")+" (+"+fmt2.format(m.s0*m.r*100)+"%)":"")+(m.treino?", treino de Attack nível "+fmtN.format(m.treino)+" (+"+fmt2.format(m.t*100)+"%)":"")+'. Esse é o dano medido, sem a runa.</li>'+
+    '<li>Hoje '+nome+' dá <b>'+fmt(m.Dmed)+'</b>, com X-Attack '+(m.h0?"Tier "+m.h0+" (+"+XATK[m.h0]+"%)":"nenhum")+(m.s0?", "+plural(m.s0,"Star","Stars")+" (+"+fmt2.format(m.s0*m.r*100)+"%)":"")+(m.treino?", treino de Attack nível "+fmtN.format(m.treino)+" (+"+fmt2.format(m.t*100)+"%)":"")+'. Esse é o dano medido, sem a runa.</li>'+
     '<li>Os bônus em % do X-Attack, da Star e do treino somam entre si. Então o multiplicador do dano medido é '+Mtxt+' = <b>'+fmt3.format(m.M0)+'</b>.</li>'+
-    '<li>Como os '+fmt(m.D0)+' já incluem esse multiplicador, o dano sem os bônus em % é '+fmt(m.D0)+' ÷ '+fmt3.format(m.M0)+' = <b>'+fmt(m.B0)+'</b>. É sobre esse valor que qualquer % novo é aplicado.</li>'+
-    (exH?'<li>Exemplo: com X-Attack Tier '+exH+' (+'+XATK[exH]+'%), o multiplicador vira '+fmt3.format(mult(m,exH,m.s0))+', e o dano fica '+fmt(m.B0)+' × '+fmt3.format(mult(m,exH,m.s0))+' = <b>'+fmt(danoCom(m,exH,m.s0,0,ctx.escala))+'</b>.</li>':'')+
-    (m.podeStar&&m.s0<5?'<li>Cada Star soma +'+fmt2.format(m.r*100)+'% ao multiplicador. A próxima Star leva o dano a '+fmt(m.B0)+' × '+fmt3.format(mult(m,m.h0,m.s0+1))+' = <b>'+fmt(danoCom(m,m.h0,m.s0+1,0,ctx.escala))+'</b>.</li>':'')+
+    '<li>Como os '+fmt(m.Dmed)+' já incluem esse multiplicador, o dano sem os bônus em % é '+fmt(m.Dmed)+' ÷ '+fmt3.format(m.M0)+' = <b>'+fmt(m.B0)+'</b>. É sobre esse valor que qualquer % novo é aplicado.</li>'+
+    (m.F>1?'<li>O talento de '+elN+' está simulado: o dano final dele é multiplicado por '+fmt2.format(m.F)+' (+'+TAL_PCT+'%). Hoje fica '+fmt(m.Dmed)+' × '+fmt2.format(m.F)+' = <b>'+fmt(m.D0)+'</b>, e cada melhoria abaixo também recebe os +'+TAL_PCT+'%.</li>':'')+
+    (exH?'<li>Exemplo: com X-Attack Tier '+exH+' (+'+XATK[exH]+'%), o multiplicador vira '+fmt3.format(mult(m,exH,m.s0))+', e o dano fica '+fmt(m.B0)+' × '+fmt3.format(mult(m,exH,m.s0))+tf+' = <b>'+fmt(danoCom(m,exH,m.s0,0,ctx.escala))+'</b>.</li>':'')+
+    (m.podeStar&&m.s0<5?'<li>Cada Star soma +'+fmt2.format(m.r*100)+'% ao multiplicador. A próxima Star leva o dano a '+fmt(m.B0)+' × '+fmt3.format(mult(m,m.h0,m.s0+1))+tf+' = <b>'+fmt(danoCom(m,m.h0,m.s0+1,0,ctx.escala))+'</b>.</li>':'')+
     (m.podeStar?'<li>Para subir de N para N+1 Stars, a máquina pede outra cópia que também tenha N Stars, e essa cópia é feita a partir de cópias sem Star. Por isso cada Star nova custa o dobro de cópias da anterior (1, 2, 4, 8, 16), e todas as etapas desde a 0 → 1 entram na conta, mesmo que o Pokémon já tenha Stars.</li>':'')+
-    '<li>Cada boost soma <b>'+fmt(pb)+'</b> de dano hoje. '+(ctx.escala?"Esse ganho cresce junto quando o X-Attack ou a Star aumentam, porque entra no dano base.":"Esse ganho fica igual mesmo quando o X-Attack ou a Star aumentam.")+' Isso é configurável no passo 2.</li>'+
+    '<li>Cada boost soma <b>'+fmt(pb)+'</b> de dano hoje'+(m.F>1?' (já com os +'+TAL_PCT+'% do talento)':'')+'. '+(ctx.escala?"Esse ganho cresce junto quando o X-Attack ou a Star aumentam, porque entra no dano base.":"Esse ganho fica igual mesmo quando o X-Attack ou a Star aumentam.")+' Isso é configurável no passo 2.</li>'+
     '<li>O custo de cada boost vem da quantidade de stones gastas por boost (contando as falhas, com +'+fmtN.format(ctx.ganho)+' pontos percentuais por falha) vezes o preço da stone da faixa, escolhendo o mais barato entre craftar e comprar pronta.</li>'+
     '</ol></details></section>';
 }
@@ -2263,6 +2360,7 @@ document.addEventListener("click",function(e){
   if(act==="lista-ir"){P.listaPoke=b.getAttribute("data-poke");P.listaCen=P.cenario;irParaTab("compras");return;}
   if(act==="ir"){irPara(b.dataset);return;}
   if(act==="det"){var di=+v;detAberto=detAberto===di?-1:di;if(detAberto>=0)state.sel=di;salvar();renderForm();atualizar();if(detAberto>=0){var fh=$("f-held");if(fh)fh.focus();}else b.focus();return;}
+  if(act==="elem"){state.sel=+v;detAberto=+v;irParaTab("time");destacar($("f-elem"));return;}
   if(act==="editar"){state.sel=+v;detAberto=+v;irParaTab("time");destacar($("f-held"));return;}
   if(act==="campo"){var id=b.getAttribute("data-id");if(id==="m-haz"||id==="alvo"){destacar($(id));return;}if(id==="f-dano")id="dano-"+state.sel;detAberto=state.sel;irParaTab("time");destacar($(id));return;}
   if(act==="nota"){var nota=$("meta-nota"),aberto=nota.hidden;nota.hidden=!aberto;b.setAttribute("aria-expanded",String(aberto));return;}
