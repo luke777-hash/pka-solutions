@@ -142,6 +142,59 @@ tbody tr.click:hover{background:var(--surface-2)}
 details summary{cursor:pointer;font-weight:600;color:var(--fg)}
 details p,details li{color:var(--muted)}
 @media (prefers-reduced-motion: no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+/* estatísticas novas: selo de origem, botão "?" e cartões */
+.selo{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;line-height:1.3}
+.selo.med{border-color:var(--good);color:var(--good)}
+.selo.est{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.selo.prem{border-color:var(--shiny);color:var(--shiny);background:var(--shiny-soft)}
+.ins-q{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--muted);font:700 12px/1 var(--f-body);cursor:pointer}
+.ins-q:hover{border-color:var(--fg);color:var(--fg)}
+.ins-q[aria-expanded="true"]{background:var(--fg);border-color:var(--fg);color:var(--surface)}
+.ins-ajuda{font-size:13px;color:var(--muted);background:var(--surface-2);border-radius:8px;padding:10px 12px;display:grid;gap:6px;line-height:1.5}
+.ins-ajuda p{margin:0}
+.ins-ajuda b{color:var(--fg)}
+.ins{display:grid;gap:10px}
+.ins-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ins-top h3{margin:0;font-size:15px;font-weight:700}
+.ins-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.ins-grid > *{grid-column:span 2}
+.ins-grid > .larga{grid-column:span 3}
+@media (max-width:900px){.ins-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ins-grid > *,.ins-grid > .larga{grid-column:span 1}.ins-grid > .ultima{grid-column:1/-1}}
+@media (max-width:560px){.ins-grid > *,.ins-grid > .larga{grid-column:1/-1}}
+.ins-card{display:grid;gap:6px;align-content:start;min-width:0;padding:12px 14px}
+.ins-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ins-h h4{margin:0 auto 0 0;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.ins-v{font-family:var(--f-display);font-weight:700;font-size:clamp(18px,2.2vw,22px);font-variant-numeric:tabular-nums;line-height:1.2}
+.ins-v small{font-family:var(--f-body);font-size:13px;font-weight:600;color:var(--muted);margin-left:4px}
+.ins-s{font-size:13.5px;font-variant-numeric:tabular-nums}
+.ins-l{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ins-aviso{font-size:12.5px;border-left:3px solid var(--shiny);padding-left:8px}
+.ins-in{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.ins-in input{width:76px}
+.ins-nota{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.regua{position:relative;height:10px;border-radius:5px;background:var(--grid);margin:4px 0 2px}
+.regua .rg-f{position:absolute;top:0;bottom:0;border-radius:5px;background:var(--accent-soft);border:1px solid var(--accent)}
+.regua .rg-p{position:absolute;top:-3px;width:4px;height:16px;margin-left:-2px;border-radius:2px;background:var(--accent)}
+.rg-l{display:flex;justify-content:space-between;font-size:11px;color:var(--faint)}
+.faixa{font-size:11px;color:var(--faint);font-weight:500;margin-left:5px}
+.sorte{font-weight:600;color:var(--muted)}
+.sorte.s-mau{color:var(--bad)} .sorte.s-bom{color:var(--good)}
+td.c-sorte{white-space:normal;min-width:96px;line-height:1.25}
+td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
+/* projeto de catch */
+.catch{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:14px}
+@media (max-width:900px){.catch{grid-template-columns:minmax(0,1fr)}}
+.cform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;align-content:start}
+.cform .full{grid-column:1/-1}
+.campo{display:grid;gap:4px;font-size:13px;font-weight:600;min-width:0;align-content:start}
+.campo input,.campo select{width:100%;min-width:0}
+.cform .de{font-size:11.5px;font-weight:500;color:var(--faint)}
+.cform fieldset{grid-column:1/-1;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;min-width:0}
+.cform legend{font-size:13px;font-weight:700;padding:0 4px}
+.cform fieldset .de.full{grid-column:1/-1}
+.cres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cres .cheia{grid-column:1/-1}
+@media (max-width:560px){.cres,.cform{grid-template-columns:minmax(0,1fr)}.cform fieldset{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <link rel="stylesheet" href="/hunt-analyzer/visual-novo.css">
 <script>try{var t=localStorage.getItem("pkahub-tema");if(t==="escuro")document.documentElement.dataset.theme="dark";if(t==="claro")document.documentElement.dataset.theme="light";}catch(e){}</script>
@@ -196,6 +249,62 @@ details p,details li{color:var(--muted)}
     </div>
     <div class="kpis" id="kpis"></div>
     <div class="hl" id="highlights"></div>
+    <div class="ins" id="insBloco" hidden>
+      <div class="ins-top">
+        <h3>Taxa de shiny do alvo</h3>
+        <label class="ins-in">Alvo <select id="insSp" aria-label="Alvo das estatísticas de shiny"></select></label>
+      </div>
+      <div class="ins-grid">
+        <article class="panel ins-card">
+          <div class="ins-h"><h4>Taxa de shiny</h4><span class="selo est">Estimado</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajTaxa" aria-label="Explicar: taxa de shiny">?</button></div>
+          <div id="oTaxa"></div>
+          <div class="ins-ajuda" id="ajTaxa" hidden>
+            <p><b>O que é.</b> Com poucos kills, a taxa real pode estar bem longe da medida. A faixa diz onde ela provavelmente está. Ela estreita à medida que você caça mais.</p>
+            <p><b>Conta.</b> Taxa = kills do shiny ÷ kills da espécie (normal + shiny), nas sessões com esse alvo no filtro. A faixa é o intervalo de Wilson a 95%: uma faixa feita assim contém a taxa real em 95 de cada 100 vezes. "1 a cada N" é 1 ÷ taxa.</p>
+            <p><b>Limite.</b> Supõe que toda kill tem a mesma chance de ser shiny. O JSON não informa canal, então sessões em canais diferentes entram juntas.</p>
+          </div>
+        </article>
+        <article class="panel ins-card">
+          <div class="ins-h"><h4>Projeção por tempo</h4><span class="selo est">Estimado</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajProj" aria-label="Explicar: projeção por tempo">?</button></div>
+          <label class="ins-in">Quantas horas vou caçar? <input type="text" inputmode="decimal" id="iHoras" value="3" aria-label="Horas de hunt"> h</label>
+          <div id="oProj"></div>
+          <div class="ins-ajuda" id="ajProj" hidden>
+            <p><b>O que é.</b> Quantos shinys você deve fazer nas horas informadas. Assume que o ritmo das suas sessões filtradas se mantém.</p>
+            <p><b>Conta.</b> Ritmo = shinys ÷ horas das sessões com esse alvo no filtro. Esperado = ritmo × horas. A faixa usa a distribuição de Poisson, o modelo comum para contar eventos raros num período: em 90 de cada 100 hunts desse tamanho, o total fica entre os dois números.</p>
+            <p><b>Limite.</b> Se o ritmo mudar (outro canal, outro time, outro horário), a projeção muda junto.</p>
+          </div>
+        </article>
+        <article class="panel ins-card">
+          <div class="ins-h"><h4>Chance de seca</h4><span class="selo est">Estimado</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajSeca" aria-label="Explicar: chance de seca">?</button></div>
+          <div id="oSeca"></div>
+          <label class="ins-in">Outra quantidade <input type="text" inputmode="decimal" id="iSeca" aria-label="Kills seguidas sem shiny"> kills</label>
+          <div class="ins-ajuda" id="ajSeca" hidden>
+            <p><b>O que é.</b> A chance teórica de passar tantas kills seguidas sem nenhum shiny, na sua taxa média.</p>
+            <p><b>Conta.</b> (1 − taxa) elevado ao número de kills.</p>
+            <p><b>Limite.</b> Não é uma seca medida. O JSON não traz o horário de cada kill, então não dá para saber quantas kills seguidas você realmente passou sem shiny.</p>
+          </div>
+        </article>
+        <article class="panel ins-card larga">
+          <div class="ins-h"><h4>Quanto mais caçar para ter certeza</h4><span class="selo est">Estimado</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajMargem" aria-label="Explicar: quanto mais caçar para ter certeza">?</button></div>
+          <label class="ins-in">Margem de ± <input type="text" inputmode="decimal" id="iMargem" value="0,5" aria-label="Margem em pontos percentuais"> ponto percentual</label>
+          <div id="oMargem"></div>
+          <div class="ins-ajuda" id="ajMargem" hidden>
+            <p><b>O que é.</b> Quantas kills dessa espécie são precisas para que a taxa medida fique perto da real. Margem de ±0,5 ponto percentual quer dizer: se a taxa medida é 3,6%, a real provavelmente está entre 3,1% e 4,1%.</p>
+            <p><b>Conta.</b> kills = 1,96² × taxa × (1 − taxa) ÷ margem², com 95% de confiança.</p>
+            <p><b>Limite.</b> Usa a sua própria taxa medida como ponto de partida, então o número muda um pouco à medida que a taxa muda.</p>
+          </div>
+        </article>
+        <article class="panel ins-card larga ultima">
+          <div class="ins-h"><h4>As sessões têm a mesma taxa?</h4><span class="selo est">Estimado</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajMesma" aria-label="Explicar: as sessões têm a mesma taxa">?</button></div>
+          <div id="oMesma"></div>
+          <div class="ins-ajuda" id="ajMesma" hidden>
+            <p><b>O que é.</b> Responde se a diferença de taxa entre as sessões é só variação ou se algo (horário, canal) muda a taxa de verdade.</p>
+            <p><b>Conta.</b> Teste qui-quadrado de homogeneidade: compara os shinys de cada sessão com o que se esperaria se todas tivessem a mesma taxa. O "p" é a chance de ver diferenças desse tamanho só por acaso. Abaixo de 0,05, o acaso explica mal. O mesmo teste é feito juntando as sessões por horário de início: madrugada (0h–6h), manhã (6h–12h), tarde (12h–18h) e noite (18h–24h), no fuso deste navegador.</p>
+            <p><b>Limite.</b> Com menos de 3 sessões, ou com menos de 5 shinys (ou não shinys) esperados em alguma delas, a amostra é pequena para concluir. O JSON não informa o canal, então o teste não separa canais.</p>
+          </div>
+        </article>
+      </div>
+    </div>
   </section>
 
   <section class="block" aria-labelledby="evoT">
@@ -224,16 +333,127 @@ details p,details li{color:var(--muted)}
         <div class="chart" id="cCum"></div>
       </div>
     </div>
+    <div class="panel">
+      <div class="ctitle"><h3 id="rateTitle">Taxa de shiny acumulada</h3><span class="ins-nota"><span>faixa sombreada = faixa provável</span><span class="selo est">Estimado</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajEvo" aria-label="Explicar: taxa de shiny acumulada">?</button></span></div>
+      <div class="ins-ajuda" id="ajEvo" hidden style="margin-bottom:8px">
+        <p><b>O que é.</b> Cada ponto é a taxa de shiny somando todas as sessões até ali, do alvo escolhido em "Taxa de shiny do alvo". A faixa sombreada é a faixa provável (intervalo de Wilson a 95%).</p>
+        <p><b>Leitura.</b> A faixa estreita à medida que você caça mais. Quando a linha fica quase reta, a taxa estabilizou. Para saber se as sessões diferem de verdade, veja o card "As sessões têm a mesma taxa?".</p>
+        <p><b>Limite.</b> Mesmo do card "Taxa de shiny": supõe a mesma chance em toda kill e não separa canais.</p>
+      </div>
+      <div class="chart" id="cRate"></div>
+    </div>
   </section>
 
   <section class="block" aria-labelledby="alvT">
     <div class="h2row"><h2 id="alvT">Alvos e shinys</h2><span class="hint">Espécies somadas nas sessões filtradas. "Shiny X" é contado junto da espécie X.</span></div>
     <div class="tbl"><table id="tSpecies"></table></div>
+    <div class="ins-nota"><span class="selo est">Estimado</span><span>O número menor ao lado de "1 a cada" é a faixa provável.</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajAlvos" aria-label="Explicar: faixa provável da taxa de shiny">?</button></div>
+    <div class="ins-ajuda" id="ajAlvos" hidden>
+      <p><b>O que é.</b> Com poucos kills, a taxa real pode estar bem longe da medida. A faixa diz onde ela provavelmente está: por exemplo, "27,8 kills 22,4–34,5" quer dizer 1 a cada 27,8 medido, e provavelmente entre 1 a cada 22,4 e 1 a cada 34,5.</p>
+      <p><b>Conta.</b> Intervalo de Wilson a 95% sobre os shinys e as kills da espécie (normal + shiny) nas sessões filtradas.</p>
+      <p><b>Limite.</b> Supõe que toda kill tem a mesma chance de ser shiny e não separa canais.</p>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="catchT">
+    <div class="h2row"><h2 id="catchT">Projeto de catch</h2><span class="hint">Tudo nesta seção vem do que você digita, porque o JSON do jogo não traz nada de pokébola. As regras de ball usadas aqui vêm da comunidade. Os campos ficam salvos neste navegador, separados por shiny.</span></div>
+    <div class="catch">
+      <div class="panel cform">
+        <label class="campo full">Shiny que está projetando
+          <input type="text" id="cNome" list="cLista" autocomplete="off" placeholder="Nome do shiny">
+          <span class="de">Escolha entre os alvos importados ou digite o nome</span>
+        </label>
+        <datalist id="cLista"></datalist>
+        <label class="campo">Brokes atuais (mérito)
+          <input type="text" inputmode="decimal" id="cBrokes">
+          <span class="de">Card do pokémon no jogo</span>
+        </label>
+        <label class="campo">Estoque de Alliance + Premier
+          <input type="text" inputmode="decimal" id="cEstoque">
+          <span class="de">Seu inventário</span>
+        </label>
+        <label class="campo full">Que balls você vai jogar daqui pra frente?
+          <select id="cModo">
+            <option value="">Escolha…</option>
+            <option value="ab">Só Alliance/Premier</option>
+            <option value="ue">Ultra/Elemental</option>
+            <option value="mix">Misturado</option>
+          </select>
+        </label>
+        <fieldset>
+          <legend>Estatísticas da comunidade para esse shiny</legend>
+          <span class="de full">Site Critical Catch, janela do pokémon. P80 = 80% das capturas fecharam até esse número de balls; P95 = 95%.</span>
+          <label class="campo">Média<input type="text" inputmode="decimal" id="cMedia"></label>
+          <label class="campo">Mediana<input type="text" inputmode="decimal" id="cMediana"></label>
+          <label class="campo">P80<input type="text" inputmode="decimal" id="cP80"></label>
+          <label class="campo">P95<input type="text" inputmode="decimal" id="cP95"></label>
+          <label class="campo">Máximo<input type="text" inputmode="decimal" id="cMax"></label>
+          <label class="campo">Nº de capturas<input type="text" inputmode="decimal" id="cCapt"></label>
+        </fieldset>
+        <label class="campo">Balls jogadas por shiny morto
+          <input type="text" inputmode="decimal" id="cBps" value="1">
+          <span class="de">Premissa: vem com 1. Confira quantas você joga por shiny e ajuste.</span>
+        </label>
+        <label class="campo" id="cShhCampo">Shinys por hora
+          <input type="text" inputmode="decimal" id="cShh">
+          <span class="de" id="cShhDe">Sem sessão importada com esse alvo: informe o seu ritmo</span>
+        </label>
+      </div>
+      <div class="cres">
+        <article class="panel ins-card">
+          <div class="ins-h"><h4>Onde você está na curva</h4><span class="selo prem">Depende de premissa</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajC1" aria-label="Explicar: onde você está na curva">?</button></div>
+          <div id="oC1"></div>
+          <div class="ins-ajuda" id="ajC1" hidden>
+            <p><b>O que é.</b> Compara os seus brokes com as capturas registradas pela comunidade para esse shiny.</p>
+            <p><b>Conta.</b> A curva sai de 5 pontos: com 0 balls ninguém capturou; na mediana, metade capturou; no P80, 80%; no P95, 95%; no máximo, só 1 em cada N (nº de capturas) ainda não tinha capturado. Entre dois pontos, supõe chance constante por ball. Percentil = fração que já tinha capturado com os seus brokes. Com "Só Alliance/Premier", usa a taxa base (a mesma chance a cada ball) no lugar da curva.</p>
+            <p><b>Limite.</b> A curva mistura todos os tipos de ball. Acima do máximo registrado não há dado, e a página não inventa. A média aparece no site, mas não entra na conta: poucos casos enormes puxam a média para cima.</p>
+          </div>
+        </article>
+        <article class="panel ins-card">
+          <div class="ins-h"><h4>Chance de fechar nas próximas balls</h4><span class="selo prem">Depende de premissa</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajC2" aria-label="Explicar: chance de fechar nas próximas balls">?</button></div>
+          <div id="oC2"></div>
+          <label class="ins-in">Outra quantidade <input type="text" inputmode="decimal" id="cLivre" aria-label="Próximas balls"> balls</label>
+          <div class="ins-ajuda" id="ajC2" hidden>
+            <p><b>O que é.</b> A chance de capturar nas próximas balls, sabendo que você já jogou os seus brokes sem capturar.</p>
+            <p><b>Conta.</b> Na curva da comunidade: das pessoas que chegaram aos seus brokes sem capturar, a fração que capturou até brokes + N. Com "Só Alliance/Premier": 1 − e^(−taxa base × N), igual para qualquer quantidade de brokes.</p>
+            <p><b>Limite.</b> Quando brokes + N passa do maior valor registrado, a curva não cobre e a página não mostra número.</p>
+          </div>
+        </article>
+        <article class="panel ins-card">
+          <div class="ins-h"><h4>Chance de aura com o seu estoque</h4><span class="selo prem">Depende de premissa</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajC3" aria-label="Explicar: chance de aura com o seu estoque">?</button></div>
+          <div id="oC3"></div>
+          <div class="ins-ajuda" id="ajC3" hidden>
+            <p><b>O que é.</b> A chance de capturar com Alliance ou Premier (que dão aura) antes de o estoque acabar.</p>
+            <p><b>Conta.</b> Pela regra da comunidade, Alliance e Premier não usam o mérito, então a conta não usa a curva (que inclui o limiar). Usa a taxa base: ln(2) ÷ mediana, a chance por ball que faria metade das pessoas capturar até a mediana. Chance com estoque E = 1 − e^(−taxa base × E).</p>
+            <p><b>Limite.</b> É uma estimativa: a curva da comunidade mistura todos os tipos de ball, e o jogo não divulga a chance base.</p>
+          </div>
+        </article>
+        <article class="panel ins-card">
+          <div class="ins-h"><h4>Tempo estimado</h4><span class="selo prem">Depende de premissa</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajC4" aria-label="Explicar: tempo estimado">?</button></div>
+          <div id="oC4"></div>
+          <div class="ins-ajuda" id="ajC4" hidden>
+            <p><b>O que é.</b> Quanto tempo de hunt leva para jogar essa quantidade de balls.</p>
+            <p><b>Conta.</b> Tempo = balls ÷ (shinys por hora × balls jogadas por shiny morto). Os shinys por hora vêm de todas as sessões importadas com esse alvo; sem sessão, do número que você informar.</p>
+            <p><b>Limite.</b> Balls por shiny morto é uma premissa sua. O ritmo de hunt pode mudar de um dia para outro.</p>
+          </div>
+        </article>
+        <div class="panel ins-card cheia">
+          <div class="ins-aviso">A curva mistura jogadores de todos os tipos de ball. Se você joga só Alliance/Premier, sua curva real tende a ser mais lenta que esta.</div>
+          <div class="ins-l" id="cModoNota"></div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="block" aria-labelledby="lootT">
     <div class="h2row"><h2 id="lootT">Loot</h2><span class="hint">Drops por 100 kills usa todas as kills das sessões filtradas. Filtre por alvo para ler a taxa de um alvo só.</span></div>
     <div class="tbl"><table id="tItems"></table></div>
+    <div class="ins-nota"><span class="selo est">Estimado</span><span>O número menor ao lado de "Drops/100 kills" é a faixa provável.</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajLoot" aria-label="Explicar: faixa provável dos drops">?</button></div>
+    <div class="ins-ajuda" id="ajLoot" hidden>
+      <p><b>O que é.</b> Com poucas kills, a taxa de drop medida pode estar longe da real. A faixa diz onde ela provavelmente está.</p>
+      <p><b>Conta.</b> Intervalo exato de Poisson a 95% sobre a quantidade do item nas kills do filtro, convertido para cada 100 kills.</p>
+      <p><b>Limite.</b> O JSON não separa o loot por criatura, então a faixa vale para todas as kills do filtro juntas (filtre por alvo para ler um alvo só). Se o item cai em quantidades maiores que 1 por vez, a faixa real é mais larga que a mostrada.</p>
+    </div>
     <div class="panel">
       <div class="ctitle"><h3>Valor médio por unidade, sessão a sessão</h3><label class="hint">Item <select id="itemSel"></select></label></div>
       <div class="chart" id="cPrice"></div>
@@ -251,6 +471,12 @@ details p,details li{color:var(--muted)}
   <section class="block" aria-labelledby="sesT">
     <div class="h2row"><h2 id="sesT">Sessões</h2><span class="hint">Clique numa linha para ver o detalhe e comparar com a mediana do mesmo alvo</span></div>
     <div class="tbl"><table id="tSessions"></table></div>
+    <div class="ins-nota"><span class="selo est">Estimado</span><span>"Sorte" compara os shinys de cada sessão com a taxa das outras sessões do mesmo alvo.</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajSorte" aria-label="Explicar: sorte da sessão">?</button></div>
+    <div class="ins-ajuda" id="ajSorte" hidden>
+      <p><b>O que é.</b> Diz se a sessão teve mais ou menos shinys do que o esperado pela sua taxa de costume. O número ao lado é o percentil: 42 quer dizer que, na sua taxa, 42% das sessões desse tamanho dariam esse número de shinys ou menos.</p>
+      <p><b>Conta.</b> Taxa de referência = shinys ÷ kills da espécie em todas as outras sessões importadas com o mesmo alvo (a própria sessão fica de fora). Esperado = kills da sessão × taxa de referência. Percentil pela distribuição binomial. Abaixo de 5: azar fora do comum; 5 a 20: abaixo da média; 20 a 80: dentro do normal; 80 a 95: acima da média; acima de 95: sorte fora do comum.</p>
+      <p><b>Limite.</b> Precisa de pelo menos 2 sessões com o mesmo alvo. Supõe que a taxa não muda entre sessões.</p>
+    </div>
   </section>
 
   <footer class="foot">
@@ -263,7 +489,8 @@ details p,details li{color:var(--muted)}
     <details>
       <summary>Como cada número é calculado</summary>
       <ul>
-        <li>Todos os números vêm só do JSON exportado pelo jogo. Nada é estimado.</li>
+        <li>Os números sem selo vêm só do JSON exportado pelo jogo. Nada neles é estimado. As estatísticas novas trazem um selo: <b>Medido</b> (direto do JSON), <b>Estimado</b> (modelo estatístico sobre os dados medidos) ou <b>Depende de premissa</b> (usa algo que você digitou, ou uma premissa que você pode mudar). Cada uma tem um "?" com o que significa, a conta e o limite.</li>
+        <li>O JSON não traz nada de pokébola (balls, brokes, capturas), nem o horário de cada kill, nem o canal, nem o loot separado por criatura. Nada disso é calculado a partir de outro campo: o que depende disso vira campo para você preencher ou não é feito.</li>
         <li><b>Lucro</b> é o campo <span class="mono">balance</span> (loot − gasto). <b>Gasto</b> é <span class="mono">spent</span>.</li>
         <li>Taxas por hora no resumo são <b>somas ÷ horas totais</b> (média ponderada pelo tempo), e não a média simples das taxas de cada sessão. Assim uma hunt de 4h pesa mais que uma de 1h.</li>
         <li>Na sessão, as taxas por hora usam <span class="mono">durationSeconds</span>, igual ao analyzer do jogo.</li>
@@ -272,6 +499,14 @@ details p,details li{color:var(--muted)}
         <li><b>Dano/kill</b> é o dano que o seu time causou por criatura morta, como vem no JSON. Pode incluir dano acima da vida da criatura.</li>
         <li>Itens com valor 0 no JSON (ex.: Medal Box) aparecem marcados: o analyzer do jogo não deu preço a eles, então não entram no loot em dinheiro.</li>
         <li><b>Hunt em partes.</b> Se você exportar e continuar caçando, há dois jeitos de importar. (1) Se a nova exportação tem o mesmo horário de início da anterior, ela é a mesma contagem do jogo com mais tempo: a versão mais recente substitui a antiga. (2) Se o horário de início é outro, são partes diferentes: o analyzer sugere juntar quando a próxima parte começa até 20 min depois da anterior ser exportada, com o mesmo personagem e alvo. Você também pode juntar manualmente no detalhe da sessão. Partes com horários sobrepostos não são juntadas, para não contar o mesmo período duas vezes.</li>
+        <li><b>Faixa provável</b> (taxa de shiny e drops por 100 kills): onde a taxa real provavelmente está, com 95% de confiança. Para shiny, intervalo de Wilson sobre shinys e kills da espécie; para drops, intervalo exato de Poisson sobre a quantidade do item. A faixa estreita à medida que você caça mais.</li>
+        <li><b>Taxa de shiny do alvo</b> (no resumo) usa só as sessões com o alvo escolhido no filtro, e só as kills dessa espécie. Por isso pode ser diferente do "1 a cada" do cartão Shinys, que conta todas as criaturas.</li>
+        <li><b>Projeção por tempo</b>: shinys ÷ horas das sessões com o alvo, vezes as horas informadas. A faixa de 90% vem da distribuição de Poisson.</li>
+        <li><b>Chance de seca</b>: (1 − taxa) elevado ao número de kills. É teórica: o JSON não tem o horário de cada kill, então nenhuma seca real é medida.</li>
+        <li><b>Quanto mais caçar para ter certeza</b>: kills = 1,96² × taxa × (1 − taxa) ÷ margem².</li>
+        <li><b>As sessões têm a mesma taxa?</b>: teste qui-quadrado de homogeneidade entre as sessões do alvo, e de novo juntando por horário de início. Com menos de 3 sessões, ou com menos de 5 shinys esperados em alguma, a amostra é pequena para concluir.</li>
+        <li><b>Sorte</b> da sessão: percentil binomial dos shinys da sessão, usando como referência a taxa das outras sessões com o mesmo alvo (sem contar a própria).</li>
+        <li><b>Projeto de catch</b>: tudo vem do que você digita. A curva da comunidade liga S(0) = 1, S(mediana) = 0,5, S(P80) = 0,2, S(P95) = 0,05 e S(máximo) = 1 ÷ nº de capturas, onde S é a fração que ainda não tinha capturado; entre dois pontos, supõe chance constante por ball. Acima do máximo, não há número. A taxa base é ln(2) ÷ mediana e é usada para a chance de aura e para quem joga só Alliance/Premier. Pela regra da comunidade, só Ultra e Elemental usam o mérito, e só Alliance e Premier dão aura.</li>
         <li><b>kk</b> = milhão, <b>k</b> = mil.</li>
       </ul>
     </details>
@@ -281,6 +516,7 @@ details p,details li{color:var(--muted)}
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" hidden aria-label="Detalhe da sessão"></aside>
 
+<script src="/hunt-analyzer/estatisticas.js"></script>
 <script>
 (() => {
 "use strict";
@@ -431,7 +667,7 @@ const mval = (s,key) => { const M=METRICS[key], d=den(s,M.per); return d>0?M.num
 const magg = (list,key) => { const M=METRICS[key]; let n=0,d=0; for(const s of list){ n+=M.num(s); d+=den(s,M.per); } return d>0?n/d:NaN; };
 
 // ---------- estado ----------
-const state = { recs:new Map(), mode:"loading", example:false, sortKey:"start", sortDir:"desc", metric:"balanceH", dayMetric:"balance", item:"", openId:null };
+const state = { recs:new Map(), mode:"loading", example:false, sortKey:"start", sortDir:"desc", metric:"balanceH", dayMetric:"balance", item:"", openId:null, statSp:"" };
 let store = null;
 
 // ---------- armazenamento ----------
@@ -544,7 +780,7 @@ function chart(host, cfg){
   if(pts.length<(cfg.min||1)){ host.innerHTML=`<div class="empty">${esc(cfg.emptyText||"Sem dados suficientes.")}</div>`; return; }
   const W=Math.max(300,host.clientWidth||600), H=cfg.h||240, L=cfg.left||64, R=14, T=12, B=30;
   const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":cfg.aria||""},host);
-  const ys=pts.map(p=>p.y).concat(fin(cfg.ref)?[cfg.ref]:[]);
+  const ys=pts.map(p=>p.y).concat(fin(cfg.ref)?[cfg.ref]:[]).concat(cfg.band?pts.flatMap(p=>[p.lo,p.hi]).filter(fin):[]);
   const sy=scale(Math.min(...ys),Math.max(...ys),cfg.type==="bar"||cfg.zero);
   const Y=v=>T+(H-T-B)*(1-(v-sy.lo)/(sy.hi-sy.lo||1));
   let X, sxTicks=[];
@@ -561,6 +797,9 @@ function chart(host, cfg){
   if(cfg.type==="line"){
     const d=pts.map((p,i)=>`${i?"L":"M"}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join("");
     if(cfg.area){ el("path",{d:d+`L${X(pts.length-1).toFixed(1)},${Y(sy.lo)}L${X(0).toFixed(1)},${Y(sy.lo)}Z`,fill:color,"fill-opacity":.12,stroke:"none"},svg); }
+    if(cfg.band){ // faixa provável sombreada (lo e hi de cada ponto)
+      const cima=pts.map((p,i)=>`${i?"L":"M"}${X(i).toFixed(1)},${Y(p.hi).toFixed(1)}`).join(""), baixo=pts.map((p,i)=>`L${X(i).toFixed(1)},${Y(p.lo).toFixed(1)}`).reverse().join("");
+      el("path",{d:cima+baixo+"Z",fill:color,"fill-opacity":.16,stroke:"none"},svg); }
     el("path",{d,fill:"none",stroke:color,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"},svg);
     pts.forEach((p,i)=>marks.push(el("circle",{cx:X(i),cy:Y(p.y),r:pts.length>40?2.5:4,fill:p.shiny?"var(--shiny)":color,stroke:"var(--surface)","stroke-width":2},svg)));
   } else if(cfg.type==="bar"){
@@ -588,6 +827,179 @@ function chart(host, cfg){
   if(cfg.onClick){ hit.style.cursor="pointer"; hit.addEventListener("click", ev => { const {i}=pick(ev); if(i>=0) cfg.onClick(pts[i]); }); }
 }
 
+// ---------- estatísticas novas (as contas ficam em estatisticas.js) ----------
+const ES = window.PKA_ESTAT;
+const nfN = v => Number.isInteger(v) ? nf0.format(v) : nf1.format(v);
+const umA = p => p>0 ? (1/p>=1000 ? nf0.format(1/p) : nf1.format(1/p)) : "—";
+const chanceTxt = v => !fin(v) ? "—" : v>0 && v<0.01 ? "menos de 1%" : pct(v,0);
+const pctTxt = v => !fin(v) ? "—" : v>0 && v<0.001 ? "menos de 0,1%" : pct(v,1);
+const pTxt = p => p<0.01 ? "p < 0,01" : "p = "+nf2.format(p);
+const arred = v => !fin(v) ? NaN : v>=1000 ? Math.round(v/100)*100 : v>=100 ? Math.round(v/10)*10 : Math.ceil(v);
+function numBR(t){ t=String(t??"").trim().replace(/\s/g,""); if(!t) return NaN;
+  if(t.includes(",")) t=t.replace(/\./g,"").replace(",","."); else if(/^\d{1,3}(\.\d{3})+$/.test(t)) t=t.replace(/\./g,"");
+  const v=Number(t); return fin(v)?v:NaN; }
+function tempoTxt(h){ if(!fin(h)||h<0) return "—"; const m=Math.round(h*60); if(m<60) return `~${m} min`; const H=Math.floor(m/60), M=m%60; return H>=100?`~${nf0.format(H)} h`:`~${H} h${M?` ${String(M).padStart(2,"0")} min`:""}`; }
+// percentil (0 a 100) em texto: inteiro, sem mostrar 0 ou 100 quando não é exato
+const pctlTxt = v => v<0.5 ? "abaixo de 1" : v>=99.5 ? "acima de 99" : int(v);
+function fracao(v){ if(v<0.5) return "menos de 1 em cada 100"; if(v>=99.5) return "mais de 99 em cada 100"; const P=Math.round(v);
+  for(const d of [2,3,4,5,10]){ const n=Math.round(P*d/100); if(n>=1&&n<d&&Math.abs(n*100/d-P)<0.5) return `${n} em cada ${d}`; } return `${P} em cada 100`; }
+// régua de 0% até um pouco acima do limite de cima: a faixa provável sombreada e um traço na taxa medida
+function regua(w){ const max=w.hi*1.25, L=v=>(v/max*100).toFixed(1)+"%";
+  return `<div class="regua" aria-hidden="true"><span class="rg-f" style="left:${L(w.lo)};width:${((w.hi-w.lo)/max*100).toFixed(1)}%"></span><span class="rg-p" style="left:${L(w.p)}"></span></div><div class="rg-l" aria-hidden="true"><span>0%</span><span>${pct(max,1)}</span></div>`; }
+function faixaTxt(w){ return w.lo===0 ? `1 a cada ${umA(w.hi)} kills ou mais raro` : `1 a cada ${umA(w.hi)} a ${umA(w.lo)} kills`; }
+// shinys (k) e kills (n) de uma espécie numa sessão, normal + shiny
+function knEspecie(s, sp){ let k=0,n=0; for(const c of s.creatures){ if(baseName(c.creatureName)!==sp) continue; const v=+c.kills||0; n+=v; if(isShiny(c.creatureName)) k+=v; } return {k,n}; }
+function alvosDoFiltro(list){ const m=new Map(); for(const s of list) m.set(s.target,(m.get(s.target)||0)+knEspecie(s,s.target).n); return [...m.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]); }
+function alvoEstat(list){ const ops=alvosDoFiltro(list); const t=document.getElementById("fTarget").value;
+  if(t&&ops.includes(t)) return t; if(state.statSp&&ops.includes(state.statSp)) return state.statSp; return ops[0]||""; }
+function sorteSessao(s, all){
+  const outras=all.filter(x=>x.target===s.target && x.id!==s.id);
+  const me=knEspecie(s,s.target); let k=0,n=0; for(const o of outras){ const r=knEspecie(o,s.target); k+=r.k; n+=r.n; }
+  return {...ES.sorte(me.k, me.n, k, n), k:me.k, n:me.n, outras:outras.length};
+}
+function sorteTexto(r, alvo){
+  if(r.motivo==="sem-outras") return `Precisa de pelo menos 2 sessões com alvo ${esc(alvo)} para comparar.`;
+  if(r.motivo==="sem-shiny-nas-outras") return `As outras sessões com alvo ${esc(alvo)} não têm shiny, então não há taxa para comparar.`;
+  if(r.motivo) return "Sem kills do alvo nesta sessão.";
+  return `Esperado ~${int(r.esperado)} shinys, você fez ${int(r.obtido)}: ${r.rotulo} (percentil ${pctlTxt(r.percentil)}).`;
+}
+const classeSorte = r => !r || r.motivo ? "" : r.percentil<20 ? "s-mau" : r.percentil>80 ? "s-bom" : "";
+const bloco = (v,s,l,extra) => `${v?`<div class="ins-v">${v}</div>`:""}${s?`<div class="ins-s">${s}</div>`:""}${l?`<div class="ins-l">${l}</div>`:""}${extra||""}`;
+const aviso = t => `<div class="ins-aviso">${t}</div>`;
+
+function renderIns(list){
+  const host=document.getElementById("insBloco"), sel=document.getElementById("insSp");
+  const ops=alvosDoFiltro(list), sp=alvoEstat(list);
+  host.hidden=!list.length||!sp; if(host.hidden) return;
+  sel.innerHTML=ops.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join(""); sel.value=sp; sel.disabled=ops.length<2;
+  const ss=list.filter(s=>s.target===sp);
+  let k=0,n=0,sec=0; const linhas=[];
+  for(const s of ss){ const r=knEspecie(s,sp); k+=r.k; n+=r.n; sec+=s.sec; linhas.push({k:r.k,n:r.n,start:s.start}); }
+  const h=sec/3600, p=n?k/n:NaN, w=ES.wilson(k,n);
+  const nS=`${ss.length} ${ss.length===1?"sessão":"sessões"}`;
+  const o=id=>document.getElementById(id);
+  // 1. taxa com faixa provável
+  o("oTaxa").innerHTML = !w ? bloco("","Sem kills desse alvo no filtro.") : k===0
+    ? bloco("Nenhum shiny", `Nenhum shiny em ${int(n)} kills. Faixa provável: ${faixaTxt(w)}.`, `${esc(sp)}, ${nS}.`)
+    : bloco(`1 a cada ${umA(p)} kills<small>${pct(p,1)}</small>`, `Faixa provável: ${faixaTxt(w)} <span class="hint">(${pct(w.lo,1)} a ${pct(w.hi,1)})</span>.`, `${int(k)} shinys em ${int(n)} kills de ${esc(sp)}, em ${nS}.`, regua(w));
+  // 4. projeção
+  const H=numBR(o("iHoras").value), pr=ES.projecao(k,h,H);
+  o("oProj").innerHTML = !(H>0) ? bloco("","Informe as horas de hunt.") : !pr ? bloco("","Sem horas de hunt nesse filtro.")
+    : bloco(`~${int(pr.esperado)} shinys`, `Em ${nfN(H)} h você deve fazer ~${int(pr.esperado)} shinys (90% das vezes entre ${int(pr.lo)} e ${int(pr.hi)}).`, `Ritmo das sessões com alvo ${esc(sp)}: ${nf1.format(pr.ritmo)} shinys/h.`);
+  // 5. seca
+  const livre=numBR(o("iSeca").value);
+  o("oSeca").innerHTML = !(p>0) ? bloco("","Sem shiny medido nesse alvo: não dá para calcular.")
+    : bloco(pctTxt(ES.seca(p,100)), `Passar 100 kills sem shiny acontece em ~${pctTxt(ES.seca(p,100))} das vezes na sua taxa.`,
+      `50 kills: ${pctTxt(ES.seca(p,50))} · 150 kills: ${pctTxt(ES.seca(p,150))}${livre>0?` · ${int(livre)} kills: ${pctTxt(ES.seca(p,livre))}`:""}`);
+  // 6. kills para a margem
+  const mPts=numBR(o("iMargem").value), m=mPts/100, nec=arred(ES.killsParaMargem(p,m));
+  const ponto=`±${nfN(mPts)} ${mPts>=2?"pontos percentuais":"ponto percentual"}`;
+  o("oMargem").innerHTML = !(mPts>0) ? bloco("","Informe a margem.") : !(p>0) ? bloco("","Sem shiny medido nesse alvo: não dá para calcular.")
+    : n>=nec ? bloco("Já tem o suficiente", `Você já tem kills suficientes para medir sua taxa com margem de ${ponto} (${int(n)} de ~${int(nec)}).`)
+    : bloco(`~${int(nec)} kills`, `Para medir sua taxa com margem de ${ponto}, você precisa de ~${int(nec)} kills dessa espécie (tem ${int(n)}).`, `Faltam ~${int(arred(nec-n))} kills.`);
+  // 3. as sessões têm a mesma taxa?
+  let mesma;
+  if(ss.length<2) mesma=bloco("", `Precisa de pelo menos 2 sessões com alvo ${esc(sp)} para comparar.`);
+  else { const r=ES.mesmaTaxa(linhas);
+    if(!fin(r.p)) mesma=bloco("", "Sem shiny nessas sessões: não dá para comparar.");
+    else { const ok=r.p>=0.05;
+      const peq = r.motivo==="poucas-linhas" ? `Amostra pequena para concluir: só ${r.linhas} sessões.` : r.motivo==="esperado-baixo" ? "Amostra pequena para concluir: alguma sessão tem poucas kills para o teste." : "";
+      // mesmo teste juntando por faixa de horário de início
+      const fx=new Map(); for(const l of linhas){ const nome=ES.faixaHorario(new Date(l.start).getHours()); const g=fx.get(nome)||{k:0,n:0}; g.k+=l.k; g.n+=l.n; fx.set(nome,g); }
+      const nomes=ES.FAIXAS.map(f=>f[0]).filter(x=>fx.has(x));
+      let hor;
+      if(nomes.length<2) hor=`Por horário de início: todas as sessões começaram na mesma faixa (${nomes[0].toLowerCase()}).`;
+      else { const rh=ES.mesmaTaxa(nomes.map(x=>fx.get(x))); const okh=rh.p>=0.05;
+        hor=`Por horário de início (${nomes.join(", ").toLowerCase()}): ${okh?"diferenças compatíveis com acaso":"as faixas diferem mais do que o acaso explicaria"} (${pTxt(rh.p)})${ss.length<3||rh.menorEsperado<5?", mas a amostra é pequena":""}.`; }
+      mesma=bloco(ok?"Compatível com acaso":"Diferem além do acaso",
+        ok?`As diferenças entre suas sessões são compatíveis com acaso (${pTxt(r.p)}).`:`As sessões diferem mais do que o acaso explicaria (${pTxt(r.p)}). Vale investigar horário ou canal.`,
+        hor, peq?aviso(peq):""); }
+  }
+  o("oMesma").innerHTML=mesma;
+}
+function renderRateChart(list){
+  const sp=alvoEstat(list), ss=list.filter(s=>s.target===sp);
+  document.getElementById("rateTitle").textContent = sp ? `Taxa de shiny acumulada · ${sp}` : "Taxa de shiny acumulada";
+  let k=0,n=0; const pts=[];
+  for(const s of ss){ const r=knEspecie(s,sp); k+=r.k; n+=r.n; const w=ES.wilson(k,n); if(!w) continue;
+    pts.push({y:w.p, lo:w.lo, hi:w.hi, xl:dshort(s.start), tt:dt(s.start), id:s.id, extra:k?`1 a cada ${umA(w.p)} kills · faixa: ${faixaTxt(w)}`:`nenhum shiny em ${int(n)} kills`}); }
+  chart(document.getElementById("cRate"), { type:"line", band:true, zero:true, min:2, data:pts, yFmt:v=>pct(v,1), vLabel:"Taxa acumulada", onClick:p=>openDetail(p.id),
+    emptyText:"Aparece a partir de 2 sessões com o mesmo alvo.", aria:"Taxa de shiny acumulada com faixa provável" });
+}
+
+// ---------- projeto de catch (só entradas manuais, salvas neste navegador) ----------
+const CATCH_KEY="pka-hunt-analyzer-catch-v1";
+const CAMPOS=["cBrokes","cEstoque","cModo","cMedia","cMediana","cP80","cP95","cMax","cCapt","cBps","cShh","cLivre"];
+const chaveSp = t => String(t||"").trim().toLowerCase();
+function catchLer(){ try{ const o=JSON.parse(localStorage.getItem(CATCH_KEY)||"{}"); return o&&typeof o==="object"?o:{}; }catch(_){ return {}; } }
+function catchSalvar(){ const o=catchLer(); const nome=document.getElementById("cNome").value.trim(); const v={nome};
+  for(const id of CAMPOS) v[id]=document.getElementById(id).value;
+  o.atual=nome; o.esp=o.esp&&typeof o.esp==="object"?o.esp:{}; o.esp[chaveSp(nome)]=v;
+  try{ localStorage.setItem(CATCH_KEY, JSON.stringify(o)); }catch(_){} }
+function catchCarregar(nome){ const o=catchLer(); const d=o.esp&&o.esp[chaveSp(nome)]; if(!d) return false;
+  for(const id of CAMPOS) if(d[id]!=null) document.getElementById(id).value=d[id]; return true; }
+function renderCatch(allIn){
+  const all=allIn||allDerived(); const g=id=>document.getElementById(id), N=id=>numBR(g(id).value);
+  const alvos=[...new Set(all.map(s=>s.target))].filter(t=>t&&t!=="—").sort();
+  g("cLista").innerHTML=alvos.map(t=>`<option value="Shiny ${esc(t)}"></option>`).join("");
+  const nome=g("cNome").value.trim(), sp=baseName(nome).toLowerCase();
+  const brokes=N("cBrokes"), estoque=N("cEstoque"), modo=g("cModo").value, med=N("cMediana"), bps=N("cBps"), livre=N("cLivre");
+  const h0=ES.taxaBase(med);
+  const curva=ES.curvaComunidade({mediana:med, p80:N("cP80"), p95:N("cP95"), maximo:N("cMax"), capturas:N("cCapt")});
+  const erroCurva = !(med>0)||!(N("cP80")>0)||!(N("cP95")>0) ? "Preencha a mediana, o P80 e o P95 da comunidade (e, se tiver, o máximo e o nº de capturas)."
+    : curva.erro==="ordem" ? "Confira as estatísticas: a mediana tem que ser menor que o P80, e o P80 menor que o P95."
+    : curva.erro==="maximo" ? "Confira o máximo: ele tem que ser maior que o P95."
+    : curva.erro==="capturas" ? "Preencha o nº de capturas junto com o máximo." : "";
+  const notaCurva = !erroCurva && curva.aviso==="poucas-capturas" ? "Com 20 capturas ou menos, o máximo não cabe na curva: ela vai até o P95."
+    : !erroCurva && curva.x.length===4 ? "Sem máximo e nº de capturas, a curva vai só até o P95." : "";
+  // 1. onde está
+  let c1;
+  if(!modo) c1=bloco("","Escolha que balls você vai jogar daqui pra frente.");
+  else if(!(brokes>=0)) c1=bloco("","Preencha os brokes atuais.");
+  else if(modo==="ab"){ if(!(h0>0)) c1=bloco("","Preencha a mediana da comunidade para estimar a taxa base.");
+    else { const v=(1-ES.sobrevivenciaBase(h0,brokes))*100; c1=bloco(`Percentil ${pctlTxt(v)}`, `Pela taxa base, você está no percentil ${pctlTxt(v)}: ${fracao(v)} pessoas já teriam capturado com essa quantidade de balls.`); } }
+  else if(erroCurva) c1=bloco("",erroCurva);
+  else { const S=ES.sobrevivencia(curva,brokes);
+    c1 = S==null ? bloco("Fora da curva", `Você passou do maior valor registrado (${int(curva.fim)} balls); a curva da comunidade não cobre esse ponto.`)
+      : (v => bloco(`Percentil ${pctlTxt(v)}`, `Você está no percentil ${pctlTxt(v)}: ${fracao(v)} pessoas já tinham capturado com essa quantidade de balls.`, notaCurva))((1-S)*100); }
+  g("oC1").innerHTML=c1;
+  // 2. próximas N balls
+  let c2;
+  const chance = M => modo==="ab" ? ES.chanceProximasBase(h0,M) : ES.chanceProximas(curva,brokes,M);
+  const ctxt = M => { const c=chance(M); return c==null||!fin(c) ? "passa do maior valor registrado" : `~${chanceTxt(c)}`; };
+  if(!modo) c2=bloco("","Escolha que balls você vai jogar daqui pra frente.");
+  else if(!(brokes>=0) && modo!=="ab") c2=bloco("","Preencha os brokes atuais.");
+  else if(modo==="ab" && !(h0>0)) c2=bloco("","Preencha a mediana da comunidade para estimar a taxa base.");
+  else if(modo!=="ab" && erroCurva) c2=bloco("",erroCurva);
+  else { const c500=chance(500);
+    c2=bloco(c500==null?"Fora da curva":`~${chanceTxt(c500)}`, c500==null?"As próximas 500 balls passam do maior valor registrado; a curva não cobre.":"Chance de fechar nas próximas 500 balls.",
+      `250: ${ctxt(250)} · 1.000: ${ctxt(1000)}${livre>0?` · ${int(livre)}: ${ctxt(livre)}`:""}`); }
+  g("oC2").innerHTML=c2;
+  // 3. aura com o estoque
+  let c3;
+  if(!(h0>0)) c3=bloco("","Preencha a mediana da comunidade para estimar a taxa base.");
+  else { const e80=arred(ES.estoqueParaChance(h0,0.8)), base=`Para 80% de chance seriam ~${int(e80)} balls de aura. Taxa base estimada: 1 a cada ~${nf0.format(1/h0)} balls.`;
+    c3 = !(estoque>0) ? bloco("", "Informe o estoque de Alliance + Premier para ver a chance de aura.", base, aviso("Estimativa: a curva da comunidade mistura todos os tipos de ball."))
+      : (ca => bloco(`~${chanceTxt(ca)}`, `Se jogar as ${int(estoque)} Alliance/Premier do estoque, a chance de fechar com aura é de ~${chanceTxt(ca)}.`, base, aviso("Estimativa: a curva da comunidade mistura todos os tipos de ball.")))(ES.chanceAura(h0,estoque)); }
+  g("oC3").innerHTML=c3;
+  // 4. tempo estimado
+  const ss=sp?all.filter(s=>s.target.toLowerCase()===sp):[];
+  let shh, origem;
+  if(ss.length){ let k=0,sec=0; for(const s of ss){ k+=knEspecie(s,s.target).k; sec+=s.sec; } shh=k/(sec/3600); origem=`<span class="selo med">Medido</span> em ${ss.length} ${ss.length===1?"sessão":"sessões"} com alvo ${esc(ss[0].target)}`; }
+  else { shh=N("cShh"); origem="informado por você"; }
+  g("cShhCampo").hidden=ss.length>0;
+  const bh=shh*bps;
+  let c4;
+  if(!(bps>0)) c4=bloco("","Preencha quantas balls você joga por shiny morto.");
+  else if(!(shh>0)) c4=bloco("", ss.length?"As sessões com esse alvo não têm shiny: não dá para estimar o ritmo.":"Informe seus shinys por hora para estimar o tempo.");
+  else c4=bloco(`${nf1.format(bh)} balls/h`, `${nf1.format(shh)} shinys/h (${origem}) × ${nfN(bps)} ${bps===1?"ball":"balls"} por shiny.`,
+    `250 balls: ${tempoTxt(250/bh)} · 500: ${tempoTxt(500/bh)} · 1.000: ${tempoTxt(1000/bh)}${livre>0?` · ${int(livre)}: ${tempoTxt(livre/bh)}`:""}${estoque>0?` · estoque de ${int(estoque)}: ${tempoTxt(estoque/bh)}`:""}`);
+  g("oC4").innerHTML=c4;
+  g("cModoNota").textContent = modo==="ab" ? "Sem limiar e sem teto: cada ball tem a mesma chance, não importa quantas você já jogou."
+    : modo==="ue" ? "Captura em Ultra ou Elemental vira insumo, sem aura. O máximo registrado é um recorde da comunidade, não uma regra do jogo."
+    : modo==="mix" ? "Misturando, cada Ultra ou Elemental jogada no meio de um grind de aura pode fechar o shiny sem aura." : "";
+}
+
 // ---------- render ----------
 function render(){
   const pill=document.getElementById("storePill");
@@ -597,7 +1009,7 @@ function render(){
   fillSelect("fTarget", [...new Set(all.map(s=>s.target))].sort(), "Todos");
   const list=filtered(all).sort((a,b)=>a.start-b.start);
   renderSuggest(all);
-  renderKpis(list); renderHighlights(list); renderCharts(list); renderSpecies(list); renderItems(list); renderGoal(list); renderSessions(list, all);
+  renderKpis(list); renderHighlights(list); renderIns(list); renderCharts(list); renderSpecies(list); renderItems(list); renderGoal(list); renderSessions(list, all); renderCatch(all);
   document.getElementById("btnBackup").disabled = state.example || state.recs.size===0;
   document.getElementById("btnClear").disabled = state.example || state.recs.size===0;
   if(state.openId){ const s=all.find(x=>x.id===state.openId); if(s) openDetail(s.id, all); else closeDetail(); }
@@ -666,6 +1078,7 @@ function renderCharts(list){
   chart(document.getElementById("cTod"), { type:"bar", min:1, data:buckets.filter(b=>fin(b.y)), yFmt:M.fmtC, vLabel:M.label, emptyText:"Sem sessões nesse filtro.", aria:"Horário de início × métrica" });
   let acc=0; chart(document.getElementById("cCum"), { type:"line", area:true, zero:true, min:2, emptyText:"Aparece a partir de 2 sessões.",
     data:list.map(s=>({y:(acc+=s.balance), xl:dshort(s.start), tt:dt(s.start), id:s.id, extra:"nesta sessão: "+moneyC(s.balance)})), yFmt:moneyC, vLabel:"Acumulado", onClick:open, aria:"Lucro acumulado", color:"var(--good)" });
+  renderRateChart(list);
 }
 function renderSpecies(list){
   const sp=new Map();
@@ -675,7 +1088,7 @@ function renderSpecies(list){
   if(!rows.length){ t.innerHTML=`<tbody><tr><td class="empty">Sem criaturas nesse filtro.</td></tr></tbody>`; return; }
   t.innerHTML=`<thead><tr><th class="l">Espécie</th><th>Sessões</th><th>Kills</th><th>Shinys</th><th>% shiny</th><th>1 a cada</th><th>Dano/kill normal</th><th>Dano/kill shiny</th></tr></thead><tbody>`+
     rows.map(([b,o])=>{ const tot=o.n+o.sh; const rate=tot?o.sh/tot:NaN; const dkn=o.n?o.dn/o.n:NaN, dks=o.sh?o.dsh/o.sh:NaN;
-      return `<tr><td class="l"><b>${esc(b)}</b></td><td>${o.sess.size}</td><td>${int(tot)}</td><td>${o.sh?`<span class="chip shiny">✦ ${int(o.sh)}</span>`:"—"}</td><td>${o.sh?pct(rate,2):"—"}</td><td>${o.sh?nf1.format(tot/o.sh)+" kills":"—"}</td><td>${compact(dkn)}</td><td>${o.sh?compact(dks)+(fin(dkn)?` <span class="hint">(${nf2.format(dks/dkn)}×)</span>`:""):"—"}</td></tr>`; }).join("")+`</tbody>`;
+      return `<tr><td class="l"><b>${esc(b)}</b></td><td>${o.sess.size}</td><td>${int(tot)}</td><td>${o.sh?`<span class="chip shiny">✦ ${int(o.sh)}</span>`:"—"}</td><td>${o.sh?pct(rate,2):"—"}</td><td>${o.sh?nf1.format(tot/o.sh)+" kills"+(w=>`<span class="faixa">${umA(w.hi)}–${umA(w.lo)}</span>`)(ES.wilson(o.sh,tot)):"—"}</td><td>${compact(dkn)}</td><td>${o.sh?compact(dks)+(fin(dkn)?` <span class="hint">(${nf2.format(dks/dkn)}×)</span>`:""):"—"}</td></tr>`; }).join("")+`</tbody>`;
 }
 function itemKey(i){ return i.itemClientId!=null?String(i.itemClientId):String(i.itemName); }
 function renderItems(list){
@@ -687,7 +1100,7 @@ function renderItems(list){
   else { const maxV=Math.max(...rows.map(r=>r[1].value),1);
   t.innerHTML=`<thead><tr><th class="l">Item</th><th>Qtd.</th><th>Drops/100 kills</th><th>Valor total</th><th>% do loot</th><th>Preço médio/un.</th><th>Mín–máx/un.</th><th>Sessões</th></tr></thead><tbody>`+
     rows.map(([k,o])=>{ const zero=o.value===0;
-      return `<tr><td class="l"><b>${esc(o.name)}</b>${zero?` <span class="chip zero" title="O JSON trouxe valor 0 para este item">sem preço</span>`:""}</td><td>${int(o.count)}</td><td>${kills?nf2.format(o.count/kills*100):"—"}</td>
+      return `<tr><td class="l"><b>${esc(o.name)}</b>${zero?` <span class="chip zero" title="O JSON trouxe valor 0 para este item">sem preço</span>`:""}</td><td>${int(o.count)}</td><td>${kills?nf2.format(o.count/kills*100)+(f=>`<span class="faixa">${nf1.format(f.lo*100)}–${nf1.format(f.hi*100)}</span>`)(ES.poissonFaixa(o.count,kills)):"—"}</td>
       <td><div class="barcell">${zero?"—":money(o.value)}<span class="track"><span class="bar" style="width:${(o.value/maxV*100).toFixed(1)}%"></span></span></div></td>
       <td>${zero?"—":pct(lootTot?o.value/lootTot:NaN)}</td><td>${zero?"—":money(o.value/o.count)}</td><td>${zero?"—":`${money(o.min)}–${money(o.max)}`}</td><td>${o.sess}</td></tr>`; }).join("")+`</tbody>`; }
   // seletor + gráfico de preço
@@ -716,13 +1129,16 @@ const SCOLS=[
   {k:"shiny",t:"Shinys",v:s=>s.shiny,f:s=>`<span class="chip ${s.shiny?"shiny":""}">✦ ${int(s.shiny)}</span>`},
   {k:"shinyRate",t:"1 a cada",v:s=>s.shiny?s.kills/s.shiny:Infinity,f:s=>s.shiny?nf1.format(s.kills/s.shiny):"—"},
   {k:"spentPct",t:"Gasto/loot",v:s=>s.spentPct,f:s=>pct(s.spentPct)},
+  {k:"sorte",t:"Sorte",cls:"c-sorte",v:s=>{ const r=SORTE.get(s.id); return r&&!r.motivo?r.percentil:-1; },f:s=>{ const r=SORTE.get(s.id); return r&&!r.motivo?`<span class="sorte ${classeSorte(r)}">${r.rotulo}</span><span class="faixa">percentil ${pctlTxt(r.percentil)}</span>`:`<span class="hint" title="${esc(r?sorteTexto(r,s.target):"")}">—</span>`; }},
 ];
-function renderSessions(list){
+let SORTE = new Map();
+function renderSessions(list, all){
+  SORTE = new Map(list.map(s=>[s.id, sorteSessao(s, all||list)]));
   const t=document.getElementById("tSessions");
   const col=SCOLS.find(c=>c.k===state.sortKey)||SCOLS[0]; const dir=state.sortDir==="asc"?1:-1;
   const rows=[...list].sort((a,b)=>{ const x=col.v(a), y=col.v(b); return (x>y?1:x<y?-1:0)*dir; });
-  t.innerHTML=`<thead><tr>${SCOLS.map(c=>`<th class="${c.l?"l":""}"><button data-sort="${c.k}" ${c.k===state.sortKey?`data-dir="${state.sortDir}"`:""}>${c.t}</button></th>`).join("")}</tr></thead><tbody>`+
-    (rows.length?rows.map(s=>`<tr class="click" data-open="${esc(s.id)}" tabindex="0">${SCOLS.map(c=>`<td class="${c.l?"l":""}">${c.f(s)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${SCOLS.length}" class="empty">Nenhuma sessão nesse filtro.</td></tr>`)+`</tbody>`;
+  t.innerHTML=`<thead><tr>${SCOLS.map(c=>`<th class="${c.l?"l":""} ${c.cls||""}"><button data-sort="${c.k}" ${c.k===state.sortKey?`data-dir="${state.sortDir}"`:""}>${c.t}</button></th>`).join("")}</tr></thead><tbody>`+
+    (rows.length?rows.map(s=>`<tr class="click" data-open="${esc(s.id)}" tabindex="0">${SCOLS.map(c=>`<td class="${c.l?"l":""} ${c.cls||""}">${c.f(s)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${SCOLS.length}" class="empty">Nenhuma sessão nesse filtro.</td></tr>`)+`</tbody>`;
 }
 
 // ---------- detalhe ----------
@@ -757,6 +1173,17 @@ function openDetail(id, allIn){
       ${cell("Lucro por kill",money(mval(s,"balanceK")),cmp?deltaTag(mval(s,"balanceK"),med("balanceK")):"")}
       ${cell("Dano/h",compact(mval(s,"dmgH")),cmp?deltaTag(mval(s,"dmgH"),med("dmgH")):"")}
     </div>
+    ${(()=>{ const r=sorteSessao(s,all), w=ES.wilson(r.k,r.n);
+      return `<div class="panel ins-card">
+        <div class="ins-h"><h4>Shiny nesta sessão</h4><span class="selo est">Estimado</span><button type="button" class="ins-q" aria-expanded="false" aria-controls="ajDet" aria-label="Explicar: shiny nesta sessão">?</button></div>
+        <div class="ins-s${r.motivo||!classeSorte(r)?"":" sorte "+classeSorte(r)}">${sorteTexto(r,s.target)}</div>
+        ${w?`<div class="ins-l">${r.k?`Taxa de ${esc(s.target)} nesta sessão: 1 a cada ${umA(w.p)} kills (${pct(w.p,1)}). Faixa provável: ${faixaTxt(w)}.`:`Nenhum shiny de ${esc(s.target)} em ${int(r.n)} kills. Faixa provável: ${faixaTxt(w)}.`}</div>`:""}
+        <div class="ins-ajuda" id="ajDet" hidden>
+          <p><b>O que é.</b> Compara os shinys desta sessão com a sua taxa de costume nesse alvo, e mostra onde a taxa real desta sessão provavelmente está.</p>
+          <p><b>Conta.</b> Taxa de referência = shinys ÷ kills de ${esc(s.target)} nas outras ${r.outras} sessão(ões) com esse alvo (esta fica de fora). Esperado = kills desta sessão × taxa de referência. Percentil pela distribuição binomial. A faixa é o intervalo de Wilson a 95%.</p>
+          <p><b>Limite.</b> Supõe que a taxa não muda entre sessões. O JSON não informa canal.</p>
+        </div>
+      </div>`; })()}
     <div class="tbl"><table><thead><tr><th class="l">Criatura</th><th>Kills</th><th>Dano total</th><th>Dano/kill</th></tr></thead><tbody>
       ${crit.map(c=>`<tr><td class="l">${isShiny(c.creatureName)?`<span class="chip shiny">✦ ${esc(c.creatureName)}</span>`:esc(c.creatureName)}</td><td>${int(+c.kills)}</td><td>${compact(+c.totalDamage)}</td><td>${compact(+c.damagePerKill)}</td></tr>`).join("")}
     </tbody></table></div>
@@ -780,6 +1207,7 @@ document.addEventListener("keydown", e => { if(e.key==="Escape") closeDetail(); 
 
 // ---------- eventos ----------
 document.addEventListener("click", e => {
+  const q=e.target.closest(".ins-q"); if(q){ const box=document.getElementById(q.getAttribute("aria-controls")); if(box){ const abrir=box.hidden; box.hidden=!abrir; q.setAttribute("aria-expanded",String(abrir)); } return; }
   const o=e.target.closest("[data-open]"); if(o && !e.target.closest(".drawer")){ openDetail(o.getAttribute("data-open")); return; }
   const jn=e.target.closest("[data-join]"); if(jn){ (async()=>{ const err=await joinViews(jn.getAttribute("data-join").split("|")); if(err){ const st=document.getElementById("sgStatus"); if(st){ st.textContent=err; st.className="status err"; } } })(); return; }
   const ds=e.target.closest("[data-dismiss]"); if(ds){ const d=dismissed(); d.add(ds.getAttribute("data-dismiss")); try{ localStorage.setItem(DISMISS_KEY,JSON.stringify([...d])); }catch(_){} render(); return; }
@@ -791,6 +1219,11 @@ msel.addEventListener("change", () => { state.metric=msel.value; render(); });
 ["fPeriod","fChar","fTarget"].forEach(id=>document.getElementById(id).addEventListener("change", render));
 document.getElementById("itemSel").addEventListener("change", e => { state.item=e.target.value; render(); });
 document.getElementById("goal").addEventListener("input", () => renderGoal(filtered(allDerived())));
+["iHoras","iSeca","iMargem"].forEach(id=>document.getElementById(id).addEventListener("input", () => renderIns(filtered(allDerived()))));
+document.getElementById("insSp").addEventListener("change", e => { state.statSp=e.target.value; render(); });
+(() => { const o=catchLer(); if(o.atual!=null){ document.getElementById("cNome").value=o.atual; catchCarregar(o.atual); } })();
+document.getElementById("cNome").addEventListener("change", e => { catchCarregar(e.target.value); catchSalvar(); renderCatch(); });
+CAMPOS.forEach(id=>document.getElementById(id).addEventListener(id==="cModo"?"change":"input", () => { catchSalvar(); renderCatch(); }));
 document.getElementById("daySeg").addEventListener("click", e => { const b=e.target.closest("button"); if(!b) return; state.dayMetric=b.dataset.v; for(const x of e.currentTarget.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x===b)); render(); });
 let rT=null, lastW=0; new ResizeObserver(ents=>{ const w=Math.round(ents[0].contentRect.width); if(w===lastW) return; lastW=w; clearTimeout(rT); rT=setTimeout(()=>renderCharts(filtered(allDerived()).sort((a,b)=>a.start-b.start)),120); }).observe(document.querySelector("main"));
 
