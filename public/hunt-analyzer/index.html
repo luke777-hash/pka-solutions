@@ -81,6 +81,7 @@ select,input[type=number],input[type=text]{font:500 13.5px var(--f-body);backgro
 /* filters */
 .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
 .filters label{display:grid;gap:4px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.filters input[type=date]{font:500 13.5px var(--f-body);background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:7px 10px;text-transform:none;letter-spacing:0}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -249,7 +250,10 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
   <section class="block" aria-labelledby="sumT">
     <div class="h2row"><h2 id="sumT">Resumo</h2>
       <div class="filters">
-        <label>Período<select id="fPeriod"><option value="all">Tudo</option><option value="hoje">Hoje</option><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option></select></label>
+        <label>Período<select id="fPeriod"><option value="all">Tudo</option><option value="hoje">Hoje</option><option value="7">Últimos 7 dias</option><option value="14">Últimos 14 dias</option><option value="30">Últimos 30 dias</option><option value="dia">Escolher dia</option><option value="entre">Entre datas</option></select></label>
+        <label id="fDiaL" hidden>Dia<input type="date" id="fDia"></label>
+        <label id="fDeL" hidden>De<input type="date" id="fDe"></label>
+        <label id="fAteL" hidden>Até<input type="date" id="fAte"></label>
         <label>Personagem<select id="fChar"></select></label>
         <label>Alvo<select id="fTarget"></select></label>
       </div>
@@ -510,6 +514,7 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
       <ul>
         <li>Os números sem selo vêm só do JSON exportado pelo jogo. Nada neles é estimado. As estatísticas novas trazem um selo: <b>Medido</b> (direto do JSON), <b>Estimado</b> (modelo estatístico sobre os dados medidos) ou <b>Depende de premissa</b> (usa algo que você digitou, ou uma premissa que você pode mudar). Cada uma tem um "?" com o que significa, a conta e o limite.</li>
         <li>O JSON não traz nada de pokébola (balls, brokes, capturas), nem o horário de cada kill, nem o canal, nem o loot separado por criatura. Nada disso é calculado a partir de outro campo: o que depende disso vira campo para você preencher ou não é feito.</li>
+        <li><b>Período</b>: em "Escolher dia" e "Entre datas", cada dia vai da meia-noite à meia-noite no horário do seu aparelho, e a sessão entra no dia em que começou. "Hoje" segue a mesma regra. "Últimos N dias" conta N × 24 horas para trás a partir de agora.</li>
         <li><b>Lucro</b> é o campo <span class="mono">balance</span> (loot − gasto). <b>Gasto</b> é <span class="mono">spent</span>.</li>
         <li>Taxas por hora no resumo são <b>somas ÷ horas totais</b> (média ponderada pelo tempo), e não a média simples das taxas de cada sessão. Assim uma hunt de 4h pesa mais que uma de 1h.</li>
         <li>Na sessão, as taxas por hora usam <span class="mono">durationSeconds</span>, igual ao analyzer do jogo.</li>
@@ -774,10 +779,33 @@ function allDerived(){
   if(state.recs.size===0){ state.example=false; return []; }
   state.example=false; return buildView([...state.recs.values()]).map(derive);
 }
+// dia "AAAA-MM-DD" do campo de data -> meia-noite desse dia no horário do navegador
+const diaMs = v => { const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||""); return m ? new Date(+m[1], m[2]-1, +m[3]).getTime() : NaN; };
+const diaSeguinte = ms => { const d=new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()+1).getTime(); };
+function periodo(){ // [desde, antes de]: a sessão entra pelo horário em que começou
+  const v=id=>document.getElementById(id).value, p=v("fPeriod");
+  if(p==="all") return [-Infinity, Infinity];
+  if(p==="hoje") return [new Date().setHours(0,0,0,0), Infinity];
+  if(p==="dia"){ const d=diaMs(v("fDia")); return fin(d) ? [d, diaSeguinte(d)] : [-Infinity, Infinity]; }
+  if(p==="entre"){ const a=diaMs(v("fDe")), b=diaMs(v("fAte")); return [fin(a)?a:-Infinity, fin(b)?diaSeguinte(b):Infinity]; }
+  return [Date.now()-(+p)*864e5, Infinity];
+}
+// mostra os campos de data do período escolhido. Enquanto você não escolhe uma data, o campo acompanha as sessões:
+// "Dia" fica no último dia com sessão, "De" no primeiro e "Até" no último
+function syncPeriodo(all){
+  const p=document.getElementById("fPeriod").value, g=id=>document.getElementById(id);
+  g("fDiaL").hidden = p!=="dia"; g("fDeL").hidden = p!=="entre"; g("fAteL").hidden = p!=="entre";
+  const ts=all.map(s=>s.start).filter(fin), hoje=dayKey(Date.now());
+  const prim = ts.length ? dayKey(Math.min(...ts)) : hoje, ult = ts.length ? dayKey(Math.max(...ts)) : hoje;
+  for(const id of ["fDia","fDe","fAte"]){ g(id).min=prim; g(id).max=ult; }
+  const padrao={fDia:ult, fDe:prim, fAte:ult};
+  for(const id in padrao) if(!g(id).value || !g(id).dataset.escolhido){ g(id).value=padrao[id]; delete g(id).dataset.escolhido; }
+}
+const escolheuData = el => { if(el.value) el.dataset.escolhido="1"; else delete el.dataset.escolhido; };
 function filtered(all){
-  const p=document.getElementById("fPeriod").value, c=document.getElementById("fChar").value, t=document.getElementById("fTarget").value;
-  const since = p==="all"?-Infinity:p==="hoje"?new Date().setHours(0,0,0,0):Date.now()-(+p)*864e5;
-  return all.filter(s => s.start>=since && (!c||s.char===c) && (!t||s.target===t));
+  const c=document.getElementById("fChar").value, t=document.getElementById("fTarget").value;
+  const [desde, ate] = periodo();
+  return all.filter(s => s.start>=desde && s.start<ate && (!c||s.char===c) && (!t||s.target===t));
 }
 function fillSelect(id, values, allLabel){
   const el=document.getElementById(id), cur=el.value;
@@ -1080,6 +1108,7 @@ function render(){
   const all=allDerived();
   fillSelect("fChar", [...new Set(all.map(s=>s.char))].sort(), "Todos");
   fillSelect("fTarget", [...new Set(all.map(s=>s.target))].sort(), "Todos");
+  syncPeriodo(all);
   const list=filtered(all).sort((a,b)=>a.start-b.start);
   renderSuggest(all);
   renderKpis(list); renderHighlights(list); renderIns(list); renderCharts(list); renderSpecies(list); renderItems(list); renderGoal(list); renderSessions(list, all); renderCatch(all);
@@ -1290,6 +1319,10 @@ document.addEventListener("keydown", e => { if(e.key==="Enter"){ const o=e.targe
 const msel=document.getElementById("metric"); msel.innerHTML=Object.entries(METRICS).map(([k,m])=>`<option value="${k}">${m.label}</option>`).join(""); msel.value=state.metric;
 msel.addEventListener("change", () => { state.metric=msel.value; render(); });
 ["fPeriod","fChar","fTarget"].forEach(id=>document.getElementById(id).addEventListener("change", render));
+document.getElementById("fDia").addEventListener("change", e=>{ escolheuData(e.target); render(); });
+// "De" depois de "Até" não faz sentido: a outra data acompanha
+document.getElementById("fDe").addEventListener("change", e=>{ const a=document.getElementById("fAte"); escolheuData(e.target); if(e.target.value && a.value && e.target.value>a.value){ a.value=e.target.value; escolheuData(a); } render(); });
+document.getElementById("fAte").addEventListener("change", e=>{ const d=document.getElementById("fDe"); escolheuData(e.target); if(e.target.value && d.value && d.value>e.target.value){ d.value=e.target.value; escolheuData(d); } render(); });
 document.getElementById("itemSel").addEventListener("change", e => { state.item=e.target.value; render(); });
 document.getElementById("goal").addEventListener("input", () => renderGoal(filtered(allDerived())));
 ["iHoras","iSeca","iMargem"].forEach(id=>document.getElementById(id).addEventListener("input", () => renderIns(filtered(allDerived()))));
