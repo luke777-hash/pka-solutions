@@ -514,7 +514,7 @@ td.c-sorte .sorte,td.c-sorte .faixa{display:block;margin:0}
       <ul>
         <li>Os números sem selo vêm só do JSON exportado pelo jogo. Nada neles é estimado. As estatísticas novas trazem um selo: <b>Medido</b> (direto do JSON), <b>Estimado</b> (modelo estatístico sobre os dados medidos) ou <b>Depende de premissa</b> (usa algo que você digitou, ou uma premissa que você pode mudar). Cada uma tem um "?" com o que significa, a conta e o limite.</li>
         <li>O JSON não traz nada de pokébola (balls, brokes, capturas), nem o horário de cada kill, nem o canal, nem o loot separado por criatura. Nada disso é calculado a partir de outro campo: o que depende disso vira campo para você preencher ou não é feito.</li>
-        <li><b>Período</b>: em "Escolher dia" e "Entre datas", cada dia vai da meia-noite à meia-noite no horário do seu aparelho, e a sessão entra no dia em que começou. "Hoje" segue a mesma regra. "Últimos N dias" conta N × 24 horas para trás a partir de agora.</li>
+        <li><b>Dia da hunt</b>: a hunt conta no dia em que terminou. Uma hunt das 22h à 1h fica no dia seguinte. O fim é o horário em que o JSON foi exportado (se o JSON não trouxer esse horário, início + duração). Vale para o filtro de período e para o gráfico Por dia. Cada dia vai da meia-noite à meia-noite no horário do seu aparelho. "Últimos N dias" conta as hunts que terminaram nas últimas N × 24 horas. O horário mostrado em cada sessão continua sendo o de início.</li>
         <li><b>Lucro</b> é o campo <span class="mono">balance</span> (loot − gasto). <b>Gasto</b> é <span class="mono">spent</span>.</li>
         <li>Taxas por hora no resumo são <b>somas ÷ horas totais</b> (média ponderada pelo tempo), e não a média simples das taxas de cada sessão. Assim uma hunt de 4h pesa mais que uma de 1h.</li>
         <li>Na sessão, as taxas por hora usam <span class="mono">durationSeconds</span>, igual ao analyzer do jogo.</li>
@@ -617,7 +617,7 @@ function derive(rec){
   const balance=fin(+s.balance)?+s.balance:loot-spent;
   const xp=+s.totalExperience||0, dmg=fin(+s.totalDamage)?+s.totalDamage:+(d.damage&&d.damage.totalDamage)||0;
   return { id:rec.id, docId:rec.docId, label:rec.label||"", importedAt:rec.importedAt, data:d, parts:rec.parts||null,
-    char:String(m.character), start:+m.sessionStart*1000, sec, hours, xp, loot, spent, balance, dmg, kills, shiny,
+    char:String(m.character), start:+m.sessionStart*1000, end:endOf(d)*1000, sec, hours, xp, loot, spent, balance, dmg, kills, shiny,
     target, targetKills:tk, creatures, items, spentPct: loot>0?spent/loot:NaN };
 }
 // ---------- partes da mesma hunt ----------
@@ -782,7 +782,7 @@ function allDerived(){
 // dia "AAAA-MM-DD" do campo de data -> meia-noite desse dia no horário do navegador
 const diaMs = v => { const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||""); return m ? new Date(+m[1], m[2]-1, +m[3]).getTime() : NaN; };
 const diaSeguinte = ms => { const d=new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()+1).getTime(); };
-function periodo(){ // [desde, antes de]: a sessão entra pelo horário em que começou
+function periodo(){ // [desde, antes de]: a hunt entra pelo horário em que terminou
   const v=id=>document.getElementById(id).value, p=v("fPeriod");
   if(p==="all") return [-Infinity, Infinity];
   if(p==="hoje") return [new Date().setHours(0,0,0,0), Infinity];
@@ -791,11 +791,11 @@ function periodo(){ // [desde, antes de]: a sessão entra pelo horário em que c
   return [Date.now()-(+p)*864e5, Infinity];
 }
 // mostra os campos de data do período escolhido. Enquanto você não escolhe uma data, o campo acompanha as sessões:
-// "Dia" fica no último dia com sessão, "De" no primeiro e "Até" no último
+// "Dia" fica no último dia com sessão, "De" no primeiro e "Até" no último (dia em que cada hunt terminou)
 function syncPeriodo(all){
   const p=document.getElementById("fPeriod").value, g=id=>document.getElementById(id);
   g("fDiaL").hidden = p!=="dia"; g("fDeL").hidden = p!=="entre"; g("fAteL").hidden = p!=="entre";
-  const ts=all.map(s=>s.start).filter(fin), hoje=dayKey(Date.now());
+  const ts=all.map(s=>s.end).filter(fin), hoje=dayKey(Date.now());
   const prim = ts.length ? dayKey(Math.min(...ts)) : hoje, ult = ts.length ? dayKey(Math.max(...ts)) : hoje;
   for(const id of ["fDia","fDe","fAte"]){ g(id).min=prim; g(id).max=ult; }
   const padrao={fDia:ult, fDe:prim, fAte:ult};
@@ -805,7 +805,7 @@ const escolheuData = el => { if(el.value) el.dataset.escolhido="1"; else delete 
 function filtered(all){
   const c=document.getElementById("fChar").value, t=document.getElementById("fTarget").value;
   const [desde, ate] = periodo();
-  return all.filter(s => s.start>=desde && s.start<ate && (!c||s.char===c) && (!t||s.target===t));
+  return all.filter(s => s.end>=desde && s.end<ate && (!c||s.char===c) && (!t||s.target===t));
 }
 function fillSelect(id, values, allLabel){
   const el=document.getElementById(id), cur=el.value;
@@ -1168,7 +1168,7 @@ function renderCharts(list){
     data:list.map(s=>({y:mval(s,state.metric), xl:dshort(s.start), tt:dt(s.start)+" · "+hms(s.sec), id:s.id, extra:s.label||s.target})),
     ref:median(list.map(s=>mval(s,state.metric))), yFmt:M.fmtC, vLabel:M.label, onClick:open, aria:`${M.label} por sessão` });
   // por dia
-  const days=new Map(); for(const s of list){ const k=dayKey(s.start); const d=days.get(k)||{balance:0,hours:0,shiny:0,start:s.start,n:0}; d.balance+=s.balance; d.hours+=s.hours; d.shiny+=s.shiny; d.n++; days.set(k,d); }
+  const days=new Map(); for(const s of list){ const k=dayKey(s.end); const d=days.get(k)||{balance:0,hours:0,shiny:0,start:s.end,n:0}; d.balance+=s.balance; d.hours+=s.hours; d.shiny+=s.shiny; d.n++; days.set(k,d); }
   const dm=state.dayMetric; const dfmt = dm==="balance"?moneyC: dm==="hours"?(v=>nf1.format(v)+"h"):int;
   chart(document.getElementById("cDay"), { type:"bar", min:1, emptyText:"Sem sessões nesse filtro.",
     data:[...days.entries()].sort().map(([k,d])=>({y:d[dm], xl:dshort(d.start), tt:new Date(d.start).toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}), extra:`${d.n} sessão(ões) · ${hms(d.hours*3600)}`})),
