@@ -308,10 +308,14 @@ tr.is-best td:first-child{box-shadow:inset 3px 0 0 var(--text);}
 .idx:hover{background:var(--surface-2);}
 .idx:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
 .idx .pill{font-size:12.5px;}
+.idx[aria-selected="true"]{border-color:var(--text);background:var(--text);color:var(--surface);}
+.idx[aria-selected="true"] .pill{background:var(--surface);}
 .legend-need{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);}
 .sw-need{display:inline-block;width:22px;height:14px;border-radius:4px;background:var(--warn-soft);box-shadow:inset 0 0 0 2px var(--warn-line);}
 .g-precos{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;}
 .span-all{grid-column:1/-1;}
+.ver-f{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:10px;}
+.ver-f .fine{flex:1 1 260px;margin:0;}
 .antiga{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);}
 .antiga .btn-row{align-items:center;flex-wrap:wrap;}
 .regras{display:grid;gap:12px;}
@@ -1172,7 +1176,7 @@ function estadoPadrao(){
       xatk:["","","","","","",""],
       diamante:"",fees:feesVazias(),starRar:"t1",
       ganho:"10",cenario:"mean",escala:"sim",lista:{de:"",ate:""},listaCen:"mean",listaPoke:"",listaModo:"barato",
-      listaElem:"",
+      listaElem:"",aba:"geral",
       elem:{},antiga:null
     }
   };
@@ -1227,6 +1231,7 @@ function normalizar(o){
     if(/^[0-5]?$/.test(String(p.listaPoke)))s.precos.listaPoke=String(p.listaPoke);
     if(p.listaModo==="barato"||p.listaModo==="craft")s.precos.listaModo=p.listaModo;
     if(typeof p.listaElem==="string"&&p.listaElem.split("/").every(function(e){return !!ELEMMAP[e];}))s.precos.listaElem=p.listaElem;
+    if(typeof p.aba==="string"&&(p.aba==="geral"||ELEMMAP[p.aba.slice(3)]))s.precos.aba=p.aba;
     if(p.elem&&typeof p.elem==="object")ELEM.forEach(function(e){var t=normTabela(p.elem[e[0]]);if(t)s.precos.elem[e[0]]=t;});
     // dados de antes das tabelas por elemento: uma tabela só para o time todo. Fica guardada até a pessoa dizer de qual elemento ela é.
     var velha=p.antiga?normTabela(p.antiga):(Array.isArray(p.materiais)?normTabela({materiais:p.materiais,stones:p.stones}):null);
@@ -1650,7 +1655,7 @@ function todasHtml(rot){
    PASSO 2: PREÇOS
    ============================================================ */
 function renderPrecos(){
-  var P=state.precos,h='<div class="g-precos">';
+  var P=state.precos,h='<div class="g-precos" data-aba="geral">';
   // X-Attack
   h+='<section class="panel" id="sec-xatk"><div class="panel-head"><div><h2>X-Attack</h2><p class="panel-sub">Preço de cada tier. Para chegar num tier é preciso passar por todos os anteriores, então o custo soma os tiers do caminho.</p></div><span id="pill-xatk"></span></div>'+
     '<div class="scroll"><table class="t-form"><thead><tr><th scope="col">Tier</th><th scope="col" class="r">Bônus</th><th scope="col">Preço</th></tr></thead><tbody>';
@@ -1690,9 +1695,10 @@ function renderPrecos(){
   // Stones: uma tabela por elemento do time
   garantirTabelas();
   var els=elementosDoTime();
+  if(P.antiga||!els.length){
   h+='<section class="panel span-all" id="sec-stones"><div class="panel-head"><div><h2>Stones de boost</h2><p class="panel-sub">Cada elemento tem a própria sequência de stones e a própria receita. Um Pokémon de dois elementos pode usar a stone de qualquer um deles: em cada faixa, o planejador usa a mais barata. O custo por stone é o menor entre craftar e comprar pronta. Quanto comprar de cada material fica no passo 4.</p>'+
       '<div class="btn-row"><button type="button" class="btn btn-sm" data-act="tab" data-v="compras">Ver quanto comprar de cada material</button></div></div><span id="pill-stones"></span></div>'+
-    '<p class="note">A receita muda a cada server save: o jogo sorteia o material e a quantidade de cada elemento. Confira na janela Criar e atualize aqui.</p>';
+    '';
   if(P.antiga){
     h+='<div class="antiga"><h3>Tabela de antes da separação por elemento</h3><p class="fine">Ela tem preços que você já preencheu, mas não diz de qual elemento é. Escolha o elemento para movê-la para lá (substitui a tabela desse elemento), ou apague.</p>'+
       '<div class="btn-row"><div class="fld"><label class="sr" for="ant-e">Elemento da tabela antiga</label><select id="ant-e">'+ELEM.map(function(e){return opt(e[0],e[1],els[0]||"");}).join("")+'</select></div>'+
@@ -1700,14 +1706,38 @@ function renderPrecos(){
   }
   if(!els.length)h+='<p class="muted">Escolha o elemento de cada Pokémon no passo 1, em "Dados de melhoria". Aparece aqui uma tabela de stones para cada elemento do time.</p>';
   h+='</section>';
-  els.forEach(function(e){h+=tabelaElemHtml(e,P.elem[e]);});
+  }
   h+='</div>';
+  els.forEach(function(e){h+='<div class="aba-st" data-aba="st-'+e+'">'+tabelaElemHtml(e,P.elem[e])+'</div>';});
   $("precos-body").innerHTML=h;
+  mostrarAba();
   preencherInputs($("precos-body"));
+}
+// aba aberta em Preços: "geral" ou "st-<elemento>" de um elemento do time
+function abaValida(){var a=state.precos.aba;return a&&a!=="geral"&&elementosDoTime().indexOf(a.slice(3))>=0?a:"geral";}
+function mostrarAba(){
+  var a=abaValida(),bs=document.querySelectorAll("#precos-body [data-aba]");
+  for(var i=0;i<bs.length;i++)bs[i].hidden=bs[i].getAttribute("data-aba")!==a;
+  var ts=document.querySelectorAll('#sec-index [data-act="aba"]');
+  for(var j=0;j<ts.length;j++)ts[j].setAttribute("aria-selected",String(ts[j].getAttribute("data-v")===a));
+}
+// primeira faixa que algum Pokémon do elemento ainda vai usar (pelo boost atual). Sem boost informado, todas.
+var verTodas={};
+function primeiraFaixa(e){
+  var f=FAIXAS.length,todas=false;
+  state.time.forEach(function(p){
+    if(elemsDe(p).indexOf(e)<0)return;
+    var b=parseNum(p.boost);
+    if(!valido(b)||b<0||b>BOOST_MAX){todas=true;return;}
+    if(b<BOOST_MAX)f=Math.min(f,faixaDoBoost(b+1));
+  });
+  return todas?0:f;
 }
 function tabelaElemHtml(e,T){
   var EN=ELEMMAP[e],pre="precos.elem."+e+".";
-  return '<section class="panel span-all sec-st" id="sec-st-'+e+'"><div class="panel-head"><div><h2>Stones de '+EN+'</h2><p class="panel-sub">Usada por '+esc(juntar(quemUsa(e)))+'.</p></div><span id="pill-st-'+e+'"></span></div>'+
+  var f0=primeiraFaixa(e),ver=!!verTodas[e];
+  var esc0=f0>0?(f0>=FAIXAS.length?"Todos os Pokémon de "+EN+" já estão em +50, então nenhuma faixa entra no plano.":"Escondidas "+(f0>1?"as faixas "+FAIXAS[0].nome+" a "+FAIXAS[f0-1].nome:"a faixa "+FAIXAS[0].nome)+" (+0 a +"+(f0*5)+"): nenhum Pokémon de "+EN+" está abaixo de +"+(f0*5)+"."):"";
+  return '<section class="panel span-all sec-st" id="sec-st-'+e+'"><div class="panel-head"><div><h2>Stones de '+EN+'</h2><p class="panel-sub">Usada por '+esc(juntar(quemUsa(e)))+'.'+(state.time.some(function(p){var x=elemsDe(p);return x.length>1&&x.indexOf(e)>=0;})?' Pokémon de dois elementos usa, em cada faixa, a stone mais barata entre as duas tabelas.':'')+' O custo por stone é o menor entre craftar e comprar pronta. A receita muda a cada server save: o jogo sorteia o material e a quantidade. Confira na janela Criar e atualize aqui.</p></div><span id="pill-st-'+e+'"></span></div>'+
     '<div class="stones-l"><div><h3>Materiais do craft de '+EN+'</h3><p class="fine">Para material que você dropa, use o preço de venda no market: usar no craft é abrir mão desse dinheiro.</p>'+
     '<div class="mats">'+
     T.materiais.map(function(mt,mi){
@@ -1719,13 +1749,15 @@ function tabelaElemHtml(e,T){
     '<div><h3>Stones de '+EN+'</h3><p class="fine">Quantidade de cada material em 1 stone, como na janela Criar, e o preço da stone pronta. O custo por stone é o menor dos dois caminhos.</p>'+
     '<div class="scroll"><table class="t-stones"><colgroup><col class="c-nome"><col class="c-pronta">'+T.materiais.map(function(){return '<col>';}).join("")+'<col class="c-custo"></colgroup><thead><tr id="st-head-'+e+'">'+stHeadHtml(T)+'</tr></thead><tbody>'+
     FAIXAS.map(function(f,fi){
-      var r='<tr id="sr-'+e+'-'+fi+'" data-need="s:'+e+':'+fi+'"><th scope="row" class="nw"><b>'+f.nome+'</b><span class="via">+'+(fi*5)+' até +'+(fi*5+5)+', chance '+f.base+'%</span></th>'+
+      var r='<tr id="sr-'+e+'-'+fi+'" data-need="s:'+e+':'+fi+'"'+(fi<f0&&!ver?' hidden':'')+'><th scope="row" class="nw"><b>'+f.nome+'</b><span class="via">+'+(fi*5)+' até +'+(fi*5+5)+', chance '+f.base+'%</span></th>'+
         '<td data-l="Pronta no market"><label class="sr" for="sm-'+e+'-'+fi+'">Stone '+f.nome+' de '+EN+' pronta no market</label><input type="text" id="sm-'+e+'-'+fi+'" data-path="'+pre+'stones.'+fi+'.market" data-fmt="gold" data-need="s:'+e+':'+fi+'" placeholder="—" autocomplete="off"></td>';
       T.materiais.forEach(function(mt,mi){
         r+='<td class="r" data-e="'+e+'" data-mi="'+mi+'" data-l="'+nomeMat(mt,mi)+'"><label class="sr" for="sq-'+e+'-'+fi+'-'+mi+'">Quantidade do material '+(mi+1)+' na stone '+f.nome+' de '+EN+'</label><input type="text" id="sq-'+e+'-'+fi+'-'+mi+'" inputmode="numeric" data-path="'+pre+'stones.'+fi+'.qty.'+mi+'" data-fmt="int" placeholder="0" autocomplete="off"></td>';
       });
       return r+'<td class="r cost" id="cs-'+e+'-'+fi+'"></td></tr>';
-    }).join("")+'</tbody></table></div></div></div></section>';
+    }).join("")+'</tbody></table></div>'+
+    (f0>0?'<div class="ver-f"><p class="fine">'+(ver?"Mostrando todas as faixas.":esc0)+'</p><button type="button" class="btn btn-sm" data-act="ver-faixas" data-e="'+e+'" aria-expanded="'+ver+'">'+(ver?"Esconder as que o time não usa":"Mostrar todas as faixas")+'</button></div>':'')+
+    '</div></div></section>';
 }
 function stHeadHtml(T){
   return '<th scope="col">Stone</th><th scope="col">Pronta no market</th>'+
@@ -1750,14 +1782,15 @@ function atualizarPrecos(){
   var cnt={x:0,f:0,s:0,el:0},porE={},elsT=elementosDoTime();
   Object.keys(pend).forEach(function(k){var t=pend[k].t;if(t==="xatk")cnt.x++;else if(t==="fee"||t==="dia")cnt.f++;else if(t==="stone"){cnt.s++;porE[pend[k].e]=(porE[pend[k].e]||0)+1;}else if(t==="elem")cnt.el++;});
   $("pill-xatk").innerHTML=pillHtml(cnt.x);$("pill-star").innerHTML=pillHtml(cnt.f);
-  $("pill-stones").innerHTML=cnt.el?'<span class="pill warn">'+plural(cnt.el,"Pokémon sem elemento","Pokémon sem elemento")+'</span>':pillHtml(cnt.s);
+  if($("pill-stones"))$("pill-stones").innerHTML=cnt.el?'<span class="pill warn">'+plural(cnt.el,"Pokémon sem elemento","Pokémon sem elemento")+'</span>':pillHtml(cnt.s);
   elsT.forEach(function(e){var pe=$("pill-st-"+e);if(pe)pe.innerHTML=pillHtml(porE[e]||0);});
-  var idx=[["sec-xatk","X-Attack",cnt.x],["sec-star","Star",cnt.f],["sec-regras","Regras do boost",-1]];
-  if(elsT.length)elsT.forEach(function(e){idx.push(["sec-st-"+e,"Stones de "+ELEMMAP[e],porE[e]||0]);});
-  else idx.push(["sec-stones","Stones",cnt.el]);
-  $("sec-index").innerHTML=idx.map(function(a){
-    return '<button type="button" class="idx" data-act="sec" data-v="'+a[0]+'">'+a[1]+(a[2]>0?'<span class="pill warn">'+a[2]+'</span>':(a[2]===0&&!semDadosTime()?'<span class="pill ok">ok</span>':''))+'</button>';
+  var idx=[["geral","X-Attack, Star e regras",cnt.x+cnt.f+cnt.el]];
+  elsT.forEach(function(e){idx.push(["st-"+e,"Stones de "+ELEMMAP[e],porE[e]||0]);});
+  var abaAt=abaValida();
+  var ih=idx.map(function(a){
+    return '<button type="button" class="idx" role="tab" data-act="aba" data-v="'+a[0]+'" aria-selected="'+(a[0]===abaAt)+'">'+a[1]+(a[2]>0?'<span class="pill warn">'+a[2]+'</span>':(a[2]===0&&!semDadosTime()?'<span class="pill ok">ok</span>':''))+'</button>';
   }).join("");
+  if($("sec-index").innerHTML!==ih)$("sec-index").innerHTML=ih;
   // tiers com taxa pendente e tiers usados pelo time
   var usados={};
   state.time.forEach(function(p,i){if(RARMAP[p.rar]&&(+p.stars||0)<5)(usados[p.rar]=usados[p.rar]||[]).push(nomeDe(i));});
@@ -2499,6 +2532,8 @@ function destacar(el){
 }
 function irPara(d){
   var t=d.t,id,tab="precos";
+  if(t==="xatk"||t==="fee"||t==="dia")state.precos.aba="geral";
+  if(t==="stone")state.precos.aba="st-"+d.e;
   if(t==="xatk")id="x-"+d.tier;
   else if(t==="fee"){state.precos.starRar=d.rar;id="fd-"+d.e;}
   else if(t==="dia")id="s-dia";
@@ -2555,14 +2590,15 @@ document.addEventListener("click",function(e){
   if(act==="tab"){irParaTab(v);$("tab-"+v).focus();return;}
   if(act==="pick"){state.sel=+v;salvar();simKey=null;atualizar();var nb=document.querySelector('.pk[data-v="'+v+'"]');if(nb)nb.focus();return;}
   if(act==="rar"){P.starRar=v;salvar();renderPrecos();atualizar();var c=document.querySelector('.chip[data-act="rar"][data-v="'+v+'"]');if(c)c.focus();return;}
-  if(act==="sec"){var s=$(v);if(s){try{s.scrollIntoView({block:"start",behavior:reduz?"auto":"smooth"});}catch(err){s.scrollIntoView();}}return;}
+  if(act==="aba"){P.aba=v;salvar();mostrarAba();var tb=document.querySelector('#sec-index [data-v="'+v+'"]');if(tb)tb.focus();return;}
   if(act==="haz-mais"){state.hazard=String(Math.min(HAZ.length-1,+state.hazard+1));state.metaManual=false;salvar();preencherTopo();atualizar();return;}
   if(act==="usar-tabela"){state.metaManual=false;salvar();preencherTopo();atualizar();$("alvo").focus();return;}
   if(act==="sim-reset"){state.sim.i=-1;simKey=null;atualizar();var sh=$("sim-h");if(sh)sh.focus();return;}
   if(act==="sim-compras"){var rs=A.info[state.sel];if(!rs.m.falta){P.listaPoke="";P.listaElem=rs.m.elems.join("/");P.lista={de:String(rs.m.b0),ate:String(state.sim.b)};P.listaCen=P.cenario;irParaTab("compras");}return;}
   if(act==="add-mat"){var T=P.elem[b.getAttribute("data-e")];if(!T)return;T.materiais.push({nome:"",preco:""});T.stones.forEach(function(s){s.qty.push("");});salvar();renderPrecos();atualizar();return;}
   if(act==="rm-mat"){var T2=P.elem[b.getAttribute("data-e")],i=+v;if(!T2||T2.materiais.length<=1)return;T2.materiais.splice(i,1);T2.stones.forEach(function(s){s.qty.splice(i,1);});salvar();renderPrecos();atualizar();return;}
-  if(act==="ant-mover"){var ae=$("ant-e").value;if(!P.antiga||!ELEMMAP[ae])return;P.elem[ae]=P.antiga;P.antiga=null;salvar();renderPrecos();atualizar();var sa=$("sec-st-"+ae);if(sa)destacar(sa.querySelector("input"));return;}
+  if(act==="ant-mover"){var ae=$("ant-e").value;if(!P.antiga||!ELEMMAP[ae])return;P.elem[ae]=P.antiga;P.antiga=null;if(elementosDoTime().indexOf(ae)>=0)P.aba="st-"+ae;salvar();renderPrecos();atualizar();var sa=$("sec-st-"+ae);if(sa)destacar(sa.querySelector("input"));return;}
+  if(act==="ver-faixas"){var ve=b.getAttribute("data-e");verTodas[ve]=!verTodas[ve];renderPrecos();atualizar();var vb=document.querySelector('[data-act="ver-faixas"][data-e="'+ve+'"]');if(vb)vb.focus();return;}
   if(act==="ant-apagar"){
     if(b.getAttribute("data-confirm")==="1"){P.antiga=null;salvar();renderPrecos();atualizar();return;}
     b.setAttribute("data-confirm","1");b.textContent="Clique de novo para apagar";
