@@ -312,6 +312,8 @@ tr.is-best td:first-child{box-shadow:inset 3px 0 0 var(--text);}
 .sw-need{display:inline-block;width:22px;height:14px;border-radius:4px;background:var(--warn-soft);box-shadow:inset 0 0 0 2px var(--warn-line);}
 .g-precos{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start;}
 .span-all{grid-column:1/-1;}
+.antiga{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);}
+.antiga .btn-row{align-items:center;flex-wrap:wrap;}
 .regras{display:grid;gap:12px;}
 .usado{margin-top:8px;font-size:14px;color:var(--muted);}
 .guide{margin-top:10px;font-size:14px;color:var(--muted);}
@@ -718,6 +720,7 @@ var XATK=[0,8,12,16,19,22,25,28];
 // Talento do nível 500: +5% no dano total dos Pokémon do elemento (informado por Lucas).
 // Conta: multiplica o dano final do Pokémon (X-Attack, Stars, treino e boost) por 1,05.
 var TAL_PCT=5;
+// Pokémon de dois elementos: com o talento dos dois ganha os 5%; com o de um só, 2,5% (informado por Lucas).
 var ELEM=[["normal","Normal"],["fire","Fire"],["water","Water"],["grass","Grass"],["electric","Electric"],["ice","Ice"],
   ["fighting","Fighting"],["poison","Poison"],["ground","Ground"],["flying","Flying"],["psychic","Psychic"],["bug","Bug"],
   ["rock","Rock"],["ghost","Ghost"],["dragon","Dragon"],["dark","Dark"],["steel","Steel"],["fairy","Fairy"]];
@@ -748,9 +751,9 @@ var FAIXAS=[
   {nome:"Celestial",base:8},{nome:"Mystic",base:5}
 ];
 var BOOST_MAX=50;
-// Quantidades por craft (prints da janela Criar usados na calculadora de boost)
-var QTY_PADRAO=[[22,182,182,343,5],[46,196,273,427,10],[70,357,336,448,16],[215,497,448,553,20],[361,525,581,616,29],
-  [761,693,777,805,36],[1256,889,910,1022,41],[1783,945,1029,1050,46],[2320,1113,1197,1239,49],[3048,1463,1358,1491,55]];
+// As faixas são as mesmas para todos os elementos; a pedra precisa ser de um dos elementos do Pokémon (wiki, Sistema de Boost).
+// A receita de cada elemento muda a cada server save: o jogo sorteia material e quantidade (informado por Lucas).
+// Por isso cada elemento tem a própria tabela de materiais e stones, preenchida por quem usa.
 // Dano necessário por dupla (em mil) para matar o lure, por hazard (linha) e runa de ataque (coluna 0 a 5).
 // Fonte: tabela "Dano necessário por hazard", criada por xandin. Valores copiados como estão.
 var HAZ=[[560,548,537,526,515,505],[578,566,555,545,535,522],[596,584,573,562,552,539],[614,600,590,579,568,556],[632,619,608,596,585,573],
@@ -767,7 +770,7 @@ var NOTAS_CEN={
   p99:"Quantidade que basta em 99 de cada 100 sequências. Margem folgada.",
   worst:"Teto absoluto: falhar em todas as tentativas até a chance chegar a 100%. Não dá para gastar mais que isso."
 };
-var MOTIVO_TXT={qtd:"sem quantidades do craft",conf:"craft não conferido",mat:"falta preço de material"};
+var MOTIVO_TXT={qtd:"sem quantidades do craft",mat:"falta preço de material"};
 
 /* ============================================================
    LÓGICA (pura)
@@ -834,7 +837,8 @@ function fx(t){return {k:"x:"+t,t:"xatk",tier:t};}
 function ffee(rar,e){return {k:"f:"+rar+":"+e,t:"fee",rar:rar,e:e};}
 var FDIA={k:"dia",t:"dia"};
 var FCOPIA={k:"copia",t:"copia"};
-function fstone(fi,why){return {k:"s:"+fi,t:"stone",fi:fi,why:why};}
+function fstone(e,fi,why){return {k:"s:"+e+":"+fi,t:"stone",e:e,fi:fi,why:why};}
+function felem(i){return {k:"el:"+i,t:"elem",i:i};}
 function uniqItems(a){var o=[],s={};a.forEach(function(x){if(!s[x.k]){s[x.k]=1;o.push(x);}});return o;}
 
 /* ---- custos ---- */
@@ -869,24 +873,25 @@ function custoStar(s0,s,rar,preco,ctx){
   r.falta=uniqItems(r.falta);
   return r;
 }
-function custoBoost(b0,n,ctx){
+// tbl: custo por stone de cada faixa para este Pokémon (o elemento mais barato entre os dele, ver stonesDoPoke)
+function custoBoost(b0,n,ctx,tbl){
   var cont={};
   for(var i=1;i<=n;i++){var fi=faixaDoBoost(b0+i);cont[fi]=(cont[fi]||0)+1;}
   var c=0,st=0,f=[],det=[];
   Object.keys(cont).map(Number).sort(function(a,b){return a-b;}).forEach(function(fi){
-    var m=cont[fi],stones=stonesNaFaixa(fi,m,ctx.ganho,ctx.cenario),u=ctx.stone[fi];
+    var m=cont[fi],stones=stonesNaFaixa(fi,m,ctx.ganho,ctx.cenario),u=tbl[fi];
     st+=stones;
-    if(!u.ok){f.push(fstone(fi,u.motivo));det.push({fi:fi,m:m,stones:stones,custo:null});return;}
-    c+=stones*u.unit;det.push({fi:fi,m:m,stones:stones,custo:stones*u.unit,via:u.via});
+    if(!u.ok){f=f.concat(u.falta);det.push({fi:fi,m:m,stones:stones,custo:null});return;}
+    c+=stones*u.unit;det.push({fi:fi,m:m,stones:stones,custo:stones*u.unit,via:u.via,e:u.e});
   });
-  return {c:c,falta:f,stones:st,det:det};
+  return {c:c,falta:uniqItems(f),stones:st,det:det};
 }
 
 /* ---- dano ----
    Bônus em % do X-Attack, da Star e do treino SOMAM: dano = base × (1 + X-Attack + Stars × %Star + treino).
    O dano medido inclui X-Attack, Stars e treino, mas não a runa: a runa entra pela coluna da tabela de hazard.
    O boost soma "dano por boost"; se o ganho acompanha os bônus em %, cresce junto com eles. */
-function montarModelo(p,ctx,F){
+function montarModelo(p,ctx,F,i){
   if(!(F>0))F=1;
   var D0=parseNum(p.dano),b0=parseNum(p.boost),k=parseNum(p.danoBoost),P=parseNum(p.preco);
   var h0=p.held===""?null:+p.held,s0=+p.stars||0,rar=p.rar;
@@ -903,7 +908,7 @@ function montarModelo(p,ctx,F){
   var M0=1+XATK[h0]/100+s0*r+t;
   // D0 = dano de hoje na conta (com o talento simulado, se houver); Dmed = dano medido no jogo
   return {D0:D0*F,Dmed:D0,F:F,h0:h0,b0:b0,s0:s0,k:k,P:valido(P)?P:null,rar:rar,r:r,podeStar:!!RARMAP[rar],
-    treino:tl,t:t,M0:M0,B0:D0/M0};
+    treino:tl,t:t,M0:M0,B0:D0/M0,elems:elemsDe(p),stone:stonesDoPoke(elemsDe(p),ctx,i)};
 }
 function mult(m,h,s){return 1+XATK[h]/100+s*m.r+m.t;}
 function porBoost(m,h,s,esc){return esc?m.k*mult(m,h,s)/m.M0:m.k;}
@@ -914,7 +919,7 @@ function boostsNecessarios(m,h,s,esc,alvo){
   return Math.ceil((alvo-base)/(porBoost(m,h,s,esc)*m.F)-1e-9);
 }
 function avaliar(m,h,s,n,ctx){
-  var ch=custoHeld(m.h0,h,ctx),cs=custoStar(m.s0,s,m.rar,m.P,ctx),cb=custoBoost(m.b0,n,ctx);
+  var ch=custoHeld(m.h0,h,ctx),cs=custoStar(m.s0,s,m.rar,m.P,ctx),cb=custoBoost(m.b0,n,ctx,m.stone);
   return {h:h,s:s,n:n,dano:danoCom(m,h,s,n,ctx.escala),custo:ch.c+cs.c+cb.c,
     falta:uniqItems(ch.falta.concat(cs.falta,cb.falta)),ch:ch,cs:cs,cb:cb};
 }
@@ -960,7 +965,7 @@ function opcoes(m,ctx){
   var sMax=m.podeStar?5:m.s0,nMax=BOOST_MAX-m.b0;
   for(h=m.h0;h<=7;h++)held[h]=custoHeld(m.h0,h,ctx);
   for(s=m.s0;s<=sMax;s++)star[s]=custoStar(m.s0,s,m.rar,m.P,ctx);
-  for(n=0;n<=nMax;n++)boost[n]=custoBoost(m.b0,n,ctx);
+  for(n=0;n<=nMax;n++)boost[n]=custoBoost(m.b0,n,ctx,m.stone);
   for(h=m.h0;h<=7;h++)for(s=m.s0;s<=sMax;s++)for(n=0;n<=nMax;n++){
     var a=held[h],b=star[s],c=boost[n];
     ops.push({h:h,s:s,n:n,dano:danoCom(m,h,s,n,ctx.escala),custo:a.c+b.c+c.c,
@@ -1140,7 +1145,24 @@ function opt(v,txt,cur){return '<option value="'+v+'"'+(String(cur)===String(v)?
    ============================================================ */
 var N=6,KEY="pka-planejador-2x2x2:v1";
 var PASSOS=["time","precos","melhorar","compras"];
-function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0",elem:""};}
+function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0",elem:"",elem2:""};}
+// tabela de stones de um elemento: materiais do craft (nome e preço), e por faixa o preço da stone pronta e a quantidade de cada material
+var NMAT_PADRAO=5;
+function tabelaVazia(){
+  var mats=[];for(var i=0;i<NMAT_PADRAO;i++)mats.push({nome:"",preco:""});
+  return {materiais:mats,stones:FAIXAS.map(function(){return {market:"",qty:mats.map(function(){return "";})};})};
+}
+function normTabela(t){
+  if(!t||typeof t!=="object"||!Array.isArray(t.materiais)||!t.materiais.length)return null;
+  var mats=t.materiais.map(function(m){m=m||{};return {nome:str(m.nome,""),preco:str(m.preco,"")};});
+  var sts=Array.isArray(t.stones)&&t.stones.length===FAIXAS.length?t.stones:[];
+  return {materiais:mats,stones:FAIXAS.map(function(_,fi){
+    var st=sts[fi]||{},q=Array.isArray(st.qty)?st.qty:[];
+    return {market:str(st.market,""),qty:mats.map(function(_,i){return str(q[i],"");})};
+  })};
+}
+// elementos do Pokémon, sem repetir (1 ou 2)
+function elemsDe(p){var r=[];[p.elem,p.elem2].forEach(function(e){if(e&&ELEMMAP[e]&&r.indexOf(e)<0)r.push(e);});return r;}
 function feesVazias(){var o={};RAR.forEach(function(r){o[r.id]=[0,1,2,3,4].map(function(){return {d:"",g:""};});});return o;}
 function estadoPadrao(){
   var time=[];for(var i=0;i<N;i++)time.push(pokeVazio());
@@ -1150,8 +1172,8 @@ function estadoPadrao(){
       xatk:["","","","","","",""],
       diamante:"",fees:feesVazias(),starRar:"t1",
       ganho:"10",cenario:"mean",escala:"sim",lista:{de:"",ate:""},listaCen:"mean",listaPoke:"",listaModo:"barato",
-      materiais:[{nome:"Material 1",preco:""},{nome:"Material 2",preco:""},{nome:"Material 3",preco:""},{nome:"Material 4",preco:""},{nome:"Material 5",preco:""}],
-      stones:FAIXAS.map(function(f,i){return {market:"",conf:true,qty:QTY_PADRAO[i].map(String)};})
+      listaElem:"",
+      elem:{},antiga:null
     }
   };
 }
@@ -1175,6 +1197,8 @@ function normalizar(o){
       Object.keys(v).forEach(function(k){v[k]=str(p[k],v[k]);});
       if(v.funcao!=="lurer"&&v.funcao!=="damage")v.funcao="";
       if(!ELEMMAP[v.elem])v.elem="";
+      if(!ELEMMAP[v.elem2]||v.elem2===v.elem)v.elem2="";
+      if(!v.elem&&v.elem2){v.elem=v.elem2;v.elem2="";}
       return v;
     });
   }
@@ -1202,21 +1226,17 @@ function normalizar(o){
     if(["none","mean","p90","p99","worst"].indexOf(p.listaCen)>=0)s.precos.listaCen=p.listaCen;
     if(/^[0-5]?$/.test(String(p.listaPoke)))s.precos.listaPoke=String(p.listaPoke);
     if(p.listaModo==="barato"||p.listaModo==="craft")s.precos.listaModo=p.listaModo;
-    if(Array.isArray(p.materiais)&&p.materiais.length>=1){
-      s.precos.materiais=p.materiais.map(function(m){m=m||{};return {nome:str(m.nome,""),preco:str(m.preco,"")};});
-      if(Array.isArray(p.stones)&&p.stones.length===FAIXAS.length){
-        s.precos.stones=p.stones.map(function(st,fi){
-          st=st||{};var q=Array.isArray(st.qty)?st.qty:[];
-          var qty=s.precos.materiais.map(function(_,i){return str(q[i],"0");});
-          // as quantidades da tabela sempre valem para o craft (não há mais a marca "Conferidas")
-          return {market:str(st.market,""),conf:true,qty:qty};
-        });
-      }else{
-        s.precos.stones=FAIXAS.map(function(){return {market:"",conf:true,qty:s.precos.materiais.map(function(){return "0";})};});
-      }
-    }
+    if(typeof p.listaElem==="string"&&p.listaElem.split("/").every(function(e){return !!ELEMMAP[e];}))s.precos.listaElem=p.listaElem;
+    if(p.elem&&typeof p.elem==="object")ELEM.forEach(function(e){var t=normTabela(p.elem[e[0]]);if(t)s.precos.elem[e[0]]=t;});
+    // dados de antes das tabelas por elemento: uma tabela só para o time todo. Fica guardada até a pessoa dizer de qual elemento ela é.
+    var velha=p.antiga?normTabela(p.antiga):(Array.isArray(p.materiais)?normTabela({materiais:p.materiais,stones:p.stones}):null);
+    if(velha&&tabelaTemPreco(velha))s.precos.antiga=velha;
   }
   return s;
+}
+// a tabela tem algum preço digitado (material ou stone pronta)?
+function tabelaTemPreco(t){
+  return t.materiais.some(function(m){return String(m.preco).trim()!==""||!/^(Material \d+)?$/.test(String(m.nome).trim());})||t.stones.some(function(st){return String(st.market).trim()!=="";});
 }
 var state=estadoPadrao();
 var storageOk=(function(){try{var k=KEY+":t";localStorage.setItem(k,"1");localStorage.removeItem(k);return true;}catch(e){return false;}})();
@@ -1227,21 +1247,52 @@ function setPath(path,v){var ks=path.split("."),o=state;for(var i=0;i<ks.length-
 function nomeDe(i){return state.time[i].nome.trim()||("Pokémon "+(i+1));}
 // talento do elemento: "" = não tem, "tem" = já tem (já está no dano medido), "sim" = simular que tem
 function talDe(e){return e?(state.talento[e]||""):"";}
-function fatorTal(i){return talDe(state.time[i].elem)==="sim"?1+TAL_PCT/100:1;}
+// % do talento para os elementos do Pokémon, dado quais talentos estão ativos
+function talPct(els,ativo){
+  if(!els.length)return 0;
+  var k=els.filter(ativo).length;
+  return k===els.length?TAL_PCT:(k?TAL_PCT/2:0);
+}
+// multiplicador do dano medido: o dano medido já tem os talentos "já tenho"; somamos os simulados ("sim") e, se pedido, o de "extra".
+// Com "com", contam só os talentos marcados nele (no lugar dos simulados).
+function fatorElems(els,extra,com){
+  var tem=function(e){return talDe(e)==="tem";};
+  var on=function(e){return tem(e)||e===extra||(com?!!com[e]:talDe(e)==="sim");};
+  return (1+talPct(els,on)/100)/(1+talPct(els,tem)/100);
+}
+function fatorTal(i){return fatorElems(elemsDe(state.time[i]));}
+// garante uma tabela de stones para cada elemento do time
+function garantirTabelas(){
+  var P=state.precos;
+  elementosDoTime().forEach(function(e){if(!P.elem[e])P.elem[e]=tabelaVazia();});
+}
+// elementos do time na ordem em que aparecem
+function elementosDoTime(){
+  var r=[];state.time.forEach(function(p){elemsDe(p).forEach(function(e){if(r.indexOf(e)<0)r.push(e);});});return r;
+}
+function quemUsa(e){var r=[];state.time.forEach(function(p,i){if(elemsDe(p).indexOf(e)>=0)r.push(nomeDe(i));});return r;}
 
 /* ============================================================
    ANÁLISE (recalculada a cada mudança)
    ============================================================ */
 function contexto(){
   var P=state.precos;
-  var ctx={xatk:[0],diamante:parseNum(P.diamante),fees:{},stone:[],
+  var ctx={xatk:[0],diamante:parseNum(P.diamante),fees:{},stoneE:{},
     ganho:parseNum(P.ganho),cenario:P.cenario,escala:P.escala==="sim"};
   if(!valido(ctx.ganho)||ctx.ganho<0)ctx.ganho=10;
   P.xatk.forEach(function(x){ctx.xatk.push(parseNum(x));});
   RAR.forEach(function(r){ctx.fees[r.id]=P.fees[r.id].map(function(t){return {d:parseNum(t.d),g:parseNum(t.g)};});});
-  ctx.stone=P.stones.map(function(st){
+  Object.keys(P.elem).forEach(function(e){ctx.stoneE[e]=custoTabela(P.elem[e]);});
+  var a=state.metaManual?parseNum(state.alvo):HAZ[+state.hazard][+state.runaCol]*1000;
+  ctx.alvo=a;
+  ctx.meta=(valido(a)&&a>0)?a/2:null;
+  return ctx;
+}
+// custo por stone de cada faixa de uma tabela: o menor entre craftar e comprar pronta
+function custoTabela(T){
+  return T.stones.map(function(st){
     var craft=0,matOk=true,usa=false;
-    P.materiais.forEach(function(m,mi){
+    T.materiais.forEach(function(m,mi){
       var q=parseNum(st.qty[mi]);
       if(!valido(q)||q<=0)return;
       usa=true;
@@ -1249,19 +1300,30 @@ function contexto(){
       if(!valido(pr)){matOk=false;return;}
       craft+=q*pr;
     });
-    var craftOk=usa&&st.conf&&matOk;
+    var craftOk=usa&&matOk;
     var mk=parseNum(st.market),mkOk=valido(mk)&&mk>0;
     var r={craft:craftOk?craft:null,market:mkOk?mk:null,ok:craftOk||mkOk,
-      motivo:!usa?"qtd":(!st.conf?"conf":(!matOk?"mat":""))};
+      motivo:!usa?"qtd":(!matOk?"mat":"")};
     if(craftOk&&mkOk){r.unit=Math.min(craft,mk);r.via=mk<craft?"pronta":"craft";}
     else if(craftOk){r.unit=craft;r.via="craft";}
     else if(mkOk){r.unit=mk;r.via="pronta";}
     return r;
   });
-  var a=state.metaManual?parseNum(state.alvo):HAZ[+state.hazard][+state.runaCol]*1000;
-  ctx.alvo=a;
-  ctx.meta=(valido(a)&&a>0)?a/2:null;
-  return ctx;
+}
+var TAB_SEM=FAIXAS.map(function(){return {ok:false,motivo:"qtd",craft:null,market:null};});
+// Para cada faixa, a stone mais barata entre os elementos do Pokémon (pode ser um elemento numa faixa e o outro na seguinte).
+// Sem preço em nenhum dos elementos, a faixa fica pendente com o que falta em cada um.
+function stonesDoPoke(els,ctx,i){
+  return FAIXAS.map(function(_,fi){
+    if(!els.length)return {ok:false,falta:[felem(i)]};
+    var best=null,falta=[];
+    els.forEach(function(e){
+      var u=(ctx.stoneE[e]||TAB_SEM)[fi];
+      if(!u.ok){falta.push(fstone(e,fi,u.motivo));return;}
+      if(!best||u.unit<best.unit-1e-9)best={ok:true,unit:u.unit,via:u.via,e:e};
+    });
+    return best||{ok:false,falta:falta};
+  });
 }
 function analisarRotacao(ctx){
   var alvo=ctx.alvo,inval=0;
@@ -1287,7 +1349,7 @@ function analisar(){
   var info=state.time.map(function(p,i){
     var dm=parseNum(p.dano),F=fatorTal(i);
     var r={i:i,nome:nomeDe(i),funcao:p.funcao,dano:valido(dm)?dm*F:dm,vazio:!p.nome.trim()&&!String(p.dano).trim()};
-    var m=montarModelo(p,ctx,F);r.m=m;
+    var m=montarModelo(p,ctx,F,i);r.m=m;
     if(m.falta){r.fr=r.frOt=valido(r.dano)?[fixo(r.dano)]:null;return r;}
     var ops=opcoes(m,ctx);
     r.ops=ops;r.fr=fronteira(ops,false);r.frOt=fronteira(ops,true);
@@ -1307,9 +1369,10 @@ function analisar(){
   Object.keys(pend).forEach(function(k){
     var it=pend[k];
     if(it.t!=="stone"||it.why!=="mat")return;
-    state.precos.materiais.forEach(function(mt,mi){
-      var q=parseNum(state.precos.stones[it.fi].qty[mi]);
-      if(valido(q)&&q>0&&!valido(parseNum(mt.preco)))matNeed["m:"+mi]=true;
+    var T=state.precos.elem[it.e];if(!T)return;
+    T.materiais.forEach(function(mt,mi){
+      var q=parseNum(T.stones[it.fi].qty[mi]);
+      if(valido(q)&&q>0&&!valido(parseNum(mt.preco)))matNeed["m:"+it.e+":"+mi]=true;
     });
   });
   return {ctx:ctx,rot:rot,info:info,tp:tp,tpOt:tpOt,dica:dica,plano:plano,pend:pend,matNeed:matNeed};
@@ -1325,8 +1388,9 @@ function parceiroDe(i){
 
 /* ---- textos do que falta ---- */
 function linhasFalta(itens){
-  var fees={},xs=[],sts=[],dia=false,cop=false;
+  var fees={},xs=[],sts=[],els=[],dia=false,cop=false;
   itens.forEach(function(it){
+    if(it.t==="elem"){els.push(it);return;}
     if(it.t==="fee")(fees[it.rar]=fees[it.rar]||[]).push(it);
     else if(it.t==="xatk")xs.push(it);
     else if(it.t==="stone")sts.push(it);
@@ -1341,13 +1405,21 @@ function linhasFalta(itens){
   });
   if(dia)L.push({txt:"Valor de 1 Diamond em gold",go:FDIA});
   if(xs.length){xs.sort(function(a,b){return a.tier-b.tier;});L.push({txt:"Preço do X-Attack "+juntar(xs.map(function(x){return "Tier "+x.tier;})),go:xs[0]});}
+  if(els.length)L.push({txt:"Elemento de "+juntar(els.map(function(x){return nomeDe(x.i);}))+", para saber de qual stone ele precisa",go:els[0]});
   if(sts.length){
-    sts.sort(function(a,b){return a.fi-b.fi;});
-    var ws=sts.map(function(x){return x.why;}),mot;
-    if(ws.every(function(w){return w==="conf";}))mot="conferir as quantidades do craft ou informar o preço da stone pronta";
-    else if(ws.every(function(w){return w==="mat";}))mot="falta preço de material do craft, ou informe o preço da stone pronta";
-    else mot="conferir o craft (quantidades e preços dos materiais) ou informar o preço da stone pronta";
-    L.push({txt:(sts.length>1?"Stones ":"Stone ")+juntar(sts.map(function(x){return FAIXAS[x.fi].nome;}))+": "+mot,go:sts[0]});
+    // agrupa por elemento, na ordem do time
+    var porE={},ordemE=[];
+    sts.forEach(function(x){if(!porE[x.e]){porE[x.e]=[];ordemE.push(x.e);}porE[x.e].push(x);});
+    var varios=ordemE.length>1;
+    ordemE.forEach(function(e){
+      var g=porE[e].slice().sort(function(a,b){return a.fi-b.fi;});
+      var ws=g.map(function(x){return x.why;}),mot;
+      if(ws.every(function(w){return w==="mat";}))mot="falta preço de material do craft, ou informe o preço da stone pronta";
+      else if(ws.every(function(w){return w==="qtd";}))mot="informe as quantidades do craft ou o preço da stone pronta";
+      else mot="complete o craft (quantidades e preços dos materiais) ou informe o preço da stone pronta";
+      L.push({txt:(g.length>1?"Stones ":"Stone ")+juntar(g.map(function(x){return FAIXAS[x.fi].nome;}))+" de "+ELEMMAP[e]+": "+mot,go:g[0]});
+    });
+    if(varios)L.push({txt:"Para Pokémon de dois elementos, basta o preço de um dos dois em cada faixa",info:true});
   }
   if(cop)L.push({txt:"Preço de uma cópia sem Star deste Pokémon",go:FCOPIA});
   return L;
@@ -1357,7 +1429,8 @@ function goBtn(it,txt,pi){
   var a=' data-act="ir" data-t="'+it.t+'"';
   if(it.t==="xatk")a+=' data-tier="'+it.tier+'"';
   if(it.t==="fee")a+=' data-rar="'+it.rar+'" data-e="'+it.e+'"';
-  if(it.t==="stone")a+=' data-fi="'+it.fi+'" data-why="'+it.why+'"';
+  if(it.t==="stone")a+=' data-e="'+it.e+'" data-fi="'+it.fi+'" data-why="'+it.why+'"';
+  if(it.t==="elem")a+=' data-i="'+it.i+'"';
   if(pi!=null)a+=' data-pi="'+pi+'"';
   return '<button type="button" class="btn btn-sm"'+a+'>'+(txt||"Preencher")+'</button>';
 }
@@ -1505,10 +1578,17 @@ function atualizarTime(){
 }
 // aviso no passo 1 quando algum talento está simulado
 function talAvisoHtml(){
-  var por={};
-  state.time.forEach(function(p,i){if(fatorTal(i)>1)(por[p.elem]=por[p.elem]||[]).push(esc(nomeDe(i)));});
-  var ks=Object.keys(por);if(!ks.length)return "";
-  return '<section class="panel"><p class="fine" style="max-width:none">Contando o talento simulado (+'+TAL_PCT+'%) de '+juntar(ks.map(function(e){return ELEMMAP[e]+" ("+juntar(por[e])+")";}))+'. Para tirar, mude no passo 3, em "Talento de elemento".</p></section>';
+  var L=[];
+  state.time.forEach(function(p,i){
+    var F=fatorTal(i);if(F<=1)return;
+    var sim=elemsDe(p).filter(function(e){return talDe(e)==="sim";}).map(function(e){return ELEMMAP[e];});
+    L.push(esc(nomeDe(i))+" (+"+fmtPct(F)+"%, "+juntar(sim)+")");
+  });
+  if(!L.length)return "";
+  return '<section class="panel"><p class="fine" style="max-width:none">Contando talento de elemento simulado: '+juntar(L)+'. Para tirar, mude no passo 3, em "Talento de elemento".</p></section>';
+}
+// ganho do multiplicador em %, com até 2 casas (5 ou 2,5)
+function fmtPct(F){return fmt2.format(Math.round((F-1)*10000)/100);
 }
 function rotHtml(rot){
   if(!rot.pronto){
@@ -1607,40 +1687,56 @@ function renderPrecos(){
       opt("sim","Sim, cresce junto",P.escala)+opt("nao","Não, é sempre o mesmo valor",P.escala)+
       '</select><span class="hint">Premissa, não confirmada no guia. O guia diz que cada boost vale 3 níveis no cálculo de dano; se o X-Attack multiplica esse dano, o ganho cresce junto.</span></div>'+
     '</div></details></section>';
-  // Stones
-  h+='<section class="panel span-all" id="sec-stones"><div class="panel-head"><div><h2>Stones de boost</h2><p class="panel-sub">O custo por stone é o menor entre craftar e comprar pronta. Quanto comprar de cada material, por stone e para chegar no boost que você quer, fica no passo 4.</p>'+
+  // Stones: uma tabela por elemento do time
+  garantirTabelas();
+  var els=elementosDoTime();
+  h+='<section class="panel span-all" id="sec-stones"><div class="panel-head"><div><h2>Stones de boost</h2><p class="panel-sub">Cada elemento tem a própria sequência de stones e a própria receita. Um Pokémon de dois elementos pode usar a stone de qualquer um deles: em cada faixa, o planejador usa a mais barata. O custo por stone é o menor entre craftar e comprar pronta. Quanto comprar de cada material fica no passo 4.</p>'+
       '<div class="btn-row"><button type="button" class="btn btn-sm" data-act="tab" data-v="compras">Ver quanto comprar de cada material</button></div></div><span id="pill-stones"></span></div>'+
-    '<div class="stones-l"><div><h3>Materiais do craft</h3><p class="fine">Para material que você dropa, use o preço de venda no market: usar no craft é abrir mão desse dinheiro.</p>'+
-    '<div class="mats">'+
-    P.materiais.map(function(mt,mi){
-      return '<div class="mat"><div class="mat-top"><label class="sr" for="mn-'+mi+'">Nome do material '+(mi+1)+'</label><input type="text" id="mn-'+mi+'" data-path="precos.materiais.'+mi+'.nome" data-rebuild="cab" placeholder="Nome do material" autocomplete="off">'+
-        '<button type="button" class="btn btn-x" data-act="rm-mat" data-v="'+mi+'" aria-label="Remover material '+(mi+1)+'"'+(P.materiais.length<=1?" disabled":"")+'>✕</button></div>'+
-        '<div class="fld"><label class="mini" for="mp-'+mi+'">Preço unitário</label><input type="text" id="mp-'+mi+'" data-path="precos.materiais.'+mi+'.preco" data-fmt="gold" data-need="m:'+mi+'" placeholder="ex.: 1.500" autocomplete="off"><span class="echo"></span></div></div>';
-    }).join("")+
-    '<button type="button" class="mat-add" data-act="add-mat">+ Adicionar material</button></div></div>'+
-    '<div><h3>Stones</h3><p class="fine">Quantidade de cada material em 1 stone, como na janela Criar, e o preço da stone pronta. O custo por stone é o menor dos dois caminhos.</p>'+
-    '<div class="scroll"><table class="t-stones"><colgroup><col class="c-nome"><col class="c-pronta">'+P.materiais.map(function(){return '<col>';}).join("")+'<col class="c-custo"></colgroup><thead><tr id="st-head"></tr></thead><tbody>'+
-    FAIXAS.map(function(f,fi){
-      var r='<tr id="sr-'+fi+'" data-need="s:'+fi+'"><th scope="row" class="nw"><b>'+f.nome+'</b><span class="via">+'+(fi*5)+' até +'+(fi*5+5)+', chance '+f.base+'%</span></th>'+
-        '<td data-l="Pronta no market"><label class="sr" for="sm-'+fi+'">Stone '+f.nome+' pronta no market</label><input type="text" id="sm-'+fi+'" data-path="precos.stones.'+fi+'.market" data-fmt="gold" data-need="s:'+fi+'" placeholder="—" autocomplete="off"></td>';
-      P.materiais.forEach(function(mt,mi){
-        r+='<td class="r" data-mi="'+mi+'" data-l="'+nomeMat(mt,mi)+'"><label class="sr" for="sq-'+fi+'-'+mi+'">Quantidade do material '+(mi+1)+' na stone '+f.nome+'</label><input type="text" id="sq-'+fi+'-'+mi+'" inputmode="numeric" data-path="precos.stones.'+fi+'.qty.'+mi+'" data-fmt="int" autocomplete="off"></td>';
-      });
-      return r+'<td class="r cost" id="cs-'+fi+'"></td></tr>';
-    }).join("")+'</tbody></table></div>'+
-    '<p class="note">As quantidades que vieram preenchidas são dos prints usados na calculadora de boost: as cinco primeiras faixas são de um elemento e as cinco últimas, de outro. Ao melhorar um Pokémon de outro elemento, atualize materiais e quantidades.</p></div></div></section>';
+    '<p class="note">A receita muda a cada server save: o jogo sorteia o material e a quantidade de cada elemento. Confira na janela Criar e atualize aqui.</p>';
+  if(P.antiga){
+    h+='<div class="antiga"><h3>Tabela de antes da separação por elemento</h3><p class="fine">Ela tem preços que você já preencheu, mas não diz de qual elemento é. Escolha o elemento para movê-la para lá (substitui a tabela desse elemento), ou apague.</p>'+
+      '<div class="btn-row"><div class="fld"><label class="sr" for="ant-e">Elemento da tabela antiga</label><select id="ant-e">'+ELEM.map(function(e){return opt(e[0],e[1],els[0]||"");}).join("")+'</select></div>'+
+      '<button type="button" class="btn btn-sm" data-act="ant-mover">Mover para este elemento</button><button type="button" class="btn btn-sm" data-act="ant-apagar">Apagar tabela antiga</button></div></div>';
+  }
+  if(!els.length)h+='<p class="muted">Escolha o elemento de cada Pokémon no passo 1, em "Dados de melhoria". Aparece aqui uma tabela de stones para cada elemento do time.</p>';
+  h+='</section>';
+  els.forEach(function(e){h+=tabelaElemHtml(e,P.elem[e]);});
   h+='</div>';
   $("precos-body").innerHTML=h;
-  renderStHead();
   preencherInputs($("precos-body"));
 }
-function renderStHead(){
-  var P=state.precos,el=$("st-head");if(!el)return;
-  el.innerHTML='<th scope="col">Stone</th><th scope="col">Pronta no market</th>'+
-    P.materiais.map(function(mt,mi){return '<th scope="col" class="r">'+esc(mt.nome||("Material "+(mi+1)))+'</th>';}).join("")+
+function tabelaElemHtml(e,T){
+  var EN=ELEMMAP[e],pre="precos.elem."+e+".";
+  return '<section class="panel span-all sec-st" id="sec-st-'+e+'"><div class="panel-head"><div><h2>Stones de '+EN+'</h2><p class="panel-sub">Usada por '+esc(juntar(quemUsa(e)))+'.</p></div><span id="pill-st-'+e+'"></span></div>'+
+    '<div class="stones-l"><div><h3>Materiais do craft de '+EN+'</h3><p class="fine">Para material que você dropa, use o preço de venda no market: usar no craft é abrir mão desse dinheiro.</p>'+
+    '<div class="mats">'+
+    T.materiais.map(function(mt,mi){
+      return '<div class="mat"><div class="mat-top"><label class="sr" for="mn-'+e+'-'+mi+'">Nome do material '+(mi+1)+' de '+EN+'</label><input type="text" id="mn-'+e+'-'+mi+'" data-path="'+pre+'materiais.'+mi+'.nome" data-rebuild="cab" data-e="'+e+'" placeholder="Material '+(mi+1)+'" autocomplete="off">'+
+        '<button type="button" class="btn btn-x" data-act="rm-mat" data-e="'+e+'" data-v="'+mi+'" aria-label="Remover material '+(mi+1)+' de '+EN+'"'+(T.materiais.length<=1?" disabled":"")+'>✕</button></div>'+
+        '<div class="fld"><label class="mini" for="mp-'+e+'-'+mi+'">Preço unitário</label><input type="text" id="mp-'+e+'-'+mi+'" data-path="'+pre+'materiais.'+mi+'.preco" data-fmt="gold" data-need="m:'+e+':'+mi+'" placeholder="ex.: 1.500" autocomplete="off"><span class="echo"></span></div></div>';
+    }).join("")+
+    '<button type="button" class="mat-add" data-act="add-mat" data-e="'+e+'">+ Adicionar material</button></div></div>'+
+    '<div><h3>Stones de '+EN+'</h3><p class="fine">Quantidade de cada material em 1 stone, como na janela Criar, e o preço da stone pronta. O custo por stone é o menor dos dois caminhos.</p>'+
+    '<div class="scroll"><table class="t-stones"><colgroup><col class="c-nome"><col class="c-pronta">'+T.materiais.map(function(){return '<col>';}).join("")+'<col class="c-custo"></colgroup><thead><tr id="st-head-'+e+'">'+stHeadHtml(T)+'</tr></thead><tbody>'+
+    FAIXAS.map(function(f,fi){
+      var r='<tr id="sr-'+e+'-'+fi+'" data-need="s:'+e+':'+fi+'"><th scope="row" class="nw"><b>'+f.nome+'</b><span class="via">+'+(fi*5)+' até +'+(fi*5+5)+', chance '+f.base+'%</span></th>'+
+        '<td data-l="Pronta no market"><label class="sr" for="sm-'+e+'-'+fi+'">Stone '+f.nome+' de '+EN+' pronta no market</label><input type="text" id="sm-'+e+'-'+fi+'" data-path="'+pre+'stones.'+fi+'.market" data-fmt="gold" data-need="s:'+e+':'+fi+'" placeholder="—" autocomplete="off"></td>';
+      T.materiais.forEach(function(mt,mi){
+        r+='<td class="r" data-e="'+e+'" data-mi="'+mi+'" data-l="'+nomeMat(mt,mi)+'"><label class="sr" for="sq-'+e+'-'+fi+'-'+mi+'">Quantidade do material '+(mi+1)+' na stone '+f.nome+' de '+EN+'</label><input type="text" id="sq-'+e+'-'+fi+'-'+mi+'" inputmode="numeric" data-path="'+pre+'stones.'+fi+'.qty.'+mi+'" data-fmt="int" placeholder="0" autocomplete="off"></td>';
+      });
+      return r+'<td class="r cost" id="cs-'+e+'-'+fi+'"></td></tr>';
+    }).join("")+'</tbody></table></div></div></div></section>';
+}
+function stHeadHtml(T){
+  return '<th scope="col">Stone</th><th scope="col">Pronta no market</th>'+
+    T.materiais.map(function(mt,mi){return '<th scope="col" class="r">'+nomeMat(mt,mi)+'</th>';}).join("")+
     '<th scope="col" class="r th-cost">Custo por stone</th>';
-  var tds=document.querySelectorAll(".t-stones td[data-mi]");
-  for(var i=0;i<tds.length;i++){var mt=P.materiais[+tds[i].getAttribute("data-mi")];if(mt)tds[i].setAttribute("data-l",mt.nome||("Material "+(+tds[i].getAttribute("data-mi")+1)));}
+}
+function renderStHead(e){
+  var T=state.precos.elem[e],el=$("st-head-"+e);if(!T||!el)return;
+  el.innerHTML=stHeadHtml(T);
+  var tds=document.querySelectorAll('.t-stones td[data-e="'+e+'"][data-mi]');
+  for(var i=0;i<tds.length;i++){var mi=+tds[i].getAttribute("data-mi"),mt=T.materiais[mi];if(mt)tds[i].setAttribute("data-l",mt.nome||("Material "+(mi+1)));}
 }
 function semDadosTime(){return !A||A.info.every(function(r){return r.m.falta;});}
 function pillHtml(n){return n?'<span class="pill warn">'+plural(n,"pendente","pendentes")+'</span>':(semDadosTime()?'<span class="pill">Faltam dados do time</span>':'<span class="pill ok">Nada pendente</span>');}
@@ -1651,10 +1747,14 @@ function atualizarPrecos(){
     var k=els[i].getAttribute("data-need");
     els[i].classList.toggle("need",k.indexOf("m:")===0?!!A.matNeed[k]:!!pend[k]);
   }
-  var cnt={x:0,f:0,s:0};
-  Object.keys(pend).forEach(function(k){var t=pend[k].t;if(t==="xatk")cnt.x++;else if(t==="fee"||t==="dia")cnt.f++;else if(t==="stone")cnt.s++;});
-  $("pill-xatk").innerHTML=pillHtml(cnt.x);$("pill-star").innerHTML=pillHtml(cnt.f);$("pill-stones").innerHTML=pillHtml(cnt.s);
-  var idx=[["sec-xatk","X-Attack",cnt.x],["sec-star","Star",cnt.f],["sec-regras","Regras do boost",-1],["sec-stones","Stones",cnt.s]];
+  var cnt={x:0,f:0,s:0,el:0},porE={},elsT=elementosDoTime();
+  Object.keys(pend).forEach(function(k){var t=pend[k].t;if(t==="xatk")cnt.x++;else if(t==="fee"||t==="dia")cnt.f++;else if(t==="stone"){cnt.s++;porE[pend[k].e]=(porE[pend[k].e]||0)+1;}else if(t==="elem")cnt.el++;});
+  $("pill-xatk").innerHTML=pillHtml(cnt.x);$("pill-star").innerHTML=pillHtml(cnt.f);
+  $("pill-stones").innerHTML=cnt.el?'<span class="pill warn">'+plural(cnt.el,"Pokémon sem elemento","Pokémon sem elemento")+'</span>':pillHtml(cnt.s);
+  elsT.forEach(function(e){var pe=$("pill-st-"+e);if(pe)pe.innerHTML=pillHtml(porE[e]||0);});
+  var idx=[["sec-xatk","X-Attack",cnt.x],["sec-star","Star",cnt.f],["sec-regras","Regras do boost",-1]];
+  if(elsT.length)elsT.forEach(function(e){idx.push(["sec-st-"+e,"Stones de "+ELEMMAP[e],porE[e]||0]);});
+  else idx.push(["sec-stones","Stones",cnt.el]);
   $("sec-index").innerHTML=idx.map(function(a){
     return '<button type="button" class="idx" data-act="sec" data-v="'+a[0]+'">'+a[1]+(a[2]>0?'<span class="pill warn">'+a[2]+'</span>':(a[2]===0&&!semDadosTime()?'<span class="pill ok">ok</span>':''))+'</button>';
   }).join("");
@@ -1673,14 +1773,14 @@ function atualizarPrecos(){
   fs.forEach(function(t){if(valido(t.d)&&valido(t.g)){d+=t.d;g+=t.g;}else ok=false;});
   $("soma-etapas").innerHTML=ok?'Soma das suas 5 etapas: <b>'+fmtN.format(d)+' D + '+fmt2.format(g/1e6)+' kk</b>. Compare com o total do guia da forma de pagamento que você usa.':'Preencha as 5 etapas para comparar a soma com o total do guia.';
   // custo por stone
-  ctx.stone.forEach(function(s,fi){
-    var c=$("cs-"+fi);if(!c)return;
+  Object.keys(ctx.stoneE).forEach(function(e){ctx.stoneE[e].forEach(function(s,fi){
+    var c=$("cs-"+e+"-"+fi);if(!c)return;
     if(!s.ok){c.innerHTML='<span class="muted">sem custo</span><span class="via2">'+(MOTIVO_TXT[s.motivo]||"")+'</span>';return;}
     var outro;
     if(s.via==="craft")outro=s.market!=null?"pronta: "+gold(s.market):"sem preço pronta";
     else outro=s.craft!=null?"craft: "+gold(s.craft):(MOTIVO_TXT[s.motivo]||"craft sem custo");
     c.innerHTML='<span class="cost-v">'+gold(s.unit)+'</span><span class="via cost-'+(s.via==="craft"?"craft":"pronta")+'">'+(s.via==="craft"?"craftando":"comprando pronta")+'</span><span class="via2">'+outro+'</span>';
-  });
+  });});
 }
 
 /* ============================================================
@@ -1711,8 +1811,8 @@ function renderForm(){
   var rar=opt("","Escolha",p.rar);
   RAR.forEach(function(r){rar+=opt(r.id,r.nome+" (+"+r.pct+"%)",p.rar);});
   rar+=opt("nao","Não recebe Star",p.rar);
-  var el=opt("","Escolha",p.elem);
-  ELEM.forEach(function(e){el+=opt(e[0],e[1],p.elem);});
+  var el=opt("","Escolha",p.elem),el2=opt("","Não tem",p.elem2);
+  ELEM.forEach(function(e){el+=opt(e[0],e[1],p.elem);if(e[0]!==p.elem)el2+=opt(e[0],e[1],p.elem2);});
   var box=$("det-"+i);box.hidden=false;
   box.innerHTML='<div class="fgrid fgrid-t">'+
       '<div class="fld"><label for="f-held">X-Attack atual</label><select id="f-held" data-path="'+pre+'held">'+held+'</select><span class="echo"></span></div>'+
@@ -1722,12 +1822,51 @@ function renderForm(){
       '<div class="fld"><label for="f-rar">Tier do Pokémon</label><select id="f-rar" data-path="'+pre+'rar">'+rar+'</select><span class="echo">% = bônus por Star</span></div>'+
       '<div class="fld"><label for="f-treino">Treino de Attack (nível)</label><input type="text" id="f-treino" inputmode="numeric" data-path="'+pre+'treino" data-fmt="treino" placeholder="0" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld"><label for="f-preco">Preço da cópia sem Star</label><input type="text" id="f-preco" data-path="'+pre+'preco" data-fmt="gold" placeholder="ex.: 140kk" autocomplete="off"><span class="echo"></span></div>'+
-      '<div class="fld"><label for="f-elem">Elemento</label><select id="f-elem" data-path="'+pre+'elem">'+el+'</select><span class="echo">para o talento do nível 500</span></div>'+
+      '<div class="fld"><label for="f-elem">Elemento</label><select id="f-elem" data-path="'+pre+'elem" data-rebuild="elem">'+el+'</select><span class="echo">stones de boost e talento do nível 500</span></div>'+
+      '<div class="fld"><label for="f-elem2">Segundo elemento</label><select id="f-elem2" data-path="'+pre+'elem2" data-rebuild="elem">'+el2+'</select><span class="echo">'+(elemDaLista(p.nome)?"veio da wiki pelo nome":"se o Pokémon tiver dois")+'</span></div>'+
     '</div>';
   $("f-boost").value=p.boost;$("f-db").value=p.danoBoost;$("f-preco").value=p.preco;$("f-treino").value=p.treino;
   simKey=null;
 }
 
+// atualiza só os campos de elemento do Pokémon aberto (o nome escolhido na lista preenche os elementos)
+function renderFormElems(){
+  var a=$("f-elem"),b=$("f-elem2");if(!a||!b||detAberto<0)return;
+  var p=state.time[detAberto],h=opt("","Não tem",p.elem2);
+  ELEM.forEach(function(e){if(e[0]!==p.elem)h+=opt(e[0],e[1],p.elem2);});
+  b.innerHTML=h;a.value=p.elem;b.value=p.elem2;
+  var ec=b.parentNode.querySelector(".echo");if(ec)ec.textContent=elemDaLista(p.nome)?"veio da wiki pelo nome":"se o Pokémon tiver dois";
+}
+// elementos do Pokémon pela lista da wiki (dados/pokedex.js), quando o nome bate com um da lista
+function normNome(t){return String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[’']/g,"").replace(/\s+/g," ").trim().replace(/^(sh|s\.)\s+/,"shiny ");}
+var elemIdx=null;
+function elemDaLista(nome){
+  if(!elemIdx){
+    var L=window.PKA_POKEDEX;if(!L||!L.length)return null;
+    elemIdx={};
+    L.forEach(function(r){var k=normNome(r[0]);if(r[7]&&!elemIdx[k]){var es=String(r[7]).split("/").filter(function(e){return !!ELEMMAP[e];});if(es.length)elemIdx[k]=es;}});
+  }
+  return elemIdx[normNome(nome)]||null;
+}
+// dados salvos antes dos dois elementos: completa pela lista sem trocar o que a pessoa escolheu
+function completarElems(){
+  var mudou=false;
+  state.time.forEach(function(p){
+    var le=elemDaLista(p.nome);if(!le)return;
+    if(!p.elem){p.elem=le[0];p.elem2=le[1]||"";mudou=true;}
+    else if(!p.elem2&&le.length>1&&le.indexOf(p.elem)>=0){p.elem2=le[0]===p.elem?le[1]:le[0];mudou=true;}
+  });
+  return mudou;
+}
+
+// de qual elemento saem as stones de cada faixa, para Pokémon de dois elementos
+function stonesDeTxt(cb){
+  var g={},ord=[];
+  cb.det.forEach(function(d){if(!d.e)return;if(!g[d.e]){g[d.e]=[];ord.push(d.e);}g[d.e].push(FAIXAS[d.fi].nome);});
+  if(!ord.length)return "";
+  if(ord.length===1)return "stones de "+ELEMMAP[ord[0]];
+  return ord.map(function(e){return juntar(g[e])+" de "+ELEMMAP[e];}).join("; ");
+}
 /* ---- simulador do Pokémon escolhido ---- */
 var simKey=null;
 function renderSim(){
@@ -1839,7 +1978,7 @@ function mudancasLis(r,o){
   var m=r.m,L=[];
   if(o.h>m.h0)L.push('<li><span>X-Attack Tier '+m.h0+' → '+o.h+'</span><b>'+gold(o.ch.c)+'</b></li>');
   if(o.s>m.s0)L.push('<li><span>'+(m.s0===0?"Sem Star":plural(m.s0,"Star","Stars"))+' → '+plural(o.s,"Star","Stars")+' ('+plural(o.cs.copias,"cópia","cópias")+' e taxas)</span><b>'+gold(o.cs.c)+'</b></li>');
-  if(o.n>0)L.push('<li><span>Boost +'+m.b0+' → +'+(m.b0+o.n)+' ('+plural(o.n,"boost","boosts")+') <button type="button" class="linkbtn" data-act="lista-ir" data-poke="'+r.i+'">ver compras</button></span><b>'+gold(o.cb.c)+'</b></li>');
+  if(o.n>0)L.push('<li><span>Boost +'+m.b0+' → +'+(m.b0+o.n)+' ('+plural(o.n,"boost","boosts")+(m.elems.length>1?', '+stonesDeTxt(o.cb):'')+') <button type="button" class="linkbtn" data-act="lista-ir" data-poke="'+r.i+'">ver compras</button></span><b>'+gold(o.cb.c)+'</b></li>');
   return L.join("");
 }
 function dicaHtml(resumo){
@@ -1851,7 +1990,7 @@ function dicaHtml(resumo){
     d.porPoke.map(function(x){
       var r=A.info[x.i];
       return '<li class="grupo"><div class="g-top"><b>'+esc(r.nome)+': '+descCombo(r.m,x.o)+'</b><span class="pill na">chega em '+fmt(x.o.dano)+'</span></div>'+
-        '<ul class="g-itens">'+linhasFalta(x.itens).map(function(l){return '<li><span>'+l.txt+'</span>'+goBtn(l.go,null,x.i)+'</li>';}).join("")+'</ul></li>';
+        '<ul class="g-itens">'+linhasFalta(x.itens).map(function(l){return '<li><span>'+l.txt+'</span>'+(l.go?goBtn(l.go,null,x.i):'')+'</li>';}).join("")+'</ul></li>';
     }).join("")+'</ul></section>';
 }
 function incompletosHtml(){
@@ -1867,8 +2006,8 @@ function incompletosHtml(){
 function hazardComTal(com){
   var rot=A.rot;if(!rot.pronto)return null;
   var danos=state.time.map(function(p,i){
-    var d=parseNum(p.dano),e=p.elem;
-    return d*((e&&talDe(e)!=="tem"&&com[e])?1+TAL_PCT/100:1);
+    var d=parseNum(p.dano);
+    return d*fatorElems(elemsDe(p),null,com);
   });
   var div=melhorDivisao(danos,rot);
   return {h:hazardMax(div.min,+state.runaCol),min:div.min};
@@ -1877,20 +2016,25 @@ function talentoHtml(){
   var grupos={},ordem=[],semElem=[];
   state.time.forEach(function(p,i){
     if(A.info[i].vazio)return;
-    if(!p.elem){semElem.push(i);return;}
-    if(!grupos[p.elem]){grupos[p.elem]=[];ordem.push(p.elem);}
-    grupos[p.elem].push(i);
+    var els=elemsDe(p);
+    if(!els.length){semElem.push(i);return;}
+    els.forEach(function(e){
+      if(!grupos[e]){grupos[e]=[];ordem.push(e);}
+      grupos[e].push(i);
+    });
   });
-  var pct=TAL_PCT/100;
-  var h='<section class="panel cq"><div class="panel-head"><div><h2>Talento de elemento (nível 500)</h2><p class="panel-sub">Cada talento dá +'+TAL_PCT+'% no dano dos Pokémon daquele elemento. Marque o que você já tem. Em "Simular que tenho", todo este passo (plano, subir de hazard e simulador) e o passo 1 já contam os +'+TAL_PCT+'%.</p></div></div>';
+  var h='<section class="panel cq"><div class="panel-head"><div><h2>Talento de elemento (nível 500)</h2><p class="panel-sub">Cada talento dá +'+TAL_PCT+'% no dano dos Pokémon daquele elemento. Pokémon de dois elementos precisa do talento dos dois para os +'+TAL_PCT+'%; com o de um só, ganha +'+fmt2.format(TAL_PCT/2)+'%. Marque o que você já tem. Em "Simular que tenho", todo este passo (plano, subir de hazard e simulador) e o passo 1 já contam o talento.</p></div></div>';
   if(ordem.length){
     h+='<ul class="tal-l">'+ordem.map(function(e){
       var st=talDe(e),ids=grupos[e],sid="tal-"+e;
       var quem=ids.map(function(i){
-        var dm=parseNum(state.time[i].dano),nm=esc(nomeDe(i));
+        var els=elemsDe(state.time[i]),dm=parseNum(state.time[i].dano),nm=esc(nomeDe(i));
+        if(els.length>1)nm+=' <span class="muted">('+els.map(function(x){return ELEMMAP[x];}).join(" e ")+')</span>';
         if(!valido(dm))return nm;
         if(st==="tem")return nm+' <b>'+fmt(dm)+'</b>';
-        return nm+' '+fmt(dm)+' → <b>'+fmt(dm*(1+pct))+'</b> <span class="margin ok">+'+fmt(dm*pct)+'</span>';
+        // com este talento e os simulados
+        var Fc=fatorElems(els,e);
+        return nm+' '+fmt(dm)+' → <b>'+fmt(dm*Fc)+'</b> <span class="margin ok">+'+fmt(dm*(Fc-1))+'</span>';
       }).join('<br>');
       var nota="";
       if(st==="tem")nota="Já está no dano medido.";
@@ -1946,7 +2090,7 @@ function atualizarProg(){
   var el=$("prog-res");if(!el)return;
   var b=progBase();if(b.msg)return;
   var ate=parseInt(state.prog.ate,10),auto=!(ate>b.N&&ate<HAZ.length),P=state.precos;
-  var key=JSON.stringify([state.time,state.talento,P.xatk,P.diamante,P.fees,P.ganho,P.cenario,P.escala,P.materiais,P.stones,b.rc,auto?"auto":ate]);
+  var key=JSON.stringify([state.time,state.talento,P.xatk,P.diamante,P.fees,P.ganho,P.cenario,P.escala,P.elem,b.rc,auto?"auto":ate]);
   var res;
   if(progCache.key===key)res=progCache.res;
   else{
@@ -1967,7 +2111,7 @@ function progIncompletos(){
 function progHtml(res,N,rc){
   if(res.impossivel){
     var inc=A.info.some(function(r){return r.m.falta&&!r.vazio;}),h='<div class="prog-sum bad"><p><b>Não dá para chegar no hazard '+res.T+' com os dados de hoje.</b></p>';
-    if(res.faltaPreco.length)h+='<p>O caminho depende de preços que ainda estão vazios:</p><ul class="g-itens">'+linhasFalta(res.faltaPreco).map(function(l){return '<li><span>'+l.txt+'</span>'+goBtn(l.go)+'</li>';}).join("")+'</ul>';
+    if(res.faltaPreco.length)h+='<p>O caminho depende de preços que ainda estão vazios:</p><ul class="g-itens">'+linhasFalta(res.faltaPreco).map(function(l){return '<li><span>'+l.txt+'</span>'+(l.go?goBtn(l.go):'')+'</li>';}).join("")+'</ul>';
     else if(inc)h+='<p>Só os Pokémon com dados completos podem receber melhorias, e eles não chegam lá sozinhos. Complete os dados dos outros para o planejador poder melhorar eles também.</p>';
     else h+='<p>Nem com todas as melhorias no máximo (X-Attack Tier 7, 5 Stars e boost +50) as 3 duplas chegam em '+fmt(alvoHaz(res.T,rc))+'.</p>';
     return h+'</div>'+progIncompletos();
@@ -2062,11 +2206,14 @@ function proximoHtml(m,ctx){
   else prox.push({w:"Star",fim:"Já tem 5 Stars"});
   if(m.b0<BOOST_MAX)prox.push({w:"Boost +"+m.b0+" → +"+(m.b0+1)+" ("+FAIXAS[faixaDoBoost(m.b0+1)].nome+")",r:avaliar(m,m.h0,m.s0,1,ctx)});
   else prox.push({w:"Boost",fim:"Já está em +50"});
-  var el=state.time[state.sel].elem,ts=talDe(el),tw="Talento de "+(el?ELEMMAP[el]:"elemento")+" (nível 500, +"+TAL_PCT+"%)";
-  if(!el)prox.push({w:tw,fim:"Escolha o elemento dele no passo 1"});
-  else if(ts==="tem")prox.push({w:tw,fim:"Já tem: está no dano medido"});
-  else if(ts==="sim")prox.push({w:tw,fim:"Simulado: já está contado no dano acima"});
-  else prox.push({w:tw,tal:true,g:m.D0*TAL_PCT/100});
+  var els=elemsDe(state.time[state.sel]);
+  if(!els.length)prox.push({w:"Talento de elemento (nível 500)",fim:"Escolha o elemento dele no passo 1"});
+  els.forEach(function(el){
+    var ts=talDe(el),tw="Talento de "+ELEMMAP[el]+" (nível 500)";
+    if(ts==="tem")prox.push({w:tw,fim:"Já tem: está no dano medido"});
+    else if(ts==="sim")prox.push({w:tw,fim:"Simulado: já está contado no dano acima"});
+    else prox.push({w:tw,tal:true,g:m.Dmed*(fatorElems(els,el)-m.F)});
+  });
   return '<section class="panel"><div class="panel-head"><div><h2>O que cada melhoria dá</h2><p class="panel-sub">Quanto cada melhoria dá sozinha, partindo de hoje. A última coluna mostra quanto custa cada 1.000 de dano: quanto menor, mais eficiente o gasto.</p></div></div>'+
     '<div class="scroll"><table><thead><tr><th scope="col">Melhoria</th><th scope="col" class="r">Dano ganho</th><th scope="col" class="r">Custo</th><th scope="col" class="r">Custo por 1.000 de dano</th></tr></thead><tbody>'+
     prox.map(function(x){
@@ -2081,19 +2228,19 @@ function proximoHtml(m,ctx){
 function comoHtml(m,ctx,pi){
   var Mtxt="1 + "+fmt2.format(XATK[m.h0]/100)+(m.s0>0?" + "+m.s0+" × "+fmt2.format(m.r):"")+(m.t>0?" + "+fmt3.format(m.t):"");
   var exH=m.h0<7?m.h0+1:null,pb=porBoost(m,m.h0,m.s0,ctx.escala)*m.F,nome=esc(nomeDe(state.sel));
-  var tf=m.F>1?" × "+fmt2.format(m.F):"",elN=ELEMMAP[state.time[state.sel].elem]||"";
+  var tf=m.F>1?" × "+fmt2.format(m.F):"",elN=juntar(elemsDe(state.time[state.sel]).filter(function(e){return talDe(e)==="sim";}).map(function(e){return ELEMMAP[e];}));
   var metaTxt=valido(ctx.alvo)?(state.metaManual?"que você digitou (a tabela dá "+fmt(valorTabela())+" no hazard "+state.hazard+" com a "+RUNA_TXT[+state.runaCol]+")":"da tabela (hazard "+state.hazard+", "+RUNA_TXT[+state.runaCol]+")"):"";
   return '<section class="panel"><details class="how-box"><summary>Como a conta foi feita</summary><ol>'+
     (valido(ctx.alvo)?'<li>A meta é por dupla: <b>'+fmt(ctx.alvo)+'</b>, '+metaTxt+'. O mob morre quando a soma do dano dos dois Pokémon da dupla chega nesse valor, então a melhoria pode ir para qualquer um dos dois.</li>':'')+
     '<li>Hoje '+nome+' dá <b>'+fmt(m.Dmed)+'</b>, com X-Attack '+(m.h0?"Tier "+m.h0+" (+"+XATK[m.h0]+"%)":"nenhum")+(m.s0?", "+plural(m.s0,"Star","Stars")+" (+"+fmt2.format(m.s0*m.r*100)+"%)":"")+(m.treino?", treino de Attack nível "+fmtN.format(m.treino)+" (+"+fmt2.format(m.t*100)+"%)":"")+'. Esse é o dano medido, sem a runa.</li>'+
     '<li>Os bônus em % do X-Attack, da Star e do treino somam entre si. Então o multiplicador do dano medido é '+Mtxt+' = <b>'+fmt3.format(m.M0)+'</b>.</li>'+
     '<li>Como os '+fmt(m.Dmed)+' já incluem esse multiplicador, o dano sem os bônus em % é '+fmt(m.Dmed)+' ÷ '+fmt3.format(m.M0)+' = <b>'+fmt(m.B0)+'</b>. É sobre esse valor que qualquer % novo é aplicado.</li>'+
-    (m.F>1?'<li>O talento de '+elN+' está simulado: o dano final dele é multiplicado por '+fmt2.format(m.F)+' (+'+TAL_PCT+'%). Hoje fica '+fmt(m.Dmed)+' × '+fmt2.format(m.F)+' = <b>'+fmt(m.D0)+'</b>, e cada melhoria abaixo também recebe os +'+TAL_PCT+'%.</li>':'')+
+    (m.F>1?'<li>O talento de '+elN+' está simulado: o dano final dele é multiplicado por '+fmt3.format(m.F)+' (+'+fmtPct(m.F)+'%). Hoje fica '+fmt(m.Dmed)+' × '+fmt3.format(m.F)+' = <b>'+fmt(m.D0)+'</b>, e cada melhoria abaixo também recebe esse ganho.</li>':'')+
     (exH?'<li>Exemplo: com X-Attack Tier '+exH+' (+'+XATK[exH]+'%), o multiplicador vira '+fmt3.format(mult(m,exH,m.s0))+', e o dano fica '+fmt(m.B0)+' × '+fmt3.format(mult(m,exH,m.s0))+tf+' = <b>'+fmt(danoCom(m,exH,m.s0,0,ctx.escala))+'</b>.</li>':'')+
     (m.podeStar&&m.s0<5?'<li>Cada Star soma +'+fmt2.format(m.r*100)+'% ao multiplicador. A próxima Star leva o dano a '+fmt(m.B0)+' × '+fmt3.format(mult(m,m.h0,m.s0+1))+tf+' = <b>'+fmt(danoCom(m,m.h0,m.s0+1,0,ctx.escala))+'</b>.</li>':'')+
     (m.podeStar?'<li>Para subir de N para N+1 Stars, a máquina pede outra cópia que também tenha N Stars, e essa cópia é feita a partir de cópias sem Star. Por isso cada Star nova custa o dobro de cópias da anterior (1, 2, 4, 8, 16), e todas as etapas desde a 0 → 1 entram na conta, mesmo que o Pokémon já tenha Stars.</li>':'')+
-    '<li>Cada boost soma <b>'+fmt(pb)+'</b> de dano hoje'+(m.F>1?' (já com os +'+TAL_PCT+'% do talento)':'')+'. '+(ctx.escala?"Esse ganho cresce junto quando o X-Attack ou a Star aumentam, porque entra no dano base.":"Esse ganho fica igual mesmo quando o X-Attack ou a Star aumentam.")+' Isso é configurável no passo 2.</li>'+
-    '<li>O custo de cada boost vem da quantidade de stones gastas por boost (contando as falhas, com +'+fmtN.format(ctx.ganho)+' pontos percentuais por falha) vezes o preço da stone da faixa, escolhendo o mais barato entre craftar e comprar pronta.</li>'+
+    '<li>Cada boost soma <b>'+fmt(pb)+'</b> de dano hoje'+(m.F>1?' (já com os +'+fmtPct(m.F)+'% do talento)':'')+'. '+(ctx.escala?"Esse ganho cresce junto quando o X-Attack ou a Star aumentam, porque entra no dano base.":"Esse ganho fica igual mesmo quando o X-Attack ou a Star aumentam.")+' Isso é configurável no passo 2.</li>'+
+    '<li>O custo de cada boost vem da quantidade de stones gastas por boost (contando as falhas, com +'+fmtN.format(ctx.ganho)+' pontos percentuais por falha) vezes o preço da stone da faixa, escolhendo o mais barato entre craftar e comprar pronta'+(m.elems.length>1?' e entre as stones de '+m.elems.map(function(e){return ELEMMAP[e];}).join(" e ")+' (em cada faixa vale a mais barata)':'')+'.</li>'+
     '</ol></details></section>';
 }
 
@@ -2111,7 +2258,7 @@ function renderCompras(){
     '<div class="fgrid" style="margin-top:12px">'+
       '<div class="fld"><label for="l-de">Boost atual</label><input type="text" id="l-de" inputmode="numeric" data-path="precos.lista.de" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld"><label for="l-ate">Boost desejado</label><input type="text" id="l-ate" inputmode="numeric" data-path="precos.lista.ate" data-fmt="boost" autocomplete="off"><span class="echo"></span></div>'+
-    '</div></div><div class="c-col">'+
+    '</div><div class="fld" style="margin-top:12px"><label for="l-elem">Stones de</label><select id="l-elem" data-path="precos.listaElem"></select><span class="hint" id="l-elem-h"></span></div></div><div class="c-col">'+
     '<p class="lbl-sm" id="lbl-cen">Quantas stones contar nesta lista</p><div class="chips" role="group" aria-labelledby="lbl-cen">'+
       [["none","Sem falhas"],["mean","Média"],["p90","Cobre 90%"],["p99","Cobre 99%"],["worst","Pior caso"]].map(function(c){
         return '<button type="button" class="chip" data-act="lcen" data-v="'+c[0]+'" aria-pressed="'+(c[0]===cen)+'">'+c[1]+'</button>';}).join("")+
@@ -2140,6 +2287,13 @@ function atualizarCompras(){
   A.info.forEach(function(r,i){var pl=A.plano[i];if(pl&&!pl.o.fixo&&pl.o.n>0)ops+='<option value="'+i+'">'+esc(r.nome)+': +'+r.m.b0+' até +'+(r.m.b0+pl.o.n)+'</option>';});
   if(ops!==lastOps){sel.innerHTML=ops;lastOps=ops;}
   sel.value=P.listaPoke;
+  // elemento das stones
+  var se=$("l-elem"),oe=opcoesElemLista(),LEa=elemsDaLista().join("/");
+  if(P.listaPoke!==""&&LEa&&!oe.some(function(o){return o[0]===LEa;}))oe.unshift([LEa,LEa.split("/").map(function(e){return ELEMMAP[e];}).join(" ou ")]);
+  var oh=oe.length?oe.map(function(o){return '<option value="'+o[0]+'">'+esc(o[1])+'</option>';}).join(""):'<option value="">Nenhum elemento no time</option>';
+  if(se.getAttribute("data-ops")!==oh){se.innerHTML=oh;se.setAttribute("data-ops",oh);}
+  se.value=LEa;se.disabled=P.listaPoke!==""||!oe.length;
+  $("l-elem-h").textContent=P.listaPoke!==""?"os elementos do Pokémon do plano":(LEa.indexOf("/")>0?"em cada faixa, a stone mais barata entre os dois":"");
   if(P.listaPoke!==""){
     var a=$("l-de"),b=$("l-ate");
     if(document.activeElement!==a)a.value=P.lista.de;
@@ -2150,87 +2304,134 @@ function atualizarCompras(){
     resumo.innerHTML='<p class="muted">Informe o boost atual e o desejado, de 0 a 50, com o desejado maior que o atual.</p>';
     res.innerHTML="";return;
   }
+  var LE=elemsDaLista();
+  if(!LE.length){
+    resumo.innerHTML='<p class="muted">Escolha de qual elemento são as stones. Os elementos vêm dos Pokémon do passo 1.</p>';
+    res.innerHTML="";return;
+  }
+  var multi=LE.length>1,EN=function(e){return ELEMMAP[e];};
   var cont={};
   for(var n=de+1;n<=ate;n++){var fi=faixaDoBoost(n);cont[fi]=(cont[fi]||0)+1;}
-  var zeros=function(){return P.materiais.map(function(){return 0;});};
-  // modo "mais barato": cada faixa pelo caminho mais barato
-  var total=0,stonesTot=0,semRota=[],compraMat=zeros(),compraPronta=[],nPronta=0;
-  // modo "craftar tudo": todas as faixas pelo craft
-  var craftMat=zeros(),craftCusto=0,craftSemPreco=false,semConf=[],nConf=0,craftTudoOk=true;
+  // modo "mais barato": cada faixa pelo caminho mais barato (elemento e craft ou pronta)
+  var total=0,stonesTot=0,semRota=[],compraMat={},ordemMat=[],compraPronta=[],nPronta=0;
+  // modo "craftar tudo": todas as faixas pelo craft, no elemento de craft mais barato
+  var craftMat={},ordemCraft=[],craftCusto=0,craftSemPreco=false,semConf=[],nConf=0,craftTudoOk=true;
+  var somaMat=function(acc,ordem,e,mi,q){var k=e+"|"+mi;if(!(k in acc)){acc[k]=0;ordem.push(k);}acc[k]+=q;};
+  var nomeMatE=function(e,mi){var T=P.elem[e],mt=T&&T.materiais[mi];return (mt?nomeMat(mt,mi):"Material "+(mi+1))+(multi?" ("+EN(e)+")":"");};
   var blocos=Object.keys(cont).map(Number).sort(function(a,b){return a-b;}).map(function(fi){
-    var f=FAIXAS[fi],m=cont[fi],st=P.stones[fi],s=ctx.stone[fi];
+    var f=FAIXAS[fi],m=cont[fi];
     var stones=stonesNaFaixa(fi,m,ctx.ganho,cen),exato=cen!=="mean";
     stonesTot+=stones;
     var primeiro=Math.max(de+1,fi*5+1),ultimo=Math.min(ate,fi*5+5);
-    var rows="",craftFaixa=0,precoFalta=false,needs=[];
-    P.materiais.forEach(function(mt,mi){
-      var per=parseNum(st.qty[mi]);if(!valido(per))per=0;
-      var need=Math.ceil(per*stones-1e-9),pr=parseNum(mt.preco),cost=valido(pr)?need*pr:null;
-      needs[mi]=need;
-      if(per>0&&cost===null)precoFalta=true;
-      if(cost!==null)craftFaixa+=cost;
-      rows+='<tr><td>'+nomeMat(mt,mi)+'</td><td class="r">'+fmtN.format(per)+'</td><td class="r">'+fmtN.format(need)+'</td><td class="r">'+(cost===null?(per>0?'<span class="muted">sem preço</span>':'—'):gold(cost))+'</td></tr>';
+    // cada elemento possível nesta faixa
+    var op=LE.map(function(e){
+      var T=P.elem[e],s=(ctx.stoneE[e]||TAB_SEM)[fi];
+      var rows="",craftFaixa=0,precoFalta=false,needs=[];
+      if(T)T.materiais.forEach(function(mt,mi){
+        var per=parseNum(T.stones[fi].qty[mi]);if(!valido(per))per=0;
+        var need=Math.ceil(per*stones-1e-9),pr=parseNum(mt.preco),cost=valido(pr)?need*pr:null;
+        needs[mi]=need;
+        if(per>0&&cost===null)precoFalta=true;
+        if(cost!==null)craftFaixa+=cost;
+        rows+='<tr><td>'+nomeMat(mt,mi)+'</td><td class="r">'+fmtN.format(per)+'</td><td class="r">'+fmtN.format(need)+'</td><td class="r">'+(cost===null?(per>0?'<span class="muted">sem preço</span>':'—'):gold(cost))+'</td></tr>';
+      });
+      var craftOk=!precoFalta&&s.craft!=null,mk=s.market,mkOk=mk!=null;
+      return {e:e,rows:rows,craftFaixa:craftFaixa,precoFalta:precoFalta,needs:needs,temQtd:needs.some(function(q){return q>0;}),
+        craftOk:craftOk,craftUnit:craftOk?s.craft:null,mk:mk,mkOk:mkOk,mkFaixa:mkOk?stones*mk:null};
     });
-    var craftOk=st.conf&&!precoFalta&&s.craft!=null;
-    var craftUnit=craftOk?s.craft:null;
-    var mk=s.market,mkOk=mk!=null,mkFaixa=mkOk?stones*mk:null;
-    var rota=craftOk&&mkOk?(mk<craftUnit?"pronta":"craft"):(craftOk?"craft":(mkOk?"pronta":null));
-    if(rota==="craft"){total+=craftFaixa;needs.forEach(function(q,mi){compraMat[mi]+=q;});}
-    else if(rota==="pronta"){total+=mkFaixa;compraPronta.push({fi:fi,q:Math.ceil(stones-1e-9)});nPronta++;}
+    // mais barato: entre os elementos, craft ou pronta (empate fica com o craft e com o primeiro elemento)
+    var best=null;
+    op.forEach(function(o){
+      if(o.craftOk&&(!best||o.craftUnit<best.unit-1e-9))best={o:o,via:"craft",unit:o.craftUnit};
+      if(o.mkOk&&(!best||o.mk<best.unit-1e-9))best={o:o,via:"pronta",unit:o.mk};
+    });
+    var rota=best?best.via:null;
+    if(rota==="craft"){total+=best.o.craftFaixa;best.o.needs.forEach(function(q,mi){if(q>0)somaMat(compraMat,ordemMat,best.o.e,mi,q);});}
+    else if(rota==="pronta"){total+=best.o.mkFaixa;compraPronta.push({fi:fi,e:best.o.e,mk:best.o.mk,q:Math.ceil(stones-1e-9)});nPronta++;}
     else semRota.push(f.nome);
-    if(!craftOk)craftTudoOk=false;
-    var temQtd=needs.some(function(q){return q>0;});
-    if(st.conf&&temQtd){nConf++;craftCusto+=craftFaixa;if(precoFalta)craftSemPreco=true;needs.forEach(function(q,mi){craftMat[mi]+=q;});}
+    // craftar tudo: o elemento com craft mais barato; sem custo completo, o primeiro que tem quantidades
+    var oc=null;
+    op.forEach(function(o){if(o.craftOk&&(!oc||!oc.craftOk||o.craftUnit<oc.craftUnit-1e-9))oc=o;});
+    if(!oc)op.forEach(function(o){if(!oc&&o.temQtd)oc=o;});
+    if(!op.some(function(o){return o.craftOk;}))craftTudoOk=false;
+    if(oc){nConf++;craftCusto+=oc.craftFaixa;if(oc.precoFalta)craftSemPreco=true;oc.needs.forEach(function(q,mi){if(q>0)somaMat(craftMat,ordemCraft,oc.e,mi,q);});}
     else semConf.push(f.nome);
-    var both=craftOk&&mkOk,hi=both?Math.max(craftUnit,mk):0,lo=both?Math.min(craftUnit,mk):0,pd=both&&hi>0?(hi-lo)/hi*100:0,empate=both&&pd<0.5;
-    var naCraft=!st.conf?"quantidades não conferidas":(precoFalta?"falta preço de material":"sem quantidades");
+    // o elemento mostrado na faixa: o do caminho escolhido no modo da lista
+    var o=modo==="craft"?(oc||op[0]):(best?best.o:op[0]);
+    var r2=o.craftOk&&o.mkOk?(o.mk<o.craftUnit?"pronta":"craft"):(o.craftOk?"craft":(o.mkOk?"pronta":null));
+    var both=o.craftOk&&o.mkOk,hi=both?Math.max(o.craftUnit,o.mk):0,lo=both?Math.min(o.craftUnit,o.mk):0,pd=both&&hi>0?(hi-lo)/hi*100:0,empate=both&&pd<0.5;
+    var naCraft=o.precoFalta?"falta preço de material":"sem quantidades";
     var verd;
     if(both)verd=empate?'<p class="verd quiet">Os dois caminhos dão praticamente no mesmo preço nesta faixa.</p>':
-      '<p class="verd"><b>'+(rota==="pronta"?"Comprar pronta":"Craftar")+'</b> sai '+fmt1.format(pd)+'% mais barato por stone, uma diferença de '+gold(Math.abs(craftFaixa-mkFaixa))+' nesta faixa.</p>';
-    else if(mkOk)verd='<p class="verd quiet">Sem o custo do craft ('+naCraft+'), não dá para comparar. O total usa a stone pronta.</p>';
-    else if(craftOk)verd='<p class="verd quiet">Informe o preço da stone pronta no passo 2 para comparar os dois caminhos. O total usa o craft.</p>';
-    else verd='<p class="verd quiet">Sem preço para esta faixa: '+naCraft+' e sem preço da stone pronta. Ela fica fora do total.</p>';
+      '<p class="verd"><b>'+(r2==="pronta"?"Comprar pronta":"Craftar")+'</b> sai '+fmt1.format(pd)+'% mais barato por stone, uma diferença de '+gold(Math.abs(o.craftFaixa-o.mkFaixa))+' nesta faixa.</p>';
+    else if(o.mkOk)verd='<p class="verd quiet">Sem o custo do craft ('+naCraft+'), não dá para comparar. O total usa a stone pronta.</p>';
+    else if(o.craftOk)verd='<p class="verd quiet">Informe o preço da stone pronta no passo 2 para comparar os dois caminhos. O total usa o craft.</p>';
+    else verd='<p class="verd quiet">Sem preço para esta faixa'+(multi?' em '+EN(o.e):'')+': '+naCraft+' e sem preço da stone pronta.'+(multi?'':' Ela fica fora do total.')+'</p>';
+    // comparação com o outro elemento
+    var outros=multi?op.filter(function(x){return x!==o;}).map(function(x){
+      var u=x.craftOk&&x.mkOk?Math.min(x.craftUnit,x.mk):(x.craftOk?x.craftUnit:(x.mkOk?x.mk:null));
+      return '<p class="verd quiet">'+EN(x.e)+': '+(u==null?'sem preço nesta faixa.':gold(u)+' por stone ('+(x.craftOk&&(!x.mkOk||x.craftUnit<=x.mk)?"craftando":"comprando pronta")+').')+'</p>';
+    }).join(""):"";
     var nst=exato?fmtN.format(stones):fmt1.format(stones);
-    return '<section class="panel band"><div class="band-head"><h3>'+f.nome+'</h3><span class="fr">boost +'+primeiro+(ultimo>primeiro?' a +'+ultimo:'')+', chance base '+f.base+'%</span>'+
+    return '<section class="panel band"><div class="band-head"><h3>'+f.nome+' de '+EN(o.e)+'</h3><span class="fr">boost +'+primeiro+(ultimo>primeiro?' a +'+ultimo:'')+', chance base '+f.base+'%</span>'+
       '<span class="ft"><b>'+nst+'</b> stones para '+plural(m,"boost","boosts")+'</span></div>'+
-      '<div class="compare">'+tileHtml("Craftar",craftUnit,craftFaixa,craftOk,naCraft,both&&!empate&&rota==="craft")+tileHtml("Comprar pronta",mk,mkFaixa,mkOk,"sem preço informado",both&&!empate&&rota==="pronta")+'</div>'+verd+
-      (st.conf?'<div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col" class="r">Por stone</th><th scope="col" class="r">Total na faixa ('+nst+' stones)</th><th scope="col" class="r">Custo</th></tr></thead><tbody>'+rows+'</tbody>'+
-        '<tfoot><tr><td colspan="3">Craftando esta faixa</td><td class="r">'+(precoFalta?"—":gold(craftFaixa))+'</td></tr></tfoot></table></div>':
-        '<div class="conf-falta"><p class="fine">A tabela de materiais desta faixa aparece quando as quantidades dela estão marcadas como <b>Conferidas</b> no passo 2. Sem isso o planejador não usa as quantidades, porque podem ser de outro elemento.</p>'+goBtn({t:"stone",fi:fi,why:"conf"},"Conferir as quantidades")+'</div>')+
+      '<div class="compare">'+tileHtml("Craftar",o.craftUnit,o.craftFaixa,o.craftOk,naCraft,both&&!empate&&r2==="craft")+tileHtml("Comprar pronta",o.mk,o.mkFaixa,o.mkOk,"sem preço informado",both&&!empate&&r2==="pronta")+'</div>'+verd+outros+
+      '<div class="scroll"><table><thead><tr><th scope="col">Material de '+EN(o.e)+'</th><th scope="col" class="r">Por stone</th><th scope="col" class="r">Total na faixa ('+nst+' stones)</th><th scope="col" class="r">Custo</th></tr></thead><tbody>'+o.rows+'</tbody>'+
+        '<tfoot><tr><td colspan="3">Craftando esta faixa</td><td class="r">'+(o.precoFalta?"—":gold(o.craftFaixa))+'</td></tr></tfoot></table></div>'+
       '</section>';
   });
   var cenTxt=(cen==="mean"?fmt1.format(stonesTot):fmtN.format(stonesTot))+" stones no total.";
   var margem=(cen==="p90"||cen==="p99")?"A margem de cada faixa foi somada, então o total cobre mais que a porcentagem escolhida no caminho inteiro.":"";
   var linhas="",grand,listaTxt;
+  var precoMat=function(k){var a=k.split("|"),T=P.elem[a[0]],mt=T&&T.materiais[+a[1]];return mt?parseNum(mt.preco):null;};
+  var nomeK=function(k){var a=k.split("|");return nomeMatE(a[0],+a[1]);};
+  // lista na ordem dos elementos e dos materiais da tabela
+  var ordK=function(x,y){var a=x.split("|"),b=y.split("|");return (LE.indexOf(a[0])-LE.indexOf(b[0]))||(+a[1]-+b[1]);};
+  ordemMat.sort(ordK);ordemCraft.sort(ordK);
   if(modo==="barato"){
     var sub=[cenTxt];
     if(semRota.length)sub.push("Fora do total por falta de preço: "+juntar(semRota)+".");
     if(nPronta)sub.push("O total já escolhe o caminho mais barato de cada faixa: "+(nPronta===1?"1 faixa sai mais barata comprando pronta":nPronta+" faixas saem mais baratas comprando prontas")+".");
     if(nPronta&&craftTudoOk&&craftCusto>total)sub.push("Craftando tudo daria "+gold(craftCusto)+", ou seja, "+gold(craftCusto-total)+" a mais.");
     if(margem)sub.push(margem);
-    P.materiais.forEach(function(mt,mi){
-      if(compraMat[mi]>0){var pr=parseNum(mt.preco);linhas+='<tr><td>'+nomeMat(mt,mi)+'</td><td class="r">'+fmtN.format(compraMat[mi])+'</td><td class="r">'+(valido(pr)?gold(compraMat[mi]*pr):"—")+'</td></tr>';}
-    });
-    compraPronta.forEach(function(c){linhas+='<tr><td>Stone '+FAIXAS[c.fi].nome+' pronta</td><td class="r">'+fmtN.format(c.q)+'</td><td class="r">'+gold(c.q*ctx.stone[c.fi].market)+'</td></tr>';});
+    ordemMat.forEach(function(k){var pr=precoMat(k);linhas+='<tr><td>'+nomeK(k)+'</td><td class="r">'+fmtN.format(compraMat[k])+'</td><td class="r">'+(valido(pr)?gold(compraMat[k]*pr):"—")+'</td></tr>';});
+    compraPronta.forEach(function(c){linhas+='<tr><td>Stone '+FAIXAS[c.fi].nome+' de '+EN(c.e)+' pronta</td><td class="r">'+fmtN.format(c.q)+'</td><td class="r">'+gold(c.q*c.mk)+'</td></tr>';});
     grand='<div class="grand"><span class="gl">Total de +'+de+' até +'+ate+'</span><span class="gv">'+gold(total)+'</span><span class="gs">'+sub.join(" ")+'</span></div>';
-    listaTxt="Somando todas as faixas, já pelo caminho mais barato de cada uma. Quantidades arredondadas para cima.";
+    listaTxt="Somando todas as faixas, já pelo caminho mais barato de cada uma"+(multi?" (elemento e craft ou pronta)":"")+". Quantidades arredondadas para cima.";
   }else{
     var subC=[cenTxt];
     if(semConf.length)subC.push("Fora da lista: "+juntar(semConf)+", porque estão sem quantidades de material no passo 2.");
     if(craftSemPreco)subC.push("Algum material está sem preço, então o custo não conta esse material.");
     if(craftTudoOk&&!semRota.length&&total<craftCusto-0.5)subC.push("Pelo caminho mais barato de cada faixa daria "+gold(total)+", ou seja, "+gold(craftCusto-total)+" a menos.");
     if(margem)subC.push(margem);
-    P.materiais.forEach(function(mt,mi){
-      if(craftMat[mi]>0){var pr=parseNum(mt.preco);linhas+='<tr><td>'+nomeMat(mt,mi)+'</td><td class="r">'+fmtN.format(craftMat[mi])+'</td><td class="r">'+(valido(pr)?gold(craftMat[mi]*pr):'<span class="muted">sem preço</span>')+'</td></tr>';}
-    });
+    ordemCraft.forEach(function(k){var pr=precoMat(k);linhas+='<tr><td>'+nomeK(k)+'</td><td class="r">'+fmtN.format(craftMat[k])+'</td><td class="r">'+(valido(pr)?gold(craftMat[k]*pr):'<span class="muted">sem preço</span>')+'</td></tr>';});
     var parcial=semConf.length||craftSemPreco;
     grand='<div class="grand"><span class="gl">Craftando tudo de +'+de+' até +'+ate+(parcial&&nConf?' (parcial)':'')+'</span><span class="gv">'+(nConf?gold(craftCusto):"—")+'</span><span class="gs">'+(nConf?subC.join(" "):"Nenhuma faixa deste intervalo tem quantidades de material no passo 2.")+'</span></div>';
-    listaTxt="Somando todas as faixas, craftando todas as stones. Quantidades arredondadas para cima.";
+    listaTxt="Somando todas as faixas, craftando todas as stones"+(multi?" no elemento de craft mais barato de cada faixa":"")+". Quantidades arredondadas para cima.";
   }
   resumo.innerHTML=grand+
     (linhas?'<h3 style="margin-top:20px">Lista de compras</h3><p class="fine" style="margin:4px 0 10px">'+listaTxt+'</p>'+
       '<div class="scroll"><table><thead><tr><th scope="col">Item</th><th scope="col" class="r">Quantidade</th><th scope="col" class="r">Custo</th></tr></thead><tbody>'+linhas+'</tbody></table></div>':'');
   res.innerHTML='<div class="bands">'+blocos.join("")+'</div>';
+}
+// elementos das stones da lista: os do Pokémon do plano escolhido ou os escolhidos no campo
+function elemsDaLista(){
+  var P=state.precos;
+  if(P.listaPoke!==""&&state.time[+P.listaPoke])return elemsDe(state.time[+P.listaPoke]);
+  var v=P.listaElem?P.listaElem.split("/").filter(function(e){return !!ELEMMAP[e];}):[];
+  if(v.length)return v;
+  var o=opcoesElemLista();return o.length?o[0][0].split("/"):[];
+}
+// opções do campo "Stones de": cada combinação de elementos dos Pokémon do time e cada elemento sozinho
+function opcoesElemLista(){
+  var r=[],vis={};
+  state.time.forEach(function(p,i){
+    var els=elemsDe(p);if(!els.length)return;
+    var v=els.join("/");if(vis[v])return;vis[v]=1;
+    r.push([v,els.map(function(e){return ELEMMAP[e];}).join(" ou ")+(els.length>1?" ("+nomeDe(i)+")":"")]);
+  });
+  elementosDoTime().forEach(function(e){if(!vis[e]){vis[e]=1;r.push([e,ELEMMAP[e]]);}});
+  return r;
 }
 
 /* ============================================================
@@ -2302,14 +2503,11 @@ function irPara(d){
   else if(t==="fee"){state.precos.starRar=d.rar;id="fd-"+d.e;}
   else if(t==="dia")id="s-dia";
   else if(t==="stone"){
-    var fi=+d.fi;
-    if(d.why==="conf")id="sc-"+fi;
-    else if(d.why==="mat"){
-      id="sm-"+fi;
-      state.precos.materiais.some(function(mt,mi){var q=parseNum(state.precos.stones[fi].qty[mi]);if(valido(q)&&q>0&&!valido(parseNum(mt.preco))){id="mp-"+mi;return true;}return false;});
-    }
-    else id="sm-"+fi;
+    var fi=+d.fi,e=d.e,T=state.precos.elem[e];
+    id="sm-"+e+"-"+fi;
+    if(d.why==="mat"&&T)T.materiais.some(function(mt,mi){var q=parseNum(T.stones[fi].qty[mi]);if(valido(q)&&q>0&&!valido(parseNum(mt.preco))){id="mp-"+e+"-"+mi;return true;}return false;});
   }
+  else if(t==="elem"){tab="time";state.sel=+d.i;detAberto=state.sel;id="f-elem";}
   else if(t==="copia"){tab="time";id="f-preco";if(d.pi!=null&&d.pi!=="")state.sel=+d.pi;detAberto=state.sel;}
   state.tab=tab;salvar();mostrar();
   destacar($(id));
@@ -2334,7 +2532,16 @@ function onEdit(e){
   if(path.indexOf("precos.lista.")===0)state.precos.listaPoke="";
   if(state.exemplo&&path.indexOf("time.")===0)state.exemplo=false;
   salvar();
-  if(t.getAttribute("data-rebuild")==="cab")renderStHead();
+  if(t.getAttribute("data-rebuild")==="cab")renderStHead(t.getAttribute("data-e"));
+  var mn=/^time\.(\d+)\.(nome|elem|elem2)$/.exec(path);
+  if(mn){
+    var pk=state.time[+mn[1]];
+    if(mn[2]==="nome"){var le=elemDaLista(pk.nome);if(le){pk.elem=le[0];pk.elem2=le[1]||"";}}
+    if(pk.elem2===pk.elem)pk.elem2="";
+    if(!pk.elem&&pk.elem2){pk.elem=pk.elem2;pk.elem2="";}
+    garantirTabelas();salvar();
+    if(+mn[1]===detAberto)renderFormElems();
+  }
   if(path==="precos.listaPoke"&&state.precos.listaPoke!==""){state.precos.listaCen=state.precos.cenario;salvar();marcarCen();}
   atualizar();
 }
@@ -2352,9 +2559,15 @@ document.addEventListener("click",function(e){
   if(act==="haz-mais"){state.hazard=String(Math.min(HAZ.length-1,+state.hazard+1));state.metaManual=false;salvar();preencherTopo();atualizar();return;}
   if(act==="usar-tabela"){state.metaManual=false;salvar();preencherTopo();atualizar();$("alvo").focus();return;}
   if(act==="sim-reset"){state.sim.i=-1;simKey=null;atualizar();var sh=$("sim-h");if(sh)sh.focus();return;}
-  if(act==="sim-compras"){var rs=A.info[state.sel];if(!rs.m.falta){P.listaPoke="";P.lista={de:String(rs.m.b0),ate:String(state.sim.b)};P.listaCen=P.cenario;irParaTab("compras");}return;}
-  if(act==="add-mat"){P.materiais.push({nome:"",preco:""});P.stones.forEach(function(s){s.qty.push("0");});salvar();renderPrecos();atualizar();return;}
-  if(act==="rm-mat"){var i=+v;if(P.materiais.length<=1)return;P.materiais.splice(i,1);P.stones.forEach(function(s){s.qty.splice(i,1);});salvar();renderPrecos();atualizar();return;}
+  if(act==="sim-compras"){var rs=A.info[state.sel];if(!rs.m.falta){P.listaPoke="";P.listaElem=rs.m.elems.join("/");P.lista={de:String(rs.m.b0),ate:String(state.sim.b)};P.listaCen=P.cenario;irParaTab("compras");}return;}
+  if(act==="add-mat"){var T=P.elem[b.getAttribute("data-e")];if(!T)return;T.materiais.push({nome:"",preco:""});T.stones.forEach(function(s){s.qty.push("");});salvar();renderPrecos();atualizar();return;}
+  if(act==="rm-mat"){var T2=P.elem[b.getAttribute("data-e")],i=+v;if(!T2||T2.materiais.length<=1)return;T2.materiais.splice(i,1);T2.stones.forEach(function(s){s.qty.splice(i,1);});salvar();renderPrecos();atualizar();return;}
+  if(act==="ant-mover"){var ae=$("ant-e").value;if(!P.antiga||!ELEMMAP[ae])return;P.elem[ae]=P.antiga;P.antiga=null;salvar();renderPrecos();atualizar();var sa=$("sec-st-"+ae);if(sa)destacar(sa.querySelector("input"));return;}
+  if(act==="ant-apagar"){
+    if(b.getAttribute("data-confirm")==="1"){P.antiga=null;salvar();renderPrecos();atualizar();return;}
+    b.setAttribute("data-confirm","1");b.textContent="Clique de novo para apagar";
+    setTimeout(function(){if(b.isConnected){b.removeAttribute("data-confirm");b.textContent="Apagar tabela antiga";}},3000);return;
+  }
   if(act==="lcen"){P.listaCen=v;salvar();renderCompras();atualizar();var lc=document.querySelector('.chip[data-act="lcen"][data-v="'+v+'"]');if(lc)lc.focus();return;}
   if(act==="lmodo"){P.listaModo=v;salvar();renderCompras();atualizar();var lm=document.querySelector('.chip[data-act="lmodo"][data-v="'+v+'"]');if(lm)lm.focus();return;}
   if(act==="lista-ir"){P.listaPoke=b.getAttribute("data-poke");P.listaCen=P.cenario;irParaTab("compras");return;}
@@ -2400,12 +2613,15 @@ document.querySelector(".steps").addEventListener("keydown",function(e){
   e.preventDefault();irParaTab(PASSOS[n]);$("tab-"+PASSOS[n]).focus();
 });
 
-if(/teste/.test(location.hash))window.__pl={opcoes:opcoes,fronteira:fronteira,melhorDupla:melhorDupla,planoTime:planoTime,montarModelo:montarModelo,contexto:contexto,analisar:analisar,avaliar:avaliar,progressao:progressao,melhorDivisao:melhorDivisao,alvoProgAuto:alvoProgAuto,cabeNaVerba:cabeNaVerba,getA:function(){return A;}};
+if(/teste/.test(location.hash))window.__pl={opcoes:opcoes,fronteira:fronteira,melhorDupla:melhorDupla,planoTime:planoTime,montarModelo:montarModelo,contexto:contexto,analisar:analisar,avaliar:avaliar,progressao:progressao,melhorDivisao:melhorDivisao,alvoProgAuto:alvoProgAuto,cabeNaVerba:cabeNaVerba,getA:function(){return A;},getS:function(){return state;}};
 carregar();
+garantirTabelas();
 montarTopo();
 preencherTopo();
 montarLinhas();
 mostrar();
+// a lista de Pokémon carrega depois deste script
+window.addEventListener("load",function(){if(completarElems()){garantirTabelas();salvar();mostrar();}});
 })();
 </script>
 
