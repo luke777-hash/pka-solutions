@@ -374,6 +374,13 @@ td.cost .cost-craft,td.cost .cost-pronta{color:var(--ok);}
 
 /* ---------- passo 3: melhorar ---------- */
 .l-melhorar{display:grid;grid-template-columns:minmax(0,1fr);gap:20px 24px;align-items:start;}
+.abas-m{margin-bottom:20px;}
+.abas-f{margin-bottom:14px;}
+.bands.bands-1{grid-template-columns:minmax(0,1fr);}
+/* abas do passo 3: fora de "Por Pokémon", uma coluna só com o painel da aba */
+.l-melhorar:not([data-aba="poke"]){display:block;}
+.l-melhorar:not([data-aba="poke"]) #pk-res{display:grid;}
+.l-melhorar:not([data-aba="poke"]) .poke-list,.l-melhorar:not([data-aba="poke"]) #pk-mid{display:none;}
 .poke-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0;}
 .list-h{grid-column:1/-1;font-size:15px;color:var(--muted);}
 .pk{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;column-gap:10px;min-width:0;padding:8px 10px 8px 8px;border:1px solid var(--line-strong);border-radius:9px;background:var(--plate);color:var(--text);text-align:left;cursor:pointer;}
@@ -673,7 +680,8 @@ dialog::backdrop{background:rgba(5,8,12,.55);}
 
     <!-- passo 3 -->
     <section id="p-melhorar" role="tabpanel" aria-labelledby="tab-melhorar" hidden>
-      <div class="l-melhorar">
+      <nav class="sec-index abas-m" id="m-abas" role="tablist" aria-label="Partes do passo 3"></nav>
+      <div class="l-melhorar" id="l-melhorar" data-aba="plano">
         <div class="poke-list" id="poke-list" role="group" aria-label="Pokémon do time"></div>
         <div class="stack" id="pk-mid"><section class="panel" id="pk-sim"></section></div>
         <div class="res" id="pk-res"><div class="stack" id="pk-plan"></div><div class="stack" id="pk-tal"></div><div class="stack" id="pk-prog"></div><div class="stack" id="pk-sel"></div></div>
@@ -1149,6 +1157,8 @@ function opt(v,txt,cur){return '<option value="'+v+'"'+(String(cur)===String(v)?
    ============================================================ */
 var N=6,KEY="pka-planejador-2x2x2:v1";
 var PASSOS=["time","precos","melhorar","compras"];
+// abas do passo 3: [id, nome, painéis que aparecem]
+var ABAS_M=[["plano","Plano do time",["pk-plan"]],["hazard","Subir de hazard",["pk-prog"]],["talento","Talento de elemento",["pk-tal"]],["poke","Por Pokémon",["pk-sel"]]];
 function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0",elem:"",elem2:""};}
 // tabela de stones de um elemento: materiais do craft (nome e preço), e por faixa o preço da stone pronta e a quantidade de cada material
 var NMAT_PADRAO=5;
@@ -1171,7 +1181,7 @@ function feesVazias(){var o={};RAR.forEach(function(r){o[r.id]=[0,1,2,3,4].map(f
 function estadoPadrao(){
   var time=[];for(var i=0;i<N;i++)time.push(pokeVazio());
   return {
-    exemplo:false,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",talento:{},time:time,sel:0,tab:"time",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
+    exemplo:false,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",talento:{},time:time,sel:0,tab:"time",abaM:"plano",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
     precos:{
       xatk:["","","","","","",""],
       diamante:"",fees:feesVazias(),starRar:"t1",
@@ -1208,6 +1218,7 @@ function normalizar(o){
   }
   if(o.talento&&typeof o.talento==="object")ELEM.forEach(function(e){var v=o.talento[e[0]];if(v==="tem"||v==="sim")s.talento[e[0]]=v;});
   if(typeof o.sel==="number"&&o.sel>=0&&o.sel<N)s.sel=o.sel;
+  if(ABAS_M.some(function(a){return a[0]===o.abaM;}))s.abaM=o.abaM;
   if(o.prog&&typeof o.prog==="object"){
     if(/^(\d|1[0-7])?$/.test(String(o.prog.ate)))s.prog.ate=String(o.prog.ate);
     s.prog.verba=str(o.prog.verba,"");
@@ -1948,7 +1959,26 @@ function atualizarSim(){
 }
 
 /* ---- plano do time ---- */
+function mostrarAbaM(){
+  var a=state.abaM,l=$("l-melhorar");l.setAttribute("data-aba",a);
+  ABAS_M.forEach(function(x){x[2].forEach(function(id){$(id).hidden=x[0]!==a;});});
+  var h=ABAS_M.map(function(x){return '<button type="button" class="idx" role="tab" data-act="abaM" data-v="'+x[0]+'" aria-selected="'+(x[0]===a)+'">'+x[1]+abaMPill(x[0])+'</button>';}).join("");
+  if($("m-abas").innerHTML!==h)$("m-abas").innerHTML=h;
+}
+// selo de cada aba do passo 3
+function abaMPill(a){
+  if(a==="plano"){
+    if(!A.rot.alvoOk||!A.rot.pronto)return "";
+    if(A.tp&&A.tp.total<0.5)return '<span class="pill ok">já mata</span>';
+    if(A.tp)return '<span class="pill ok">'+gold(A.tp.total)+'</span>';
+    return A.tpOt?'<span class="pill warn">faltam preços</span>':'<span class="pill bad">não chega</span>';
+  }
+  if(a==="talento"){var n=elementosDoTime().filter(function(e){return talDe(e)==="sim";}).length;return n?'<span class="pill warn">'+plural(n,"simulado","simulados")+'</span>':"";}
+  if(a==="poke")return '<span class="pill">'+esc(nomeDe(state.sel))+'</span>';
+  return "";
+}
 function atualizarMelhorar(){
+  mostrarAbaM();
   renderPicker();
   renderSim();atualizarSim();
   var foco=document.activeElement&&document.activeElement.id;
@@ -2351,6 +2381,7 @@ function atualizarCompras(){
   var craftMat={},ordemCraft=[],craftCusto=0,craftSemPreco=false,semConf=[],nConf=0,craftTudoOk=true;
   var somaMat=function(acc,ordem,e,mi,q){var k=e+"|"+mi;if(!(k in acc)){acc[k]=0;ordem.push(k);}acc[k]+=q;};
   var nomeMatE=function(e,mi){var T=P.elem[e],mt=T&&T.materiais[mi];return (mt?nomeMat(mt,mi):"Material "+(mi+1))+(multi?" ("+EN(e)+")":"");};
+  var abasF=[];
   var blocos=Object.keys(cont).map(Number).sort(function(a,b){return a-b;}).map(function(fi){
     var f=FAIXAS[fi],m=cont[fi];
     var stones=stonesNaFaixa(fi,m,ctx.ganho,cen),exato=cen!=="mean";
@@ -2406,6 +2437,8 @@ function atualizarCompras(){
       return '<p class="verd quiet">'+EN(x.e)+': '+(u==null?'sem preço nesta faixa.':gold(u)+' por stone ('+(x.craftOk&&(!x.mkOk||x.craftUnit<=x.mk)?"craftando":"comprando pronta")+').')+'</p>';
     }).join(""):"";
     var nst=exato?fmtN.format(stones):fmt1.format(stones);
+    var cf=modo==="craft"?(oc&&!oc.precoFalta&&oc.craftOk?oc.craftFaixa:null):(best?(best.via==="craft"?best.o.craftFaixa:best.o.mkFaixa):null);
+    abasF.push({fi:fi,txt:f.nome+(multi?" de "+EN(o.e):""),custo:cf});
     return '<section class="panel band"><div class="band-head"><h3>'+f.nome+' de '+EN(o.e)+'</h3><span class="fr">boost +'+primeiro+(ultimo>primeiro?' a +'+ultimo:'')+', chance base '+f.base+'%</span>'+
       '<span class="ft"><b>'+nst+'</b> stones para '+plural(m,"boost","boosts")+'</span></div>'+
       '<div class="compare">'+tileHtml("Craftar",o.craftUnit,o.craftFaixa,o.craftOk,naCraft,both&&!empate&&r2==="craft")+tileHtml("Comprar pronta",o.mk,o.mkFaixa,o.mkOk,"sem preço informado",both&&!empate&&r2==="pronta")+'</div>'+verd+outros+
@@ -2445,8 +2478,15 @@ function atualizarCompras(){
   resumo.innerHTML=grand+
     (linhas?'<h3 style="margin-top:20px">Lista de compras</h3><p class="fine" style="margin:4px 0 10px">'+listaTxt+'</p>'+
       '<div class="scroll"><table><thead><tr><th scope="col">Item</th><th scope="col" class="r">Quantidade</th><th scope="col" class="r">Custo</th></tr></thead><tbody>'+linhas+'</tbody></table></div>':'');
-  res.innerHTML='<div class="bands">'+blocos.join("")+'</div>';
+  // uma faixa por vez, escolhida nas abas
+  var k=0;abasF.forEach(function(a,i){if(a.fi===faixaC)k=i;});
+  faixaC=abasF.length?abasF[k].fi:-1;
+  res.innerHTML=(abasF.length>1?'<nav class="sec-index abas-f" role="tablist" aria-label="Faixas de boost">'+abasF.map(function(a,i){
+      return '<button type="button" class="idx" role="tab" data-act="faixaC" data-v="'+a.fi+'" aria-selected="'+(i===k)+'">'+a.txt+(a.custo!=null?'<span class="pill">'+gold(a.custo)+'</span>':'<span class="pill warn">sem preço</span>')+'</button>';
+    }).join("")+'</nav>':'')+
+    '<div class="bands bands-1">'+(blocos[k]||"")+'</div>';
 }
+var faixaC=-1;
 // elementos das stones da lista: os do Pokémon do plano escolhido ou os escolhidos no campo
 function elemsDaLista(){
   var P=state.precos;
@@ -2590,6 +2630,8 @@ document.addEventListener("click",function(e){
   if(act==="tab"){irParaTab(v);$("tab-"+v).focus();return;}
   if(act==="pick"){state.sel=+v;salvar();simKey=null;atualizar();var nb=document.querySelector('.pk[data-v="'+v+'"]');if(nb)nb.focus();return;}
   if(act==="rar"){P.starRar=v;salvar();renderPrecos();atualizar();var c=document.querySelector('.chip[data-act="rar"][data-v="'+v+'"]');if(c)c.focus();return;}
+  if(act==="faixaC"){faixaC=+v;atualizarCompras();var tf=document.querySelector('.abas-f [data-v="'+v+'"]');if(tf)tf.focus();return;}
+  if(act==="abaM"){state.abaM=v;salvar();atualizar();var tm=document.querySelector('#m-abas [data-v="'+v+'"]');if(tm)tm.focus();return;}
   if(act==="aba"){P.aba=v;salvar();mostrarAba();var tb=document.querySelector('#sec-index [data-v="'+v+'"]');if(tb)tb.focus();return;}
   if(act==="haz-mais"){state.hazard=String(Math.min(HAZ.length-1,+state.hazard+1));state.metaManual=false;salvar();preencherTopo();atualizar();return;}
   if(act==="usar-tabela"){state.metaManual=false;salvar();preencherTopo();atualizar();$("alvo").focus();return;}
