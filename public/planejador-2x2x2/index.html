@@ -732,7 +732,8 @@ var XATK=[0,8,12,16,19,22,25,28];
 // Talento do nível 500: +5% no dano total dos Pokémon do elemento (informado por Lucas).
 // Conta: multiplica o dano final do Pokémon (X-Attack, Stars, treino e boost) por 1,05.
 var TAL_PCT=5;
-// Pokémon de dois elementos: com o talento dos dois ganha os 5%; com o de um só, 2,5% (informado por Lucas).
+// O talento vale pelo elemento dos golpes do Pokémon. Pokémon de dois elementos costuma ter um elemento que rege
+// todo o kit (ex.: Aggron é Rock/Steel e os golpes são Steel), então basta o talento desse elemento (informado por Lucas).
 var ELEM=[["normal","Normal"],["fire","Fire"],["water","Water"],["grass","Grass"],["electric","Electric"],["ice","Ice"],
   ["fighting","Fighting"],["poison","Poison"],["ground","Ground"],["flying","Flying"],["psychic","Psychic"],["bug","Bug"],
   ["rock","Rock"],["ghost","Ghost"],["dragon","Dragon"],["dark","Dark"],["steel","Steel"],["fairy","Fairy"]];
@@ -1159,7 +1160,7 @@ var N=6,KEY="pka-planejador-2x2x2:v1";
 var PASSOS=["time","precos","melhorar","compras"];
 // abas do passo 3: [id, nome, painéis que aparecem]
 var ABAS_M=[["plano","Plano do time",["pk-plan"]],["hazard","Subir de hazard",["pk-prog"]],["talento","Talento de elemento",["pk-tal"]],["poke","Por Pokémon",["pk-sel"]]];
-function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0",elem:"",elem2:""};}
+function pokeVazio(){return {nome:"",funcao:"",dano:"",held:"",boost:"",stars:"0",rar:"",preco:"",danoBoost:"1.100",treino:"0",elem:"",elem2:"",elemAtk:""};}
 // tabela de stones de um elemento: materiais do craft (nome e preço), e por faixa o preço da stone pronta e a quantidade de cada material
 var NMAT_PADRAO=5;
 function tabelaVazia(){
@@ -1213,6 +1214,7 @@ function normalizar(o){
       if(!ELEMMAP[v.elem])v.elem="";
       if(!ELEMMAP[v.elem2]||v.elem2===v.elem)v.elem2="";
       if(!v.elem&&v.elem2){v.elem=v.elem2;v.elem2="";}
+      if(!v.elem2||(v.elemAtk!==v.elem&&v.elemAtk!==v.elem2))v.elemAtk="";
       return v;
     });
   }
@@ -1263,20 +1265,21 @@ function setPath(path,v){var ks=path.split("."),o=state;for(var i=0;i<ks.length-
 function nomeDe(i){return state.time[i].nome.trim()||("Pokémon "+(i+1));}
 // talento do elemento: "" = não tem, "tem" = já tem (já está no dano medido), "sim" = simular que tem
 function talDe(e){return e?(state.talento[e]||""):"";}
-// % do talento para os elementos do Pokémon, dado quais talentos estão ativos
-function talPct(els,ativo){
-  if(!els.length)return 0;
-  var k=els.filter(ativo).length;
-  return k===els.length?TAL_PCT:(k?TAL_PCT/2:0);
+// elemento que conta para o talento: o do Pokémon, ou, se ele tiver dois, o elemento dos golpes escolhido no passo 1
+function elemTal(p){
+  var els=elemsDe(p);
+  if(els.length===1)return els[0];
+  return els.length===2&&els.indexOf(p.elemAtk)>=0?p.elemAtk:"";
 }
-// multiplicador do dano medido: o dano medido já tem os talentos "já tenho"; somamos os simulados ("sim") e, se pedido, o de "extra".
-// Com "com", contam só os talentos marcados nele (no lugar dos simulados).
-function fatorElems(els,extra,com){
-  var tem=function(e){return talDe(e)==="tem";};
-  var on=function(e){return tem(e)||e===extra||(com?!!com[e]:talDe(e)==="sim");};
-  return (1+talPct(els,on)/100)/(1+talPct(els,tem)/100);
+// multiplicador do dano medido: "já tenho" já está no dano medido; somamos o simulado ("sim") ou, se pedido, o talento "extra".
+// Com "com", conta só se o elemento estiver marcado nele (no lugar dos simulados).
+function fatorPoke(p,extra,com){
+  var e=elemTal(p);
+  if(!e||talDe(e)==="tem")return 1;
+  var on=e===extra||(com?!!com[e]:talDe(e)==="sim");
+  return on?1+TAL_PCT/100:1;
 }
-function fatorTal(i){return fatorElems(elemsDe(state.time[i]));}
+function fatorTal(i){return fatorPoke(state.time[i]);}
 // garante uma tabela de stones para cada elemento do time
 function garantirTabelas(){
   var P=state.precos;
@@ -1597,7 +1600,7 @@ function talAvisoHtml(){
   var L=[];
   state.time.forEach(function(p,i){
     var F=fatorTal(i);if(F<=1)return;
-    var sim=elemsDe(p).filter(function(e){return talDe(e)==="sim";}).map(function(e){return ELEMMAP[e];});
+    var sim=[ELEMMAP[elemTal(p)]];
     L.push(esc(nomeDe(i))+" (+"+fmtPct(F)+"%, "+juntar(sim)+")");
   });
   if(!L.length)return "";
@@ -1868,6 +1871,7 @@ function renderForm(){
       '<div class="fld"><label for="f-preco">Preço da cópia sem Star</label><input type="text" id="f-preco" data-path="'+pre+'preco" data-fmt="gold" placeholder="ex.: 140kk" autocomplete="off"><span class="echo"></span></div>'+
       '<div class="fld"><label for="f-elem">Elemento</label><select id="f-elem" data-path="'+pre+'elem" data-rebuild="elem">'+el+'</select><span class="echo">stones de boost e talento do nível 500</span></div>'+
       '<div class="fld"><label for="f-elem2">Segundo elemento</label><select id="f-elem2" data-path="'+pre+'elem2" data-rebuild="elem">'+el2+'</select><span class="echo">'+(elemDaLista(p.nome)?"veio da wiki pelo nome":"se o Pokémon tiver dois")+'</span></div>'+
+      '<div class="fld" id="fld-atk"'+(elemsDe(p).length<2?' hidden':'')+'><label for="f-elemAtk">Elemento dos golpes</label><select id="f-elemAtk" data-path="'+pre+'elemAtk">'+opcoesAtk(p)+'</select><span class="echo">o talento do nível 500 vale por ele; a wiki mostra o elemento de cada golpe</span></div>'+
     '</div>';
   $("f-boost").value=p.boost;$("f-db").value=p.danoBoost;$("f-preco").value=p.preco;$("f-treino").value=p.treino;
   simKey=null;
@@ -1880,6 +1884,14 @@ function renderFormElems(){
   ELEM.forEach(function(e){if(e[0]!==p.elem)h+=opt(e[0],e[1],p.elem2);});
   b.innerHTML=h;a.value=p.elem;b.value=p.elem2;
   var ec=b.parentNode.querySelector(".echo");if(ec)ec.textContent=elemDaLista(p.nome)?"veio da wiki pelo nome":"se o Pokémon tiver dois";
+  var fa=$("fld-atk"),c=$("f-elemAtk");
+  if(fa&&c){fa.hidden=elemsDe(p).length<2;c.innerHTML=opcoesAtk(p);c.value=p.elemAtk;}
+}
+// opções do elemento dos golpes: um dos dois elementos do Pokémon
+function opcoesAtk(p){
+  var h=opt("","Escolha",p.elemAtk);
+  elemsDe(p).forEach(function(e){h+=opt(e,ELEMMAP[e],p.elemAtk);});
+  return h;
 }
 // elementos do Pokémon pela lista da wiki (dados/pokedex.js), quando o nome bate com um da lista
 function normNome(t){return String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[’']/g,"").replace(/\s+/g," ").trim().replace(/^(sh|s\.)\s+/,"shiny ");}
@@ -2070,33 +2082,31 @@ function hazardComTal(com){
   var rot=A.rot;if(!rot.pronto)return null;
   var danos=state.time.map(function(p,i){
     var d=parseNum(p.dano);
-    return d*fatorElems(elemsDe(p),null,com);
+    return d*fatorPoke(p,null,com);
   });
   var div=melhorDivisao(danos,rot);
   return {h:hazardMax(div.min,+state.runaCol),min:div.min};
 }
 function talentoHtml(){
-  var grupos={},ordem=[],semElem=[];
+  var grupos={},ordem=[],semElem=[],semAtk=[];
   state.time.forEach(function(p,i){
     if(A.info[i].vazio)return;
-    var els=elemsDe(p);
+    var els=elemsDe(p),e=elemTal(p);
     if(!els.length){semElem.push(i);return;}
-    els.forEach(function(e){
-      if(!grupos[e]){grupos[e]=[];ordem.push(e);}
-      grupos[e].push(i);
-    });
+    if(!e){semAtk.push(i);return;}
+    if(!grupos[e]){grupos[e]=[];ordem.push(e);}
+    grupos[e].push(i);
   });
-  var h='<section class="panel cq"><div class="panel-head"><div><h2>Talento de elemento (nível 500)</h2><p class="panel-sub">Cada talento dá +'+TAL_PCT+'% no dano dos Pokémon daquele elemento. Pokémon de dois elementos precisa do talento dos dois para os +'+TAL_PCT+'%; com o de um só, ganha +'+fmt2.format(TAL_PCT/2)+'%. Marque o que você já tem. Em "Simular que tenho", todo este passo (plano, subir de hazard e simulador) e o passo 1 já contam o talento.</p></div></div>';
+  var h='<section class="panel cq"><div class="panel-head"><div><h2>Talento de elemento (nível 500)</h2><p class="panel-sub">Cada talento dá +'+TAL_PCT+'% no dano dos Pokémon cujos golpes são daquele elemento. Em Pokémon de dois elementos vale o elemento dos golpes, escolhido no passo 1 (ex.: Aggron é Rock/Steel e os golpes dele são Steel). Marque o que você já tem. Em "Simular que tenho", todo este passo (plano, subir de hazard e simulador) e o passo 1 já contam o talento.</p></div></div>';
   if(ordem.length){
     h+='<ul class="tal-l">'+ordem.map(function(e){
       var st=talDe(e),ids=grupos[e],sid="tal-"+e;
       var quem=ids.map(function(i){
-        var els=elemsDe(state.time[i]),dm=parseNum(state.time[i].dano),nm=esc(nomeDe(i));
-        if(els.length>1)nm+=' <span class="muted">('+els.map(function(x){return ELEMMAP[x];}).join(" e ")+')</span>';
+        var pk=state.time[i],els=elemsDe(pk),dm=parseNum(pk.dano),nm=esc(nomeDe(i));
+        if(els.length>1)nm+=' <span class="muted">('+els.map(function(x){return ELEMMAP[x];}).join("/")+', golpes de '+ELEMMAP[e]+')</span>';
         if(!valido(dm))return nm;
         if(st==="tem")return nm+' <b>'+fmt(dm)+'</b>';
-        // com este talento e os simulados
-        var Fc=fatorElems(els,e);
+        var Fc=fatorPoke(pk,e);
         return nm+' '+fmt(dm)+' → <b>'+fmt(dm*Fc)+'</b> <span class="margin ok">+'+fmt(dm*(Fc-1))+'</span>';
       }).join('<br>');
       var nota="";
@@ -2118,7 +2128,9 @@ function talentoHtml(){
       h+='<p class="note">Sem simular talento, o time mata '+(hz0.h<0?"abaixo do hazard 0":"até o hazard "+hz0.h)+'. Com todos os que faltam ('+juntar(falta.map(function(e){return ELEMMAP[e];}))+'), sem outra melhoria, mata '+(hzT.h<0?"abaixo do hazard 0":"até o hazard "+hzT.h)+(state.metaManual?" (pela tabela)":"")+'.</p>';
     }
   }
-  if(semElem.length)h+=(ordem.length?'<p class="note">Sem elemento escolhido:</p>':'<p class="muted">Escolha o elemento de cada Pokémon no passo 1, em "Dados de melhoria".</p>')+
+  if(semAtk.length)h+='<p class="note">Pokémon de dois elementos sem o elemento dos golpes escolhido (o talento dele fica de fora):</p>'+
+    '<ul class="g-itens">'+semAtk.map(function(i){var els=elemsDe(state.time[i]);return '<li><span>'+esc(nomeDe(i))+' <span class="muted">('+els.map(function(x){return ELEMMAP[x];}).join("/")+')</span></span><button type="button" class="btn btn-sm" data-act="elemAtk" data-v="'+i+'">Escolher o elemento dos golpes</button></li>';}).join("")+'</ul>';
+  if(semElem.length)h+=(ordem.length||semAtk.length?'<p class="note">Sem elemento escolhido:</p>':'<p class="muted">Escolha o elemento de cada Pokémon no passo 1, em "Dados de melhoria".</p>')+
     '<ul class="g-itens">'+semElem.map(function(i){return '<li><span>'+esc(nomeDe(i))+'</span><button type="button" class="btn btn-sm" data-act="elem" data-v="'+i+'">Escolher o elemento</button></li>';}).join("")+'</ul>';
   return h+'</section>';
 }
@@ -2269,14 +2281,15 @@ function proximoHtml(m,ctx){
   else prox.push({w:"Star",fim:"Já tem 5 Stars"});
   if(m.b0<BOOST_MAX)prox.push({w:"Boost +"+m.b0+" → +"+(m.b0+1)+" ("+FAIXAS[faixaDoBoost(m.b0+1)].nome+")",r:avaliar(m,m.h0,m.s0,1,ctx)});
   else prox.push({w:"Boost",fim:"Já está em +50"});
-  var els=elemsDe(state.time[state.sel]);
+  var pS=state.time[state.sel],els=elemsDe(pS),el=elemTal(pS);
   if(!els.length)prox.push({w:"Talento de elemento (nível 500)",fim:"Escolha o elemento dele no passo 1"});
-  els.forEach(function(el){
-    var ts=talDe(el),tw="Talento de "+ELEMMAP[el]+" (nível 500)";
+  else if(!el)prox.push({w:"Talento de elemento (nível 500)",fim:"Escolha o elemento dos golpes dele no passo 1"});
+  else{
+    var ts=talDe(el),tw="Talento de "+ELEMMAP[el]+" (nível 500, +"+TAL_PCT+"%)";
     if(ts==="tem")prox.push({w:tw,fim:"Já tem: está no dano medido"});
     else if(ts==="sim")prox.push({w:tw,fim:"Simulado: já está contado no dano acima"});
-    else prox.push({w:tw,tal:true,g:m.Dmed*(fatorElems(els,el)-m.F)});
-  });
+    else prox.push({w:tw,tal:true,g:m.Dmed*(fatorPoke(pS,el)-m.F)});
+  }
   return '<section class="panel"><div class="panel-head"><div><h2>O que cada melhoria dá</h2><p class="panel-sub">Quanto cada melhoria dá sozinha, partindo de hoje. A última coluna mostra quanto custa cada 1.000 de dano: quanto menor, mais eficiente o gasto.</p></div></div>'+
     '<div class="scroll"><table><thead><tr><th scope="col">Melhoria</th><th scope="col" class="r">Dano ganho</th><th scope="col" class="r">Custo</th><th scope="col" class="r">Custo por 1.000 de dano</th></tr></thead><tbody>'+
     prox.map(function(x){
@@ -2291,7 +2304,7 @@ function proximoHtml(m,ctx){
 function comoHtml(m,ctx,pi){
   var Mtxt="1 + "+fmt2.format(XATK[m.h0]/100)+(m.s0>0?" + "+m.s0+" × "+fmt2.format(m.r):"")+(m.t>0?" + "+fmt3.format(m.t):"");
   var exH=m.h0<7?m.h0+1:null,pb=porBoost(m,m.h0,m.s0,ctx.escala)*m.F,nome=esc(nomeDe(state.sel));
-  var tf=m.F>1?" × "+fmt2.format(m.F):"",elN=juntar(elemsDe(state.time[state.sel]).filter(function(e){return talDe(e)==="sim";}).map(function(e){return ELEMMAP[e];}));
+  var tf=m.F>1?" × "+fmt2.format(m.F):"",elN=ELEMMAP[elemTal(state.time[state.sel])]||"";
   var metaTxt=valido(ctx.alvo)?(state.metaManual?"que você digitou (a tabela dá "+fmt(valorTabela())+" no hazard "+state.hazard+" com a "+RUNA_TXT[+state.runaCol]+")":"da tabela (hazard "+state.hazard+", "+RUNA_TXT[+state.runaCol]+")"):"";
   return '<section class="panel"><details class="how-box"><summary>Como a conta foi feita</summary><ol>'+
     (valido(ctx.alvo)?'<li>A meta é por dupla: <b>'+fmt(ctx.alvo)+'</b>, '+metaTxt+'. O mob morre quando a soma do dano dos dois Pokémon da dupla chega nesse valor, então a melhoria pode ir para qualquer um dos dois.</li>':'')+
@@ -2608,12 +2621,13 @@ function onEdit(e){
   if(state.exemplo&&path.indexOf("time.")===0)state.exemplo=false;
   salvar();
   if(t.getAttribute("data-rebuild")==="cab")renderStHead(t.getAttribute("data-e"));
-  var mn=/^time\.(\d+)\.(nome|elem|elem2)$/.exec(path);
+  var mn=/^time\.(\d+)\.(nome|elem|elem2|elemAtk)$/.exec(path);
   if(mn){
     var pk=state.time[+mn[1]];
     if(mn[2]==="nome"){var le=elemDaLista(pk.nome);if(le){pk.elem=le[0];pk.elem2=le[1]||"";}}
     if(pk.elem2===pk.elem)pk.elem2="";
     if(!pk.elem&&pk.elem2){pk.elem=pk.elem2;pk.elem2="";}
+    if(!pk.elem2||(pk.elemAtk!==pk.elem&&pk.elemAtk!==pk.elem2))pk.elemAtk="";
     garantirTabelas();salvar();
     if(+mn[1]===detAberto)renderFormElems();
   }
@@ -2652,6 +2666,7 @@ document.addEventListener("click",function(e){
   if(act==="ir"){irPara(b.dataset);return;}
   if(act==="det"){var di=+v;detAberto=detAberto===di?-1:di;if(detAberto>=0)state.sel=di;salvar();renderForm();atualizar();if(detAberto>=0){var fh=$("f-held");if(fh)fh.focus();}else b.focus();return;}
   if(act==="elem"){state.sel=+v;detAberto=+v;irParaTab("time");destacar($("f-elem"));return;}
+  if(act==="elemAtk"){state.sel=+v;detAberto=+v;irParaTab("time");destacar($("f-elemAtk"));return;}
   if(act==="editar"){state.sel=+v;detAberto=+v;irParaTab("time");destacar($("f-held"));return;}
   if(act==="campo"){var id=b.getAttribute("data-id");if(id==="m-haz"||id==="alvo"){destacar($(id));return;}if(id==="f-dano")id="dano-"+state.sel;detAberto=state.sel;irParaTab("time");destacar($(id));return;}
   if(act==="nota"){var nota=$("meta-nota"),aberto=nota.hidden;nota.hidden=!aberto;b.setAttribute("aria-expanded",String(aberto));return;}
