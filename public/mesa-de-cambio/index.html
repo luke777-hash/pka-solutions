@@ -437,7 +437,8 @@
   function cartaoFromReais(amountReais){
     var baseQtd = state.pDdOficial>0 ? Math.floor(amountReais/state.pDdOficial) : 0;
     var bonus = bonusForQty(baseQtd) + streamerEff();
-    return {baseQtd:baseQtd, bonus:bonus, totalDiamonds:baseQtd*(1+bonus/100)};
+    // diamond vem sempre inteiro: a parte quebrada do bônus não entra
+    return {baseQtd:baseQtd, bonus:bonus, totalDiamonds:Math.floor(baseQtd*(100+bonus)/100+1e-9)};
   }
 
   function cartaoMinCostForDiamonds(D){
