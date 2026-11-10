@@ -396,6 +396,25 @@
     capital: 0
   };
 
+  // o que foi preenchido fica guardado neste navegador e volta ao abrir a mesa de novo
+  // (as regras do jogo, como faixas de bônus e preço oficial, não são guardadas)
+  var CHAVE_MESA="pkahub-mesa";
+  var GUARDAR=["pKk","pDdResale","pDesconto","pMktMin","pMktMax","pUnit","useStreamer","pMktProfit","pKkSell",
+               "mode","amountReais","amountKk","amountKkTenho","capital"];
+  try{
+    var salvo=JSON.parse(localStorage.getItem(CHAVE_MESA)||"null");
+    if(salvo && typeof salvo==="object") GUARDAR.forEach(function(k){
+      if(typeof salvo[k]===typeof state[k]) state[k]=salvo[k];
+    });
+  }catch(e){}
+  function guardar(){
+    try{
+      var o={}; GUARDAR.forEach(function(k){ o[k]=state[k]; });
+      localStorage.setItem(CHAVE_MESA,JSON.stringify(o));
+    }catch(e){}
+  }
+  if(["reais","kk","diamond","lucro"].indexOf(state.mode)<0) state.mode="reais";
+
   var fMoney = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
   var fInt   = new Intl.NumberFormat("pt-BR");
   var f2     = new Intl.NumberFormat("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -526,6 +545,7 @@
     var ledger=document.getElementById("ledger");
     var entry=document.getElementById("entry");
     board.innerHTML=""; ledger.innerHTML="";
+    guardar();
 
     Array.prototype.forEach.call(document.querySelectorAll("#modes button"),function(b){
       b.setAttribute("aria-pressed", b.dataset.mode===state.mode ? "true":"false");
