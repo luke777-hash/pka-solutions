@@ -291,7 +291,7 @@
       </div>
       <div class="f">
         <label for="lMkt">Venda do diamond no market <span class="unit">K</span></label>
-        <input type="text" id="lMkt" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 285k">
+        <input type="text" id="lMkt" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 285">
       </div>
       <div class="f">
         <label for="lKkSell">Venda do KK ao player <span class="unit">R$</span></label>
@@ -316,8 +316,8 @@
           <div class="f"><label for="pDdResale">Diamond na revenda — R$ cada</label><input type="number" id="pDdResale" min="0" step="0.01"></div>
           <div class="f"><label for="pDdOficial">Valor do Diamond na compra oficial — R$ cada <span class="fixo-tag">fixo</span></label><input type="number" id="pDdOficial" min="0" step="0.01" readonly aria-readonly="true" tabindex="-1"></div>
           <div class="f"><label for="pDesconto">Desconto da loja oficial — %</label><input type="number" id="pDesconto" min="0" max="100" step="1"></div>
-          <div class="f"><label for="pMktMin">Diamond no market, mínimo — K</label><input type="text" id="pMktMin" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 263k"></div>
-          <div class="f"><label for="pMktMax">Diamond no market, máximo — K</label><input type="text" id="pMktMax" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 275k"></div>
+          <div class="f"><label for="pMktMin">Diamond no market, mínimo — K</label><input type="text" id="pMktMin" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 263"></div>
+          <div class="f"><label for="pMktMax">Diamond no market, máximo — K</label><input type="text" id="pMktMax" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 275"></div>
           <div class="f w"><label for="pUnit">1 KK equivale a quantos K</label><input type="number" id="pUnit" min="1" step="1"></div>
         </div>
       </div>
@@ -337,7 +337,7 @@
         <h3>Revenda para outros players</h3>
         <p>Usado só no modo de lucro: por quanto você consegue escoar o diamond no market e por quanto vende o KK para outro player.</p>
         <div class="fields">
-          <div class="f w"><label for="pMktProfit">Venda do diamond no market — K</label><input type="text" id="pMktProfit" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 285k"></div>
+          <div class="f w"><label for="pMktProfit">Venda do diamond no market — K</label><input type="text" id="pMktProfit" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="ex.: 285"></div>
           <div class="f w"><label for="pKkSell">Venda do KK para o player — R$</label><input type="number" id="pKkSell" min="0" step="0.01"></div>
         </div>
       </div>
@@ -794,7 +794,7 @@
   }
 
   /* ---------- ligação dos campos ---------- */
-  // Campos de valor no market aceitam "263k" (k = mil) e também o número inteiro.
+  // Campos de valor no market já estão em K: "263" vale 263k. Também aceitam "263k" e o número inteiro (263000).
   var EM_K={pMktMin:1,pMktMax:1,pMktProfit:1};
   function lerK(txt){
     var t=String(txt).trim().toLowerCase().replace(/\s+/g,""),mult=1;
@@ -803,7 +803,10 @@
     if(t.indexOf(",")>=0){t=t.replace(/\./g,"").replace(",",".");}
     else if(/^\d{1,3}(\.\d{3})+$/.test(t)){t=t.replace(/\./g,"");}
     var v=parseFloat(t);
-    return isFinite(v)?v*mult:0;
+    if(!isFinite(v)) return 0;
+    // sem "k" no fim, um número abaixo de 100.000 é lido como K (263 = 263k)
+    if(mult===1 && v<100000) mult=1e3;
+    return v*mult;
   }
   function mostrarK(v){
     if(!v) return "";
@@ -811,7 +814,7 @@
     return String(v);
   }
   function ler(key,txt){ return EM_K[key] ? lerK(txt) : (txt===""?0:parseFloat(txt)||0); }
-  function mostrar(key){ return EM_K[key] ? mostrarK(state[key]) : state[key]; }
+  function mostrar(key){ return EM_K[key] ? mostrarK(state[key]).replace(/k$/,"") : state[key]; }
   function bind(id,key){
     var input=document.getElementById(id);
     input.value=mostrar(key);
