@@ -125,6 +125,8 @@
     var lucro = !!sel && sel.getAttribute("data-mode")==="lucro";
     if(cfgWrap) cfgWrap.hidden = lucro;
     if(wrap) wrap.classList.toggle("vn-lucro", lucro);
+    // em "Tenho KK, quero diamond" a conta só usa o valor do diamond no market e quantos K tem 1 KK
+    if(wrap) wrap.classList.toggle("vn-diamond", !!sel && sel.getAttribute("data-mode")==="diamond");
   }
   if(modos) new MutationObserver(aplicarModo).observe(modos, {subtree:true, attributes:true, attributeFilter:["aria-pressed"]});
   aplicarModo();

@@ -268,6 +268,7 @@
   <nav class="modes" id="modes" aria-label="O que calcular">
     <button type="button" data-mode="reais">Tenho um valor em reais</button>
     <button type="button" data-mode="kk">Preciso de tanto KK</button>
+    <button type="button" data-mode="diamond">Tenho KK, quero diamond</button>
     <button type="button" data-mode="lucro">Quero lucrar revendendo</button>
   </nav>
 
@@ -351,6 +352,7 @@
       <li><b>Doação com cartão</b> — o preço por diamond é o da loja oficial, mas você recebe diamond extra pela faixa em que a compra cai, somado ao bônus do código de streamer quando marcado.</li>
       <li>Quando você pede uma quantidade de KK, cada faixa de bônus é testada e fica a compra mais barata que atinge a meta — às vezes comprar um pouco a mais para subir de faixa sai por menos.</li>
       <li><b>Lucro revendendo</b> — o diamond é comprado em reais, vendido no market por KK, e esse KK é vendido de volta por reais a outro player. O que decide se fecha no positivo é o valor do diamond no market: abaixo do ponto de virada mostrado, a operação dá prejuízo.</li>
+      <li><b>Comprar diamond com KK</b> — o KK que você tem vira K (1 KK = o valor de "1 KK equivale a quantos K") e é dividido pelo valor do diamond no market, no mínimo e no máximo da faixa. Só conta diamond inteiro; o que não fecha um diamond aparece como sobra.</li>
       <li>A rota vencedora é escolhida pelo meio da faixa do market, não pelo melhor caso.</li>
     </ul>
     <details class="io">
@@ -390,6 +392,7 @@
     mode: "reais",
     amountReais: 0,
     amountKk: 0,
+    amountKkTenho: 0,
     capital: 0
   };
 
@@ -548,6 +551,10 @@
       label.textContent="Quanto você tem (R$)";
       aside.textContent="Cada rota converte esse valor em KK de um jeito. A barra mostra o quanto cada uma fica atrás da melhor.";
       renderReais(board);
+    } else if(state.mode==="diamond"){
+      label.textContent="Quanto KK você tem";
+      aside.textContent="Mostra quantos diamonds esse KK compra no market, no valor mínimo e no máximo da faixa informada em Cotações de hoje.";
+      renderDiamond(board);
     } else {
       label.textContent="Quanto KK você precisa";
       aside.textContent="Cada rota mostra quanto custa chegar nessa quantidade, no melhor e no pior valor do market.";
@@ -560,6 +567,7 @@
     var amountInput=document.getElementById("amount");
     var v = state.mode==="reais" ? state.amountReais
           : state.mode==="kk"    ? state.amountKk
+          : state.mode==="diamond" ? state.amountKkTenho
           : state.capital;
     if(document.activeElement!==amountInput) amountInput.value=v||"";
     mirror("lDd","pDdResale");
@@ -677,6 +685,39 @@
     );
   }
 
+  // quantos diamonds o KK compra no market: KK em K dividido pelo valor do diamond, só diamond inteiro
+  function diamondsComKk(amountKk, marketK){
+    var totalK = amountKk*state.pUnit;
+    var qtd = marketK>0 ? Math.floor(totalK/marketK) : 0;
+    var sobraKk = state.pUnit>0 ? (totalK-qtd*marketK)/state.pUnit : 0;
+    return {qtd:qtd, gastoKk:amountKk-sobraKk, sobraKk:sobraKk};
+  }
+
+  function renderDiamond(board){
+    var amount=state.amountKkTenho||0;
+    var alto=diamondsComKk(amount, state.pMktMax);
+    var baixo=diamondsComKk(amount, state.pMktMin);
+    function kTxt(v){ return mostrarK(v)||"0"; }
+
+    var cards=[
+      {key:"baixo", title:"Market baixo", sub:"Diamond a "+kTxt(state.pMktMin)+", o mínimo da faixa",
+       score:baixo.qtd, main:n(baixo.qtd)+" diamonds", delta:"no melhor caso", win:true,
+       rows:[["KK gasto",kkTxt(baixo.gastoKk)],["Sobra de KK",kkTxt(baixo.sobraKk)]]},
+      {key:"alto", title:"Market alto", sub:"Diamond a "+kTxt(state.pMktMax)+", o máximo da faixa",
+       score:alto.qtd, main:n(alto.qtd)+" diamonds", delta:"no pior caso",
+       rows:[["KK gasto",kkTxt(alto.gastoKk)],["Sobra de KK",kkTxt(alto.sobraKk)]]}
+    ];
+    cards.forEach(function(r){ board.appendChild(routeCard(r,baixo.qtd,false)); });
+
+    var faixa = alto.qtd===baixo.qtd ? n(alto.qtd) : n(alto.qtd)+" a "+n(baixo.qtd);
+    paintVerdict(null,
+      "Com "+f2.format(amount)+" KK, você compra no market",
+      faixa+(alto.qtd===1&&baixo.qtd===1?" diamond":" diamonds"),
+      "Diamond entre "+kTxt(state.pMktMin)+" e "+kTxt(state.pMktMax),
+      "O número menor vale se o diamond estiver no máximo da faixa ("+kTxt(state.pMktMax)+"); o maior, se estiver no mínimo ("+kTxt(state.pMktMin)+")."
+    );
+  }
+
   function renderLucro(ledger){
     var capital=state.capital||0;
     var buy=state.pDdResale;
@@ -791,6 +832,7 @@
     var v = amountInput.value===""?0:parseFloat(amountInput.value)||0;
     if(state.mode==="reais") state.amountReais=v;
     else if(state.mode==="kk") state.amountKk=v;
+    else if(state.mode==="diamond") state.amountKkTenho=v;
     else state.capital=v;
     render();
   });
