@@ -1,0 +1,116 @@
+/* Barra de navegação do PKA-HUB (nav.js). Igual no hub e em todas as ferramentas.
+   Tem as próprias cores e zera os estilos da página em volta, para ficar igual em todo lugar. */
+/* svg fica de fora: "all" também zeraria o desenho (x, y, d...) */
+.pkn, .pkn :where(:not(svg, svg *)){all:revert;}
+.pkn, .pkn *, .pkn *::before, .pkn *::after{box-sizing:border-box;}
+
+.pkn{
+  --pkn-bg:#ffffff; --pkn-fg:#141a24; --pkn-muted:#566274; --pkn-line:#d5dbe3; --pkn-hover:#eef1f5;
+  --pkn-planejador:#2f49b8; --pkn-mesa:#b07f1c; --pkn-hunt:#c8323a; --pkn-pokelog:#127a62;
+  --pkn-rosa:#d6336c;
+  display:block; position:relative; z-index:40; margin:0; padding:0;
+  background:var(--pkn-bg); color:var(--pkn-fg); border-bottom:1px solid var(--pkn-line);
+  font-family:"Figtree","Segoe UI",system-ui,sans-serif; font-size:14px; line-height:1.3; font-weight:600;
+  -webkit-font-smoothing:antialiased; text-align:left;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .pkn{
+    --pkn-bg:#121821; --pkn-fg:#e4e9ef; --pkn-muted:#9aa6b6; --pkn-line:#2a3441; --pkn-hover:#1d2531;
+    --pkn-planejador:#7b93f0; --pkn-mesa:#e8b44c; --pkn-hunt:#ef6b6f; --pkn-pokelog:#3cc9a2; --pkn-rosa:#f06595;
+  }
+}
+:root[data-theme="dark"] .pkn{
+  --pkn-bg:#121821; --pkn-fg:#e4e9ef; --pkn-muted:#9aa6b6; --pkn-line:#2a3441; --pkn-hover:#1d2531;
+  --pkn-planejador:#7b93f0; --pkn-mesa:#e8b44c; --pkn-hunt:#ef6b6f; --pkn-pokelog:#3cc9a2; --pkn-rosa:#f06595;
+}
+
+.pkn-dentro{
+  display:flex; align-items:center; gap:20px;
+  min-height:60px; margin:0;
+  padding:env(safe-area-inset-top, 0px) max(24px, env(safe-area-inset-right, 0px)) 0 max(24px, env(safe-area-inset-left, 0px));
+}
+
+/* marca */
+.pkn-marca{
+  display:inline-flex; align-items:center; gap:10px; flex:none;
+  color:var(--pkn-fg); text-decoration:none;
+  font-family:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif; font-weight:800; font-size:20px; letter-spacing:-.01em;
+  border-radius:8px; padding:4px 2px;
+}
+.pkn-marca-icone{width:24px; height:24px; display:block; transition:transform .25s ease;}
+.pkn-marca:hover .pkn-marca-icone{transform:rotate(90deg);}
+.pkn-c-planejador{fill:var(--pkn-planejador);}
+.pkn-c-mesa{fill:var(--pkn-mesa);}
+.pkn-c-hunt{fill:var(--pkn-hunt);}
+.pkn-c-pokelog{fill:var(--pkn-pokelog);}
+
+/* ferramentas */
+.pkn-nav{display:block; flex:1; min-width:0; align-self:stretch;}
+.pkn-lista{list-style:none; margin:0; padding:0; display:flex; align-items:stretch; gap:4px; height:100%;}
+.pkn-lista li{display:flex; margin:0; padding:0;}
+.pkn-link{
+  --pkn-cor:var(--pkn-fg);
+  position:relative; display:inline-flex; align-items:center; gap:8px;
+  padding:0 12px; color:var(--pkn-muted); text-decoration:none; white-space:nowrap;
+  transition:color .15s ease, background-color .15s ease;
+}
+.pkn-t-planejador{--pkn-cor:var(--pkn-planejador);}
+.pkn-t-mesa{--pkn-cor:var(--pkn-mesa);}
+.pkn-t-hunt{--pkn-cor:var(--pkn-hunt);}
+.pkn-t-pokelog{--pkn-cor:var(--pkn-pokelog);}
+.pkn-ponto{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--pkn-cor); flex:none;}
+.pkn-link::after{
+  content:""; position:absolute; left:12px; right:12px; bottom:-1px; height:3px; border-radius:3px 3px 0 0;
+  background:var(--pkn-cor); transform:scaleX(0); transition:transform .2s ease;
+}
+.pkn-link:hover{color:var(--pkn-fg);}
+.pkn-link:hover::after{transform:scaleX(.5);}
+.pkn-link[aria-current="page"]{color:var(--pkn-fg); font-weight:700;}
+.pkn-link[aria-current="page"]::after{transform:scaleX(1);}
+
+/* botões */
+.pkn-acoes{display:flex; align-items:center; gap:8px; margin-left:auto; flex:none;}
+.pkn-botao{
+  display:inline-flex; align-items:center; gap:7px; min-height:38px; margin:0; padding:6px 14px 6px 11px;
+  border:1px solid var(--pkn-line); border-radius:999px; background:var(--pkn-bg); color:var(--pkn-fg);
+  font:inherit; font-size:14px; font-weight:600; line-height:1; cursor:pointer;
+  transition:border-color .15s ease, transform .15s ease, background-color .15s ease;
+}
+.pkn-botao:hover{border-color:var(--pkn-fg);}
+.pkn-botao:active{transform:scale(.97);}
+.pkn-botao svg{width:18px; height:18px; display:block; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+.pkn-apoiar:hover svg{fill:var(--pkn-rosa); stroke:var(--pkn-rosa);}
+.pkn-menu{display:none;}
+.pkn a:focus-visible, .pkn button:focus-visible{outline:3px solid var(--pkn-fg); outline-offset:2px;}
+
+/* telas estreitas: as ferramentas vão para o menu */
+@media (max-width:1000px){
+  .pkn-dentro{flex-wrap:wrap; gap:8px 12px; min-height:56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));}
+  .pkn-menu{display:inline-flex;}
+  .pkn-nav{order:3; flex-basis:100%; display:none; align-self:auto;}
+  .pkn-aberta .pkn-nav{display:block;}
+  .pkn-lista{flex-direction:column; gap:2px; padding:4px 0 12px;}
+  .pkn-link{width:100%; min-height:44px; padding:0 12px; border-radius:10px; color:var(--pkn-fg);}
+  .pkn-link:hover{background:var(--pkn-hover);}
+  .pkn-link::after{left:0; right:auto; top:10px; bottom:10px; width:3px; height:auto; border-radius:0 3px 3px 0; transform:scaleY(0);}
+  .pkn-link:hover::after{transform:scaleY(0);}
+  .pkn-link[aria-current="page"]{background:var(--pkn-hover);}
+  .pkn-link[aria-current="page"]::after{transform:scaleY(1);}
+  .pkn-acoes{gap:6px;}
+  .pkn-menu[aria-expanded="true"]{background:var(--pkn-hover);}
+}
+@media (max-width:560px){
+  .pkn-tema span, .pkn-apoiar span{display:none;}
+  .pkn-tema, .pkn-apoiar{width:36px; padding:0; justify-content:center;}
+  .pkn-botao{min-height:36px;}
+  .pkn-menu{padding:6px 12px 6px 10px;}
+  .pkn-marca{font-size:18px; gap:8px;}
+  .pkn-marca-icone{width:22px; height:22px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .pkn-link, .pkn-link::after, .pkn-botao, .pkn-marca-icone{transition:none;}
+}
+@media print{ .pkn{display:none;} }
+
+/* o tema agora fica na barra: esconde o botão de tema que cada ferramenta tinha */
+.vn-tema, button#tema.tema{display:none !important;}
