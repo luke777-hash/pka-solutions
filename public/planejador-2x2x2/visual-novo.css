@@ -96,6 +96,16 @@ fieldset.role{border-radius:10px;}
 .linkbtn{transition:opacity .2s ease;}
 .linkbtn:hover{opacity:.75;}
 
+/* ---------- sub-abas (Preços, passo 3, faixas do passo 4): barra própria, maior que os botões comuns ---------- */
+.sec-index{gap:4px;padding:5px;width:fit-content;max-width:100%;border:1px solid var(--line-strong);border-radius:14px;background:var(--track);}
+.sec-index .idx{height:42px;padding:0 16px;border:0;border-radius:10px;background:transparent;color:var(--text);font-size:15.5px;}
+.sec-index .idx:has(.pill){padding-right:8px;}
+.sec-index .idx:hover{background:var(--surface);color:var(--text);}
+.sec-index .idx[aria-selected="true"]{background:var(--text);color:var(--surface);box-shadow:0 2px 8px rgba(15,20,27,.22);}
+.sec-index .idx[aria-selected="true"] .pill{background:var(--surface);}
+.sec-index .idx:focus-visible{outline-offset:1px;}
+@media (max-width:760px){.sec-index{width:100%;}.sec-index .idx{flex:1 1 auto;justify-content:center;}}
+
 /* botão de tema */
 .vn-tema svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 
