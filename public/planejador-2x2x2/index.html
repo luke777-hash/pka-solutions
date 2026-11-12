@@ -294,6 +294,13 @@ fieldset.role{grid-area:role;display:flex;width:100%;min-width:0;height:38px;mar
 .best{display:inline-block;margin-left:8px;padding:0 8px;border-radius:999px;background:var(--text);color:var(--surface);font-size:12px;font-weight:700;line-height:1.6;vertical-align:1px;}
 tr.is-best td{background:var(--surface-2);}
 tr.is-best td:first-child{box-shadow:inset 3px 0 0 var(--text);}
+.t-all tbody tr[data-act]{cursor:pointer;}
+.t-all tbody tr[data-act]:hover td{background:var(--surface-2);}
+tr.is-sel td{background:var(--surface-2);}
+tr.is-sel td:first-child{box-shadow:inset 3px 0 0 var(--lurer);}
+.rank-b{padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;}
+.rank-b:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.esc{display:inline-block;margin-left:8px;padding:0 8px;border-radius:999px;background:var(--lurer);color:var(--surface);font-size:12px;font-weight:700;line-height:1.6;vertical-align:1px;}
 .cell-n{display:block;}
 .cell-v{display:block;font-weight:700;font-variant-numeric:tabular-nums;}
 .cell-v.ok{color:var(--ok);}
@@ -1123,7 +1130,7 @@ var PERMS=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
 function ranquear(lurers,damages,alvo){
   var combos=PERMS.map(function(p){
     var duplas=lurers.map(function(l,i){var d=damages[p[i]],soma=l.dano+d.dano;return {lurer:l,damage:d,soma:soma,folga:soma-alvo,bate:soma>=alvo};});
-    return {duplas:duplas,batem:duplas.filter(function(x){return x.bate;}).length,ordenadas:duplas.map(function(x){return x.soma;}).sort(function(a,b){return a-b;})};
+    return {key:duplas.map(function(x){return x.lurer.slot+"-"+x.damage.slot;}).join(","),duplas:duplas,batem:duplas.filter(function(x){return x.bate;}).length,ordenadas:duplas.map(function(x){return x.soma;}).sort(function(a,b){return a-b;})};
   });
   function cmp(a,b){if(b.batem!==a.batem)return b.batem-a.batem;for(var i=0;i<3;i++){if(b.ordenadas[i]!==a.ordenadas[i])return b.ordenadas[i]-a.ordenadas[i];}return 0;}
   combos.sort(cmp);
@@ -1182,7 +1189,7 @@ function feesVazias(){var o={};RAR.forEach(function(r){o[r.id]=[0,1,2,3,4].map(f
 function estadoPadrao(){
   var time=[];for(var i=0;i<N;i++)time.push(pokeVazio());
   return {
-    exemplo:false,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",talento:{},time:time,sel:0,tab:"time",abaM:"plano",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
+    exemplo:false,alvo:"560k",metaManual:false,hazard:"0",runaCol:"0",talento:{},rotEsc:"",time:time,sel:0,tab:"time",abaM:"plano",sim:{i:-1,h:"",s:"",b:""},prog:{ate:"",verba:""},
     precos:{
       xatk:["","","","","","",""],
       diamante:"",fees:feesVazias(),starRar:"t1",
@@ -1220,6 +1227,7 @@ function normalizar(o){
   }
   if(o.talento&&typeof o.talento==="object")ELEM.forEach(function(e){var v=o.talento[e[0]];if(v==="tem"||v==="sim")s.talento[e[0]]=v;});
   if(typeof o.sel==="number"&&o.sel>=0&&o.sel<N)s.sel=o.sel;
+  if(typeof o.rotEsc==="string"&&/^[1-6]-[1-6](,[1-6]-[1-6]){2}$/.test(o.rotEsc))s.rotEsc=o.rotEsc;
   if(ABAS_M.some(function(a){return a[0]===o.abaM;}))s.abaM=o.abaM;
   if(o.prog&&typeof o.prog==="object"){
     if(/^(\d|1[0-7])?$/.test(String(o.prog.ate)))s.prog.ate=String(o.prog.ate);
@@ -1357,6 +1365,9 @@ function analisarRotacao(ctx){
   r.pronto=L.length===3&&D.length===3&&comDano===N&&r.alvoOk;
   if(!r.pronto)return r;
   r.combos=ranquear(L,D,alvo);r.melhor=r.combos[0];
+  // divisão escolhida pelo jogador na tabela "Todas as combinações" (some se o time mudar e ela deixar de existir)
+  r.escolhida=null;r.combos.forEach(function(c,k){if(state.rotEsc&&c.key===state.rotEsc){r.escolhida=c;r.posEsc=k+1;}});
+  r.usada=r.escolhida||r.melhor;
   r.maxMin=0;r.combos.forEach(function(c){if(c.ordenadas[0]>r.maxMin)r.maxMin=c.ordenadas[0];});
   r.hMax=hazardMax(r.maxMin,+state.runaCol);
   r.total=pokes.reduce(function(s,p){return s+p.dano;},0);
@@ -1396,12 +1407,12 @@ function analisar(){
   });
   return {ctx:ctx,rot:rot,info:info,tp:tp,tpOt:tpOt,dica:dica,plano:plano,pend:pend,matNeed:matNeed};
 }
-// Com quem este Pokémon faz dupla: no plano do time ou, sem plano, na melhor rotação de hoje
+// Com quem este Pokémon faz dupla: no plano do time ou, sem plano, na rotação do passo 1 (a melhor ou a escolhida)
 function parceiroDe(i){
   if(A.plano[i])return A.plano[i].parceiro;
   if(!A.rot.pronto)return null;
   var r=null;
-  A.rot.melhor.duplas.forEach(function(d){var l=d.lurer.slot-1,dd=d.damage.slot-1;if(l===i)r=dd;if(dd===i)r=l;});
+  A.rot.usada.duplas.forEach(function(d){var l=d.lurer.slot-1,dd=d.damage.slot-1;if(l===i)r=dd;if(dd===i)r=l;});
   return r;
 }
 
@@ -1489,7 +1500,7 @@ function atualizarPassos(){
   if(!rot.alvoOk)st=["warn","Informe a meta"];
   else if(!rot.pronto)st=["warn","Complete o time"];
   else if(!state.metaManual)st=rot.hMax>=0?["ok","Mata até o hazard "+rot.hMax]:["bad","Não mata o hazard 0"];
-  else st=rot.melhor.batem===3?["ok","As 3 duplas batem"]:["bad",rot.melhor.batem+" de 3 duplas batem"];
+  else st=rot.usada.batem===3?["ok","As 3 duplas batem"]:["bad",rot.usada.batem+" de 3 duplas batem"];
   setSt("st-time",st);
   var np=Object.keys(A.pend).length,semDados=A.info.every(function(r){return r.m.falta;});
   setSt("st-precos",np?["warn",plural(np,"pendência","pendências")]:(semDados?["","Faltam dados do time"]:["ok","Nada pendente"]));
@@ -1621,9 +1632,9 @@ function rotHtml(rot){
     return '<section class="panel"><div class="panel-head"><div><h2>Melhor rotação</h2><p class="panel-sub">Para calcular, complete:</p></div></div><ul class="todo">'+
       itens.map(function(it){return '<li class="'+(it.ok?"ok":"no")+'"><span class="ic" aria-hidden="true">'+(it.ok?"✓":"○")+'</span><span>'+it.txt+' <span class="det">('+it.det+')</span><span class="sr">'+(it.ok?", concluído":", pendente")+'</span></span></li>';}).join("")+'</ul></section>';
   }
-  var m=rot.melhor,alvo=rot.alvo,outros=rot.combos.filter(function(c){return c.melhor;}).length-1;
+  var esc1=!!rot.escolhida,m=rot.usada,alvo=rot.alvo,outros=esc1?0:rot.combos.filter(function(c){return c.melhor;}).length-1;
   var minimo=3*alvo,todasOk=m.batem===3;
-  var vtxt=todasOk?"As 3 duplas batem "+fmt(alvo):(m.batem===0?"Nenhuma dupla bate "+fmt(alvo):"No máximo "+m.batem+" de 3 duplas "+(m.batem===1?"bate ":"batem ")+fmt(alvo));
+  var vtxt=todasOk?"As 3 duplas batem "+fmt(alvo):(m.batem===0?"Nenhuma dupla bate "+fmt(alvo):(esc1?"":"No máximo ")+m.batem+" de 3 duplas "+(m.batem===1?"bate ":"batem ")+fmt(alvo));
   var maior=0;m.duplas.forEach(function(d){if(d.soma>maior)maior=d.soma;});
   var escala=Math.max(alvo,maior)*1.1;
   function pct(v){return Math.max(0,Math.min(100,v/escala*100));}
@@ -1645,23 +1656,26 @@ function rotHtml(rot){
     haz='<div class="haz-line ok">'+haz+'</div>';
   }
   var emp="";
+  if(esc1)haz+='<div class="haz-line">Você escolheu a combinação '+rot.posEsc+' da tabela "Todas as combinações"'+(rot.escolhida.melhor?', que também é uma das melhores':'. Na melhor, a dupla mais fraca tem '+fmt(rot.melhor.ordenadas[0])+' e '+(rot.melhor.batem===0?'nenhuma dupla bate':rot.melhor.batem===1?'1 dupla bate':rot.melhor.batem+' duplas batem'))+'. <button type="button" class="linkbtn" data-act="rot-auto">Voltar para a melhor</button></div>';
   if(outros===1)emp='<p class="fine" style="margin-top:12px">Outra combinação dá exatamente o mesmo resultado e também aparece como melhor na tabela.</p>';
   else if(outros>1)emp='<p class="fine" style="margin-top:12px">Outras '+outros+' combinações dão exatamente o mesmo resultado e também aparecem como melhores na tabela.</p>';
   var diag='Soma do time: <strong>'+fmt(rot.total)+'</strong>. Para as 3 duplas baterem '+fmt(alvo)+', a soma precisa ser de pelo menos <strong>'+fmt(minimo)+'</strong>.';
   if(rot.total<minimo)diag+=' <span class="warn-t">Faltam '+fmt(minimo-rot.total)+' no total: com esse time, nenhuma combinação faz as 3 duplas baterem. O passo 3 mostra o jeito mais barato de cobrir a falta.</span>';
+  else if(!todasOk&&rot.melhor.batem===3)diag+=' <span class="warn-t">Nesta divisão nem todas as duplas batem. A melhor rotação faz as 3 duplas baterem.</span>';
   else if(!todasOk)diag+=' <span class="warn-t">A soma dá, mas nenhuma combinação divide o dano de forma que as 3 duplas batam.</span>';
-  return '<section class="panel cq"><div class="panel-head"><div><h2>Melhor rotação</h2><p class="panel-sub">A numeração é a ordem de uso: 1 lura, 2 finaliza, e assim até o 6, quando a rotação recomeça.</p></div><span class="verdict '+(todasOk?"ok":"bad")+'">'+vtxt+'</span></div>'+
+  return '<section class="panel cq" id="rot-card"><div class="panel-head"><div><h2>'+(esc1?'Rotação escolhida':'Melhor rotação')+'</h2><p class="panel-sub">A numeração é a ordem de uso: 1 lura, 2 finaliza, e assim até o 6, quando a rotação recomeça.</p></div><span class="verdict '+(todasOk?"ok":"bad")+'">'+vtxt+'</span></div>'+
     haz+'<div class="plates">'+placas+'</div>'+emp+'<p class="diag">'+diag+'</p></section>';
 }
 function todasHtml(rot){
   var ls=rot.melhor.duplas.map(function(d){return d.lurer;});
   var head='<tr><th scope="col">#</th>'+ls.map(function(l){return '<th scope="col"><span class="th-l">Lurer</span> '+esc(l.nome)+' <span class="slotref">#'+l.slot+'</span></th>';}).join("")+'<th scope="col" class="r">Duplas que batem</th><th scope="col" class="r">Dupla mais fraca</th></tr>';
   var body=rot.combos.map(function(c,k){
-    return '<tr'+(c.melhor?' class="is-best"':'')+'><td><span class="rank">'+(k+1)+'</span>'+(c.melhor?'<span class="best">melhor</span>':'')+'</td>'+
+    var sel=c===rot.usada,cls=[];if(c.melhor)cls.push("is-best");if(sel&&rot.escolhida)cls.push("is-sel");
+    return '<tr data-act="rot-esc" data-v="'+c.key+'"'+(cls.length?' class="'+cls.join(" ")+'"':'')+'><td><button type="button" class="rank-b" data-act="rot-esc" data-v="'+c.key+'" aria-pressed="'+sel+'" aria-label="Usar a combinação '+(k+1)+' no quadro de rotação"><span class="rank">'+(k+1)+'</span></button>'+(c.melhor?'<span class="best">melhor</span>':'')+(sel&&rot.escolhida?'<span class="esc">escolhida</span>':'')+'</td>'+
       c.duplas.map(function(d){return '<td><span class="cell-n">'+esc(d.damage.nome)+' <span class="slotref">#'+d.damage.slot+'</span></span><span class="cell-v '+(d.bate?"ok":"bad")+'">'+fmt(d.soma)+' '+(d.bate?"✓":"✗")+'</span></td>';}).join("")+
       '<td class="r">'+c.batem+' de 3</td><td class="r">'+fmt(c.ordenadas[0])+'</td></tr>';
   }).join("");
-  return '<div class="panel-head"><div><h2>Todas as combinações</h2><p class="panel-sub">Cada coluna é um Lurer. A célula mostra o Damage que finaliza com ele e o dano da dupla.</p></div></div>'+
+  return '<div class="panel-head"><div><h2>Todas as combinações</h2><p class="panel-sub">Cada coluna é um Lurer. A célula mostra o Damage que finaliza com ele e o dano da dupla. Clique numa linha para usar essa divisão no quadro de rotação acima.</p></div>'+(rot.escolhida?'<button type="button" class="btn btn-sm" data-act="rot-auto">Voltar para a melhor</button>':'')+'</div>'+
     '<div class="scroll"><table class="t-all"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
 }
 
@@ -2642,6 +2656,10 @@ document.addEventListener("click",function(e){
   var b=e.target.closest("[data-act]");if(!b)return;
   var act=b.getAttribute("data-act"),v=b.getAttribute("data-v"),P=state.precos;
   if(act==="tab"){irParaTab(v);$("tab-"+v).focus();return;}
+  if(act==="rot-esc"||act==="rot-auto"){
+    // linha da melhor (a primeira) volta para o automático; qualquer outra fica escolhida
+    state.rotEsc=(act==="rot-auto"||!A.rot.pronto||A.rot.combos[0].key===v)?"":v;salvar();atualizar();
+    var fb=document.querySelector('.rank-b[data-v="'+(state.rotEsc||A.rot.combos[0].key)+'"]');if(fb&&e.detail===0)fb.focus({preventScroll:true});return;}
   if(act==="pick"){state.sel=+v;salvar();simKey=null;atualizar();var nb=document.querySelector('.pk[data-v="'+v+'"]');if(nb)nb.focus();return;}
   if(act==="rar"){P.starRar=v;salvar();renderPrecos();atualizar();var c=document.querySelector('.chip[data-act="rar"][data-v="'+v+'"]');if(c)c.focus();return;}
   if(act==="faixaC"){faixaC=+v;atualizarCompras();var tf=document.querySelector('.abas-f [data-v="'+v+'"]');if(tf)tf.focus();return;}
