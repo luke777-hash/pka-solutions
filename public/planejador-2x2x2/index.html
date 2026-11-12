@@ -1370,6 +1370,8 @@ function analisarRotacao(ctx){
   r.usada=r.escolhida||r.melhor;
   r.maxMin=0;r.combos.forEach(function(c){if(c.ordenadas[0]>r.maxMin)r.maxMin=c.ordenadas[0];});
   r.hMax=hazardMax(r.maxMin,+state.runaCol);
+  // hazard da divisão do card: a escolhida ou, sem escolha, a melhor para o hazard
+  r.minUsada=r.escolhida?r.escolhida.ordenadas[0]:r.maxMin;r.hUsada=r.escolhida?hazardMax(r.minUsada,+state.runaCol):r.hMax;
   r.total=pokes.reduce(function(s,p){return s+p.dano;},0);
   return r;
 }
@@ -1499,7 +1501,7 @@ function atualizarPassos(){
   var rot=A.rot,st;
   if(!rot.alvoOk)st=["warn","Informe a meta"];
   else if(!rot.pronto)st=["warn","Complete o time"];
-  else if(!state.metaManual)st=rot.hMax>=0?["ok","Mata até o hazard "+rot.hMax]:["bad","Não mata o hazard 0"];
+  else if(!state.metaManual)st=rot.hUsada>=0?["ok","Mata até o hazard "+rot.hUsada]:["bad","Não mata o hazard 0"];
   else st=rot.usada.batem===3?["ok","As 3 duplas batem"]:["bad",rot.usada.batem+" de 3 duplas batem"];
   setSt("st-time",st);
   var np=Object.keys(A.pend).length,semDados=A.info.every(function(r){return r.m.falta;});
@@ -1649,14 +1651,23 @@ function rotHtml(rot){
   }).join("");
   var haz="",rc=+state.runaCol,pela=state.metaManual?"Pela tabela, com a ":"Com a ";
   // para o hazard vale a divisão em que a dupla mais fraca fica mais forte (pode não ser a do quadro abaixo)
-  if(rot.hMax<0)haz='<div class="haz-line bad">'+pela+RUNA_TXT[rc]+', nenhuma divisão do time mata o hazard 0. O mais perto é uma divisão em que a dupla mais fraca tem '+fmt(rot.maxMin)+', e o hazard 0 pede '+fmt(HAZ[0][rc]*1000)+'.</div>';
+  if(esc1){
+    var hU=rot.hUsada,mU=rot.minUsada;
+    if(hU<0)haz='<div class="haz-line bad">'+pela+RUNA_TXT[rc]+', nesta divisão o time não mata o hazard 0: a dupla mais fraca tem '+fmt(mU)+', e o hazard 0 pede '+fmt(HAZ[0][rc]*1000)+'.</div>';
+    else{
+      haz=pela+RUNA_TXT[rc]+', nesta divisão o time mata até o <strong>hazard '+hU+'</strong> (dupla mais fraca: '+fmt(mU)+').';
+      if(hU<HAZ.length-1)haz+=' O hazard '+(hU+1)+' pede '+fmt(HAZ[hU+1][rc]*1000)+' por dupla: faltam '+fmt(HAZ[hU+1][rc]*1000-mU)+'.';
+      haz='<div class="haz-line ok">'+haz+'</div>';
+    }
+  }
+  else if(rot.hMax<0)haz='<div class="haz-line bad">'+pela+RUNA_TXT[rc]+', nenhuma divisão do time mata o hazard 0. O mais perto é uma divisão em que a dupla mais fraca tem '+fmt(rot.maxMin)+', e o hazard 0 pede '+fmt(HAZ[0][rc]*1000)+'.</div>';
   else{
     haz=pela+RUNA_TXT[rc]+', o time mata até o <strong>hazard '+rot.hMax+'</strong>, na divisão em que a dupla mais fraca fica mais forte ('+fmt(rot.maxMin)+').';
     if(rot.hMax<HAZ.length-1)haz+=' O hazard '+(rot.hMax+1)+' pede '+fmt(HAZ[rot.hMax+1][rc]*1000)+' por dupla: faltam '+fmt(HAZ[rot.hMax+1][rc]*1000-rot.maxMin)+'.';
     haz='<div class="haz-line ok">'+haz+'</div>';
   }
   var emp="";
-  if(esc1)haz+='<div class="haz-line">Você escolheu a combinação '+rot.posEsc+' da tabela "Todas as combinações"'+(rot.escolhida.melhor?', que também é uma das melhores':'. Na melhor, a dupla mais fraca tem '+fmt(rot.melhor.ordenadas[0])+' e '+(rot.melhor.batem===0?'nenhuma dupla bate':rot.melhor.batem===1?'1 dupla bate':rot.melhor.batem+' duplas batem'))+'. <button type="button" class="linkbtn" data-act="rot-auto">Voltar para a melhor</button></div>';
+  if(esc1)haz+='<div class="haz-line">Você escolheu a combinação '+rot.posEsc+' da tabela "Todas as combinações"'+(rot.escolhida.melhor?', que também é uma das melhores':'. Na melhor, a dupla mais fraca tem '+fmt(rot.melhor.ordenadas[0])+(rot.hMax>=0?' e o time mata até o hazard '+rot.hMax:''))+'. <button type="button" class="linkbtn" data-act="rot-auto">Voltar para a melhor</button></div>';
   if(outros===1)emp='<p class="fine" style="margin-top:12px">Outra combinação dá exatamente o mesmo resultado e também aparece como melhor na tabela.</p>';
   else if(outros>1)emp='<p class="fine" style="margin-top:12px">Outras '+outros+' combinações dão exatamente o mesmo resultado e também aparecem como melhores na tabela.</p>';
   var diag='Soma do time: <strong>'+fmt(rot.total)+'</strong>. Para as 3 duplas baterem '+fmt(alvo)+', a soma precisa ser de pelo menos <strong>'+fmt(minimo)+'</strong>.';
