@@ -1020,7 +1020,7 @@ function melhorDupla(fL,fD,alvo){
 function planoTime(info,rot,alvo,key){
   var L=rot.L.map(function(p){return p.slot-1;}),D=rot.D.map(function(p){return p.slot-1;});
   var memo={},best=null;
-  PERMS.forEach(function(perm){
+  (rot.perms||PERMS).forEach(function(perm){
     var duplas=[],total=0,miss=0;
     for(var k=0;k<3;k++){
       var li=L[k],di=D[perm[k]],id=li+"|"+di;
@@ -1047,7 +1047,7 @@ function hojeOp(m){return {h:m.h0,s:m.s0,n:0,dano:m.D0,custo:0,ok:true,ch:{c:0},
 // divisão em duplas com a dupla mais fraca mais forte possível (é ela que define o hazard)
 function melhorDivisao(danos,rot){
   var L=rot.L.map(function(p){return p.slot-1;}),D=rot.D.map(function(p){return p.slot-1;}),best=null;
-  PERMS.forEach(function(perm){
+  (rot.perms||PERMS).forEach(function(perm){
     var ds=[0,1,2].map(function(k){var li=L[k],di=D[perm[k]];return {li:li,di:di,soma:danos[li]+danos[di]};});
     var min=Math.min(ds[0].soma,ds[1].soma,ds[2].soma);
     if(!best||min>best.min+1e-6)best={duplas:ds,min:min};
@@ -1130,7 +1130,7 @@ var PERMS=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
 function ranquear(lurers,damages,alvo){
   var combos=PERMS.map(function(p){
     var duplas=lurers.map(function(l,i){var d=damages[p[i]],soma=l.dano+d.dano;return {lurer:l,damage:d,soma:soma,folga:soma-alvo,bate:soma>=alvo};});
-    return {key:duplas.map(function(x){return x.lurer.slot+"-"+x.damage.slot;}).join(","),duplas:duplas,batem:duplas.filter(function(x){return x.bate;}).length,ordenadas:duplas.map(function(x){return x.soma;}).sort(function(a,b){return a-b;})};
+    return {perm:p,key:duplas.map(function(x){return x.lurer.slot+"-"+x.damage.slot;}).join(","),duplas:duplas,batem:duplas.filter(function(x){return x.bate;}).length,ordenadas:duplas.map(function(x){return x.soma;}).sort(function(a,b){return a-b;})};
   });
   function cmp(a,b){if(b.batem!==a.batem)return b.batem-a.batem;for(var i=0;i<3;i++){if(b.ordenadas[i]!==a.ordenadas[i])return b.ordenadas[i]-a.ordenadas[i];}return 0;}
   combos.sort(cmp);
@@ -1368,6 +1368,8 @@ function analisarRotacao(ctx){
   // divisão escolhida pelo jogador na tabela "Todas as combinações" (some se o time mudar e ela deixar de existir)
   r.escolhida=null;r.combos.forEach(function(c,k){if(state.rotEsc&&c.key===state.rotEsc){r.escolhida=c;r.posEsc=k+1;}});
   r.usada=r.escolhida||r.melhor;
+  // com uma divisão escolhida, o passo 3 só planeja nela
+  r.perms=r.escolhida?[r.escolhida.perm]:PERMS;
   r.maxMin=0;r.combos.forEach(function(c){if(c.ordenadas[0]>r.maxMin)r.maxMin=c.ordenadas[0];});
   r.hMax=hazardMax(r.maxMin,+state.runaCol);
   // hazard da divisão do card: a escolhida ou, sem escolha, a melhor para o hazard
@@ -2029,9 +2031,9 @@ function planoTimeHtml(){
   var rot=A.rot,ctx=A.ctx,tp=A.tp,h="";
   if(!rot.alvoOk)return '<section class="panel"><div class="panel-head"><div><h2>Plano do time</h2><p class="panel-sub">Informe a meta de dano no topo da página.</p></div></div></section>';
   if(!rot.pronto)return '<section class="panel"><div class="panel-head"><div><h2>Plano do time</h2><p class="panel-sub">O plano soma o dano de cada dupla, então precisa das 3 duplas montadas: complete a função e o dano dos 6 Pokémon no passo 1. Enquanto isso, dá para simular cada Pokémon ao lado.</p></div></div><div class="btn-row"><button type="button" class="btn btn-sm" data-act="tab" data-v="time">Ir para o passo 1</button></div></section>';
-  var hoje=rot.melhor,mata=hoje.batem;
+  var hoje=rot.usada,mata=hoje.batem;
   var resumo="Hoje "+(mata===3?"as 3 duplas matam":(mata===0?"nenhuma dupla mata":mata+" de 3 duplas matam"))+" com "+fmt(ctx.alvo)+" por dupla"+
-    (mata<3?". Na melhor rotação de hoje, a dupla mais fraca tem "+fmt(hoje.ordenadas[0])+" (faltam "+fmt(ctx.alvo-hoje.ordenadas[0])+").":".");
+    (mata<3?". Na "+(rot.escolhida?"rotação que você escolheu":"melhor rotação de hoje")+", a dupla mais fraca tem "+fmt(hoje.ordenadas[0])+" (faltam "+fmt(ctx.alvo-hoje.ordenadas[0])+").":".");
   if(tp&&tp.total<0.5){
     var prox=+state.hazard<HAZ.length-1;
     h='<section class="panel"><div class="panel-head"><div><h2>O time já mata</h2><p class="panel-sub">'+resumo+' Não precisa de melhoria.</p></div><span class="pill ok">As 3 duplas matam ✓</span></div>'+
@@ -2039,7 +2041,7 @@ function planoTimeHtml(){
   }else if(tp){
     h=planoCardHtml(tp,resumo);
   }else if(!A.tpOt){
-    h='<section class="panel alert bad"><div class="panel-head"><div><h2>Não dá para o time chegar na meta</h2><p class="panel-sub alert-p">'+resumo+' Nem com todas as melhorias possíveis nos Pokémon com dados completos (X-Attack Tier 7, 5 Stars e boost +50), as 3 duplas chegam em '+fmt(ctx.alvo)+'.</p></div></div></section>';
+    h='<section class="panel alert bad"><div class="panel-head"><div><h2>Não dá para o time chegar na meta</h2><p class="panel-sub alert-p">'+resumo+' Nem com todas as melhorias possíveis nos Pokémon com dados completos (X-Attack Tier 7, 5 Stars e boost +50), as 3 duplas chegam em '+fmt(ctx.alvo)+(rot.escolhida?' nas duplas que você escolheu. Com outra divisão pode dar: volte para a melhor na tabela "Todas as combinações", no passo 1':'')+'.</p></div></div></section>';
   }
   return h+dicaHtml(resumo)+incompletosHtml();
 }
@@ -2054,7 +2056,7 @@ function planoCardHtml(tp,resumo){
       '<div class="tp-sum"><span>Dupla: <b>'+fmt(d.md.dano)+'</b></span><span class="margin ok">+'+fmt(Math.max(0,folga))+' de folga</span><span class="tp-c">'+(d.md.custo>0.5?gold(d.md.custo):'sem custo')+'</span></div></article>';
   }).join("");
   var hz=hazardMax(tp.minD,+state.runaCol);
-  return '<section class="rec cq"><div class="rec-top"><div><h2>Plano mais barato para o time</h2><p class="panel-sub">'+resumo+' O planejador testa as 6 formas de montar as duplas e, em cada dupla, as melhorias dos dois Pokémon. Fica com o que faz as 3 duplas matarem gastando menos.</p></div><span class="pill ok">As 3 duplas matam ✓</span></div>'+
+  return '<section class="rec cq"><div class="rec-top"><div><h2>Plano mais barato para o time</h2><p class="panel-sub">'+resumo+' '+(A.rot.escolhida?'O planejador usa as duplas que você escolheu no passo 1 e, em cada dupla, testa as melhorias dos dois Pokémon.':'O planejador testa as 6 formas de montar as duplas e, em cada dupla, as melhorias dos dois Pokémon.')+' Fica com o que faz as 3 duplas matarem gastando menos.</p></div><span class="pill ok">As 3 duplas matam ✓</span></div>'+
     '<div class="tp-duos">'+duos+'</div>'+
     '<div class="rec-sum"><span><span class="lbl">Custo total'+(usaBoost?' (boost '+CEN_CURTO[ctx.cenario]+')':'')+'</span><span class="big">'+gold(tp.total)+'</span></span>'+
     '<span class="ta-r"><span class="lbl">Dupla mais fraca depois</span><span class="big">'+fmt(tp.minD)+'</span>'+(hz>=0?' <span class="margin ok">'+(state.metaManual?'pela tabela, ':'')+'mata até o hazard '+hz+'</span>':'')+'</span></div>'+
@@ -2063,7 +2065,7 @@ function planoCardHtml(tp,resumo){
     '</section>';
 }
 function mesmaDivisao(tp){
-  var hoje=A.rot.melhor.duplas.map(function(d){return (d.lurer.slot-1)+"|"+(d.damage.slot-1);});
+  var hoje=A.rot.usada.duplas.map(function(d){return (d.lurer.slot-1)+"|"+(d.damage.slot-1);});
   return tp.duplas.every(function(d){return hoje.indexOf(d.li+"|"+d.di)>=0;});
 }
 function membroHtml(n,cls,rotulo,r,o){
@@ -2165,7 +2167,7 @@ var progKey=null,progCache={key:null,res:null};
 function progBase(){
   var rot=A.rot;
   if(!rot.pronto)return {msg:"Para planejar a subida, complete a função e o dano dos 6 Pokémon no passo 1."};
-  var N=rot.hMax;
+  var N=rot.hUsada;
   if(N>=HAZ.length-1)return {msg:"O time já mata o hazard "+(HAZ.length-1)+", o último da tabela."};
   return {rc:+state.runaCol,N:N};
 }
