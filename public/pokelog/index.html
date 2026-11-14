@@ -150,8 +150,65 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
 .limpar{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 14px;font-size:14px;font-weight:600;cursor:pointer}
 .limpar:hover{border-color:#c2412e;color:#c2412e}
 
+/* abas: Progresso e Meu plano */
+.abas{display:flex;gap:4px;background:var(--surface-3);border-radius:12px;padding:4px;width:max-content;max-width:100%}
+.abas button{display:inline-flex;align-items:center;gap:8px;border:0;background:none;border-radius:9px;min-height:42px;padding:8px 20px;font-size:15px;font-weight:700;color:var(--muted);cursor:pointer;transition:background-color .2s ease,color .2s ease}
+.abas button:hover{color:var(--fg)}
+.abas button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.abas .q{min-width:22px;padding:1px 7px;border-radius:99px;background:var(--pl-soft);color:var(--pl);font-size:12.5px;font-weight:700;text-align:center}
+.painel{display:grid;gap:22px}
+.poke .noplano{position:absolute;top:6px;left:7px;font-size:11px;font-weight:700;line-height:1.5;color:var(--pl);background:var(--pl-soft);border-radius:6px;padding:0 6px}
+
+/* planejador */
+.planos{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.planos label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--muted)}
+.planos select,.planos input{font:inherit;font-size:15px;color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;min-height:40px}
+.planos select{max-width:220px}
+.planos .nome-plano{flex:1 1 200px;max-width:340px}
+.planos .nome-plano input{flex:1;min-width:0}
+.planos .acoes-plano{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;min-height:40px;padding:7px 14px;font-size:14px;font-weight:600;cursor:pointer;transition:border-color .2s ease,color .2s ease}
+.btn:hover{border-color:var(--pl)}
+.btn:disabled{opacity:.5;cursor:default;border-color:var(--line)}
+.btn.perigo:hover:not(:disabled){border-color:#c2412e;color:#c2412e}
+.btn.forte{background:var(--pl);border-color:var(--pl);color:var(--pl-ink)}
+.resumo .pts small{font-size:.4em}
+.barra .plan{position:absolute;top:0;bottom:0;width:0;background:var(--pl);opacity:.38;transition:width .5s cubic-bezier(.2,.8,.2,1),left .5s cubic-bezier(.2,.8,.2,1)}
+.legenda{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted)}
+.legenda span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--pl);margin-right:6px;vertical-align:-1px}
+.legenda span.l2::before{opacity:.38}
+.massa{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;font-size:14px;color:var(--muted)}
+.massa .conta{margin-right:auto}
+.massa .conta b{color:var(--fg)}
+.lista-plano{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px}
+.nivel-tit{grid-column:1/-1;display:flex;align-items:baseline;gap:10px;margin:8px 0 0;font:800 19px/1.2 var(--f-display)}
+.nivel-tit:first-child{margin-top:0}
+.nivel-tit span{font:600 13px var(--f-body);color:var(--muted)}
+.item{min-width:0;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s ease,background-color .2s ease}
+.item.no{border-color:var(--pl)}
+.item .sel{display:grid;grid-template-columns:auto 56px minmax(0,1fr);align-items:center;gap:10px;width:100%;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit}
+.caixa{width:22px;height:22px;border-radius:6px;border:2px solid var(--line-strong);display:grid;place-items:center;transition:background-color .2s ease,border-color .2s ease}
+.caixa svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.item.no .caixa{background:var(--pl);border-color:var(--pl);color:var(--pl-ink)}
+.item.no .caixa svg{opacity:1}
+.item .sel:hover .caixa{border-color:var(--pl)}
+.item .mf{width:56px;height:56px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden}
+.item .mf img{max-width:52px;max-height:52px;object-fit:contain}
+.item .nm{display:block;font-weight:700;font-size:15px;line-height:1.2;overflow-wrap:anywhere}
+.item .inf{display:block;margin-top:3px;font-size:12.5px;line-height:1.35;color:var(--muted)}
+.item .tags{margin-top:5px}
+.item .metas{display:flex;flex-wrap:wrap;gap:6px}
+.item .st{margin:0;font-size:12.5px;font-weight:600;color:var(--pl)}
+.item.ok{background:var(--pl-soft)}
+.metas .rot{font-size:12.5px;color:var(--faint);align-self:center}
+
 @media (max-width:620px){
   .wrap{padding-inline:14px}
+  .abas{width:100%}
+  .abas button{flex:1;justify-content:center;padding-inline:10px}
+  .planos .acoes-plano{margin-left:0}
+  .planos select{max-width:none;flex:1}
+  .lista-plano{grid-template-columns:1fr}
   .placar{grid-template-columns:1fr}
   .filtros{position:static}
   .niveis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
@@ -193,6 +250,12 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
 </header>
 
 <main class="wrap">
+  <div class="abas" id="abas" role="tablist" aria-label="Pokelog">
+    <button type="button" role="tab" id="t-progresso" data-aba="progresso" aria-controls="aba-progresso" aria-selected="true">Progresso</button>
+    <button type="button" role="tab" id="t-plano" data-aba="plano" aria-controls="aba-plano" aria-selected="false">Meu plano <span class="q" id="abaQ">0</span></button>
+  </div>
+
+  <section class="painel" id="aba-progresso" role="tabpanel" aria-labelledby="t-progresso">
   <section class="avisos" id="avisos" aria-label="Avisos importantes do guia"></section>
 
   <div id="ancora" style="margin-bottom:-22px"></div>
@@ -210,9 +273,57 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
   </div>
 
   <div id="grupos"></div>
+  </section>
+
+  <section class="painel" id="aba-plano" role="tabpanel" aria-labelledby="t-plano" hidden>
+    <div class="planos" id="planos">
+      <label>Plano <select id="planoSel" aria-label="Escolher plano"></select></label>
+      <label class="nome-plano">Nome <input id="planoNome" type="text" maxlength="40" autocomplete="off" aria-label="Nome do plano"></label>
+      <div class="acoes-plano">
+        <button type="button" class="btn" id="pNovo">Novo plano</button>
+        <button type="button" class="btn" id="pDuplicar">Duplicar</button>
+        <button type="button" class="btn perigo" id="pExcluir">Excluir plano</button>
+      </div>
+    </div>
+
+    <div class="placar resumo" aria-live="polite">
+      <div class="pts" id="rPts">0<small>pts no plano</small></div>
+      <div class="detalhe" id="rDetalhe"></div>
+      <div class="barra" id="rBarra"><i></i><b class="plan"></b></div>
+      <div class="legenda"><span>Já feito</span><span class="l2">Falta fazer do plano</span></div>
+      <p class="msg" id="rMsg"></p>
+    </div>
+
+    <div id="ancoraP" style="margin-bottom:-22px"></div>
+    <div class="filtros" id="filtrosP">
+      <div class="niveis" id="niveisP" role="group" aria-label="Nível do pokelog"></div>
+      <div class="linha">
+        <label class="busca"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="buscaP" type="search" placeholder="Buscar pokémon" aria-label="Buscar pokémon no planejador" autocomplete="off"></label>
+        <div class="seg" id="mostrarP" role="group" aria-label="Mostrar">
+          <button type="button" data-f="todos" aria-pressed="true">Todos</button>
+          <button type="button" data-f="no" aria-pressed="false">No plano</button>
+          <button type="button" data-f="fora" aria-pressed="false">Fora do plano</button>
+        </div>
+        <div class="seg" id="situP" role="group" aria-label="Situação">
+          <button type="button" data-f="todas" aria-pressed="true">Todas</button>
+          <button type="button" data-f="pend" aria-pressed="false">Pendentes</button>
+          <button type="button" data-f="feitos" aria-pressed="false">Feitos</button>
+        </div>
+        <div class="seg" id="tipoP" role="group" aria-label="Tipo de pokelog"></div>
+      </div>
+      <div class="massa">
+        <span class="conta" id="contaP"></span>
+        <button type="button" class="btn" id="pAddTodos">Pôr no plano</button>
+        <button type="button" class="btn perigo" id="pTirarTodos">Tirar do plano</button>
+      </div>
+    </div>
+
+    <div class="lista-plano" id="listaP"></div>
+    <div class="vazio" id="vazioP" hidden>Nenhum pokémon com esse filtro.</div>
+  </section>
 
   <footer class="fim">
-    <p>As marcações ficam salvas só neste navegador. Animações dos pokémons: Pokémon Showdown, via PokeAPI.</p>
+    <p>As marcações e os planos ficam salvos só neste navegador. Animações dos pokémons: Pokémon Showdown, via PokeAPI.</p>
     <button type="button" class="limpar" id="limpar">Limpar marcações</button>
   </footer>
 </main>
@@ -247,7 +358,10 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
       r.tipos.forEach(function(t){ porTipo[t] = (porTipo[t]||0) + 1; });
       r.pokes.forEach(function(n){
         var k = chaveDe(n);
-        if(!especies[k]){ especies[k] = {k:k, nome:n, grupo:g.id, dex:DEX[k]}; ordem.push(k); }
+        if(!especies[k]){ especies[k] = {k:k, nome:n, grupo:g.id, dex:DEX[k], tipos:[], rotas:[]}; ordem.push(k); }
+        var sp = especies[k];
+        r.tipos.forEach(function(t){ if(sp.tipos.indexOf(t) < 0) sp.tipos.push(t); });
+        sp.rotas.push(r);
       });
     });
   });
@@ -339,6 +453,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
           var sp = especies[chaveDe(n)];
           var box = el("div","poke");
           var foto = el("div","foto"); var img = imagem(sp, e(sp.k).sh); foto.appendChild(img); box.appendChild(foto);
+          var selo = el("span","noplano","No plano"); selo.hidden = true; box.appendChild(selo);
           var nome = el("div","nome", sp.nome);
           if(sp.grupo !== g.id){ var rep = el("span","rep","conta no grupo " + sp.grupo); nome.appendChild(rep); }
           box.appendChild(nome);
@@ -351,7 +466,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
           bSh.onclick = function(){ e(sp.k).sh = !e(sp.k).sh; mudou(sp.k, bSh); };
           marcas.appendChild(bLog); marcas.appendChild(bSh); box.appendChild(marcas);
           lista.appendChild(box);
-          (refs[sp.k] || (refs[sp.k] = [])).push({box:box, log:bLog, sh:bSh, img:img, sp:sp, card:card});
+          (refs[sp.k] || (refs[sp.k] = [])).push({box:box, log:bLog, sh:bSh, img:img, sp:sp, card:card, selo:selo});
         });
         card.appendChild(lista);
         if(r[1]) card.appendChild(el("p","nota", r[1]));
@@ -372,13 +487,20 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
       r.sh.setAttribute("aria-pressed", String(s.sh));
       r.box.classList.toggle("faltando", !s.log);
       r.box.classList.toggle("brilha", s.sh);
+      r.selo.hidden = !noPlano(k);
       var quer = s.sh ? "shiny" : "normal";
       if(r.img.dataset.v !== quer){ var novo = imagem(r.sp, s.sh); r.img.replaceWith(novo); r.img = novo; }
       if(anima && anima.closest && r.box.contains(anima)){ r.box.classList.remove("pop"); void r.box.offsetWidth; r.box.classList.add("pop"); }
     });
   }
 
-  function mudou(k, botao){ salvar(); pintar(k, botao); placar(); filtrar(); }
+  function mudou(k, botao){ salvar(); pintar(k, botao); placar(); filtrar(); pintarP(k); resumoP(); filtrarP(); }
+
+  function ptsFeitos(){
+    var p = 0;
+    ordem.forEach(function(k){ var s = estado[k]; if(s && s.log) p += P.pontosLog; if(s && s.sh) p += P.pontosShiny; });
+    return p;
+  }
 
   function placar(){
     var logs=0, sh=0, porGrupo={};
@@ -474,8 +596,283 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
   });
   document.getElementById("limpar").addEventListener("click", function(){
     if(!confirm("Apagar todas as marcações de pokelog deste navegador?")) return;
-    estado = {}; salvar(); ordem.forEach(function(k){ pintar(k); }); placar(); filtrar();
+    estado = {}; salvar(); ordem.forEach(function(k){ pintar(k); pintarP(k); }); placar(); filtrar(); resumoP(); filtrarP();
   });
+
+  /* ---------- planejador ---------- */
+  // Cada plano guarda os pokémons que a pessoa pretende fazer e, para cada um, se o plano inclui o pokelog (+10) e/ou o primeiro do shiny (+2).
+  // O que já foi feito vem das marcações da aba Progresso, que continuam sendo a única fonte de "feito".
+  var CHAVE_P = "pkahub-pokelog-planos";
+  function novoId(){ return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function planoVazio(nome){ return {id:novoId(), nome:nome, itens:{}}; }
+  var planos = null;
+  try{ planos = JSON.parse(localStorage.getItem(CHAVE_P)||"null"); }catch(err){ planos = null; }
+  if(!planos || !Array.isArray(planos.lista)) planos = {ativo:null, lista:[]};
+  planos.lista = planos.lista.filter(function(p){ return p && typeof p.id === "string"; });
+  planos.lista.forEach(function(p){
+    if(typeof p.nome !== "string" || !p.nome.trim()) p.nome = "Plano";
+    if(!p.itens || typeof p.itens !== "object") p.itens = {};
+    Object.keys(p.itens).forEach(function(k){
+      var it = p.itens[k];
+      if(!especies[k] || !it || !(it.log || it.sh)) delete p.itens[k];
+      else p.itens[k] = {log:!!it.log, sh:!!it.sh};
+    });
+  });
+  if(!planos.lista.length) planos.lista.push(planoVazio("Meu plano"));
+  if(!planos.lista.some(function(p){ return p.id === planos.ativo; })) planos.ativo = planos.lista[0].id;
+  function salvarP(){ try{ localStorage.setItem(CHAVE_P, JSON.stringify(planos)); }catch(err){} }
+  function plano(){ return planos.lista.filter(function(p){ return p.id === planos.ativo; })[0]; }
+  function item(k){ return plano().itens[k]; }
+  function noPlano(k){ return !!item(k); }
+  function feitoLog(k){ return !!(estado[k] && estado[k].log); }
+  function feitoSh(k){ return !!(estado[k] && estado[k].sh); }
+  function concluido(k){ var it = item(k); return !!it && (!it.log || feitoLog(k)) && (!it.sh || feitoSh(k)); }
+  function feitoK(k){ return noPlano(k) ? concluido(k) : feitoLog(k); }
+
+  var nivelP = P.grupos[0].id, termoP = "", mostrarP = "todos", situP = "todas", tipoP = "todos";
+  var listaP = document.getElementById("listaP"), refsP = {}, titulosP = {};
+  var niveisP = document.getElementById("niveisP");
+
+  // botões de nível do planejador
+  function botaoNivelP(id, rotulo){
+    var b = el("button"); b.type = "button"; b.dataset.n = id; b.setAttribute("aria-pressed", String(id === nivelP));
+    if(id === "todos"){ b.appendChild(el("span","longo",rotulo)); b.appendChild(el("span","curto","Todos")); }
+    else b.append(rotulo);
+    b.appendChild(el("span","q"));
+    niveisP.appendChild(b);
+  }
+  botaoNivelP("todos", "Todos os níveis");
+  P.grupos.forEach(function(g){ botaoNivelP(g.id, g.id); });
+
+  var tipoBoxP = document.getElementById("tipoP");
+  [{id:"todos", nome:"Todos os tipos"}].concat(TIPOS).forEach(function(t){
+    var b = el("button"); b.type = "button"; b.dataset.t = t.id; b.setAttribute("aria-pressed", String(t.id === tipoP));
+    b.append(t.nome);
+    if(t.id !== "todos") b.appendChild(el("span", null, String(ordem.filter(function(k){ return especies[k].tipos.indexOf(t.id) >= 0; }).length)));
+    tipoBoxP.appendChild(b);
+  });
+
+  function montarP(){
+    P.grupos.forEach(function(g){
+      var tit = el("h3","nivel-tit", g.nome); var q = el("span"); tit.appendChild(q); tit._q = q;
+      listaP.appendChild(tit); titulosP[g.id] = tit;
+      ordem.forEach(function(k){
+        var sp = especies[k]; if(sp.grupo !== g.id) return;
+        var card = el("article","item");
+        var sel = el("button","sel"); sel.type = "button";
+        var caixa = el("span","caixa"); caixa.innerHTML = ICON_OK; sel.appendChild(caixa);
+        var mf = el("span","mf"); mf.appendChild(imagem(sp, false)); sel.appendChild(mf);
+        var txt = el("span");
+        txt.appendChild(el("span","nm", sp.nome));
+        var r = sp.rotas[0];
+        var info = r.pokes.length > 1 ? "Rota: " + r[0] : "";
+        if(r[1]) info += (info ? " · " : "") + r[1];
+        if(info) txt.appendChild(el("span","inf", info));
+        if(sp.tipos.length){
+          var tags = el("span","tags");
+          sp.tipos.forEach(function(t){ var d = TIPOS.filter(function(x){ return x.id === t; })[0]; tags.appendChild(el("span","tag " + t, d.nome)); });
+          txt.appendChild(tags);
+        }
+        sel.appendChild(txt);
+        card.appendChild(sel);
+        var metas = el("div","metas");
+        metas.appendChild(el("span","rot","No plano:"));
+        var bLog = el("button","marca log"); bLog.type = "button"; bLog.innerHTML = ICON_OK + "<span>Log +" + P.pontosLog + "</span>";
+        bLog.setAttribute("aria-label", "Incluir o pokelog de " + sp.nome + " no plano");
+        var bSh = el("button","marca sh"); bSh.type = "button"; bSh.innerHTML = "<span>✦ Shiny +" + P.pontosShiny + "</span>";
+        bSh.setAttribute("aria-label", "Incluir o primeiro pokelog do Shiny " + sp.nome + " no plano");
+        metas.appendChild(bLog); metas.appendChild(bSh);
+        card.appendChild(metas);
+        var st = el("p","st"); card.appendChild(st);
+        listaP.appendChild(card);
+
+        sel.onclick = function(){
+          var p = plano();
+          if(p.itens[k]) delete p.itens[k];
+          else p.itens[k] = {log:true, sh:true};
+          mudouP(k);
+        };
+        bLog.onclick = function(){ alternarMeta(k, "log"); };
+        bSh.onclick = function(){ alternarMeta(k, "sh"); };
+        refsP[k] = {card:card, sel:sel, metas:metas, log:bLog, sh:bSh, st:st, texto:semAcento(sp.nome + " " + sp.rotas.map(function(x){ return x[0] + " " + x[1]; }).join(" "))};
+      });
+    });
+  }
+
+  // desmarcar as duas metas tira o pokémon do plano
+  function alternarMeta(k, m){
+    var it = item(k); if(!it) return;
+    it[m] = !it[m];
+    if(!it.log && !it.sh) delete plano().itens[k];
+    mudouP(k);
+  }
+
+  function mudouP(k){ salvarP(); pintarP(k); pintar(k); resumoP(); filtrarP(); }
+
+  function pintarP(k){
+    var r = refsP[k]; if(!r) return;
+    var it = item(k), no = !!it;
+    r.card.classList.toggle("no", no);
+    r.sel.setAttribute("aria-pressed", String(no));
+    r.sel.setAttribute("aria-label", (no ? "Tirar " : "Pôr ") + especies[k].nome + (no ? " do plano" : " no plano"));
+    r.metas.hidden = !no;
+    if(no){ r.log.setAttribute("aria-pressed", String(it.log)); r.sh.setAttribute("aria-pressed", String(it.sh)); }
+    var partes = [];
+    if(feitoLog(k)) partes.push("Pokelog feito");
+    if(feitoSh(k)) partes.push("Shiny feito");
+    r.st.textContent = partes.length ? "✓ " + partes.join(" · ") : "";
+    r.st.hidden = !partes.length;
+    r.card.classList.toggle("ok", no && concluido(k));
+  }
+
+  function resumoP(){
+    var p = plano(), logs = 0, shs = 0, pts = 0, falta = 0, conc = 0, n = 0, porNivel = {};
+    Object.keys(p.itens).forEach(function(k){
+      var it = p.itens[k], g = especies[k].grupo; n++;
+      porNivel[g] = (porNivel[g]||0) + 1;
+      if(it.log){ logs++; pts += P.pontosLog; if(!feitoLog(k)) falta += P.pontosLog; }
+      if(it.sh){ shs++; pts += P.pontosShiny; if(!feitoSh(k)) falta += P.pontosShiny; }
+      if(concluido(k)) conc++;
+    });
+    var feitos = ptsFeitos(), fim = feitos + falta;
+    document.getElementById("rPts").innerHTML = nf.format(pts) + "<small>pts no plano</small>";
+    document.getElementById("rDetalhe").innerHTML = "<span><b>" + logs + "</b> pokelogs e <b>" + shs + "</b> shinies no plano</span><span><b>" + conc + "</b> de " + n + " concluídos</span><span>faltam <b>" + nf.format(falta) + "</b> pts do plano</span>";
+    var bar = document.getElementById("rBarra");
+    var a = Math.min(100, feitos/P.meta*100), b = Math.min(100 - a, falta/P.meta*100);
+    bar.querySelector("i").style.width = a.toFixed(1) + "%";
+    var pl = bar.querySelector(".plan"); pl.style.left = a.toFixed(1) + "%"; pl.style.width = b.toFixed(1) + "%";
+    var msg;
+    if(!n) msg = "Este plano está vazio. Marque abaixo os pokelogs que você pretende fazer.";
+    else {
+      msg = "Hoje você tem " + nf.format(feitos) + " pontos. Terminando este plano, chega a " + nf.format(fim) + " de " + nf.format(P.meta) + ".";
+      msg += fim >= P.meta ? " Isso alcança a meta do ATK 5." : " Ainda faltariam " + nf.format(P.meta - fim) + " pontos para o ATK 5.";
+    }
+    document.getElementById("rMsg").textContent = msg;
+    document.getElementById("abaQ").textContent = String(n);
+    Array.prototype.forEach.call(niveisP.querySelectorAll("button[data-n]"), function(btn){
+      var id = btn.dataset.n, tot = id === "todos" ? TOTAL : ordem.filter(function(k){ return especies[k].grupo === id; }).length;
+      var no = id === "todos" ? n : (porNivel[id]||0);
+      btn.querySelector(".q").textContent = no + "/" + tot;
+    });
+    P.grupos.forEach(function(g){ titulosP[g.id]._q.textContent = (porNivel[g.id]||0) + " no plano"; });
+  }
+
+  var visP = [];
+  function filtrarP(){
+    var t = semAcento(termoP.trim()); visP = [];
+    var porNivel = {};
+    ordem.forEach(function(k){
+      var sp = especies[k], r = refsP[k], no = noPlano(k), feito = feitoK(k);
+      var ok = (nivelP === "todos" || sp.grupo === nivelP) &&
+               (!t || r.texto.indexOf(t) >= 0) &&
+               (mostrarP === "todos" || (mostrarP === "no" ? no : !no)) &&
+               (situP === "todas" || (situP === "feitos" ? feito : !feito)) &&
+               (tipoP === "todos" || sp.tipos.indexOf(tipoP) >= 0);
+      r.card.hidden = !ok;
+      if(ok){ visP.push(k); porNivel[sp.grupo] = true; }
+    });
+    P.grupos.forEach(function(g){ titulosP[g.id].hidden = !porNivel[g.id]; });
+    document.getElementById("vazioP").hidden = visP.length > 0;
+    var add = visP.filter(function(k){ return !noPlano(k); }).length, tirar = visP.length - add;
+    document.getElementById("contaP").innerHTML = "<b>" + visP.length + "</b> " + (visP.length === 1 ? "pokémon mostrado" : "pokémons mostrados");
+    var bAdd = document.getElementById("pAddTodos"), bTirar = document.getElementById("pTirarTodos");
+    bAdd.textContent = "Pôr no plano os " + add + " mostrados"; bAdd.disabled = !add;
+    if(add === 1) bAdd.textContent = "Pôr no plano o 1 mostrado";
+    bTirar.textContent = "Tirar do plano os " + tirar + " mostrados"; bTirar.disabled = !tirar;
+    if(tirar === 1) bTirar.textContent = "Tirar do plano o 1 mostrado";
+  }
+
+  function manterNoLugarP(){
+    var f = document.getElementById("filtrosP");
+    if(getComputedStyle(f).position !== "sticky") return;
+    var y = document.getElementById("ancoraP").getBoundingClientRect().top + window.pageYOffset;
+    if(window.pageYOffset > y) window.scrollTo(0, y);
+  }
+
+  function seg(box, cb){
+    box.addEventListener("click", function(ev){
+      var b = ev.target.closest("button"); if(!b) return;
+      Array.prototype.forEach.call(box.querySelectorAll("button"), function(x){ x.setAttribute("aria-pressed", String(x === b)); });
+      cb(b); filtrarP(); manterNoLugarP();
+    });
+  }
+  seg(niveisP, function(b){ nivelP = b.dataset.n; });
+  seg(document.getElementById("mostrarP"), function(b){ mostrarP = b.dataset.f; });
+  seg(document.getElementById("situP"), function(b){ situP = b.dataset.f; });
+  seg(tipoBoxP, function(b){ tipoP = b.dataset.t; });
+  document.getElementById("buscaP").addEventListener("input", function(ev){ termoP = ev.target.value; filtrarP(); });
+
+  document.getElementById("pAddTodos").addEventListener("click", function(){
+    var p = plano();
+    visP.forEach(function(k){ if(!p.itens[k]) p.itens[k] = {log:true, sh:true}; });
+    salvarP(); visP.forEach(function(k){ pintarP(k); pintar(k); }); resumoP(); filtrarP();
+  });
+  document.getElementById("pTirarTodos").addEventListener("click", function(){
+    var p = plano(), sai = visP.filter(function(k){ return p.itens[k]; });
+    if(sai.length > 1 && !confirm("Tirar " + sai.length + " pokémons do plano “" + p.nome + "”?")) return;
+    sai.forEach(function(k){ delete p.itens[k]; });
+    salvarP(); sai.forEach(function(k){ pintarP(k); pintar(k); }); resumoP(); filtrarP();
+  });
+
+  /* lista de planos: escolher, renomear, criar, duplicar e excluir */
+  var planoSel = document.getElementById("planoSel"), planoNome = document.getElementById("planoNome");
+  function pintarPlanos(){
+    planoSel.innerHTML = "";
+    planos.lista.forEach(function(p){
+      var o = el("option", null, p.nome + " (" + Object.keys(p.itens).length + ")"); o.value = p.id; o.selected = p.id === planos.ativo;
+      planoSel.appendChild(o);
+    });
+    if(document.activeElement !== planoNome) planoNome.value = plano().nome;
+  }
+  function trocouPlano(){ salvarP(); pintarPlanos(); ordem.forEach(function(k){ pintarP(k); pintar(k); }); resumoP(); filtrarP(); }
+  function nomeLivre(base){
+    var n = 1, nome = base;
+    while(planos.lista.some(function(p){ return p.nome === nome; })){ n++; nome = base + " " + n; }
+    return nome;
+  }
+  planoSel.addEventListener("change", function(){ planos.ativo = planoSel.value; planoNome.value = plano().nome; trocouPlano(); });
+  planoNome.addEventListener("input", function(){
+    plano().nome = planoNome.value;
+    salvarP(); pintarPlanos();
+  });
+  planoNome.addEventListener("blur", function(){
+    if(!planoNome.value.trim()){ plano().nome = nomeLivre("Plano"); planoNome.value = plano().nome; }
+    else { plano().nome = planoNome.value.trim(); planoNome.value = plano().nome; }
+    salvarP(); pintarPlanos();
+  });
+  document.getElementById("pNovo").addEventListener("click", function(){
+    var p = planoVazio(nomeLivre("Novo plano")); planos.lista.push(p); planos.ativo = p.id;
+    planoNome.value = p.nome; trocouPlano(); planoNome.focus(); planoNome.select();
+  });
+  document.getElementById("pDuplicar").addEventListener("click", function(){
+    var o = plano(), p = planoVazio(nomeLivre(o.nome + " (cópia)"));
+    Object.keys(o.itens).forEach(function(k){ p.itens[k] = {log:o.itens[k].log, sh:o.itens[k].sh}; });
+    planos.lista.push(p); planos.ativo = p.id; planoNome.value = p.nome; trocouPlano();
+  });
+  document.getElementById("pExcluir").addEventListener("click", function(){
+    var o = plano();
+    if(!confirm("Excluir o plano “" + o.nome + "”? As marcações da aba Progresso não mudam.")) return;
+    planos.lista = planos.lista.filter(function(p){ return p.id !== o.id; });
+    if(!planos.lista.length) planos.lista.push(planoVazio("Meu plano"));
+    planos.ativo = planos.lista[0].id; planoNome.value = plano().nome; trocouPlano();
+  });
+
+  /* ---------- abas ---------- */
+  var CHAVE_ABA = "pkahub-pokelog-aba";
+  function abrirAba(id, guardar){
+    Array.prototype.forEach.call(document.querySelectorAll("#abas [role=tab]"), function(b){ b.setAttribute("aria-selected", String(b.dataset.aba === id)); });
+    document.getElementById("aba-progresso").hidden = id !== "progresso";
+    document.getElementById("aba-plano").hidden = id !== "plano";
+    if(guardar){ try{ localStorage.setItem(CHAVE_ABA, id); }catch(err){} }
+  }
+  document.getElementById("abas").addEventListener("click", function(ev){
+    var b = ev.target.closest("[role=tab]"); if(!b) return;
+    abrirAba(b.dataset.aba, true);
+  });
+  var abaInicial = "progresso";
+  try{ if(localStorage.getItem(CHAVE_ABA) === "plano") abaInicial = "plano"; }catch(err){}
+  if(location.hash === "#plano") abaInicial = "plano";
+  abrirAba(abaInicial, false);
 
   /* ---------- tema (mesma chave do hub) ---------- */
   var bTema = document.getElementById("tema");
@@ -499,7 +896,8 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     pintarTema();
   });
 
-  montar(); ordem.forEach(function(k){ pintar(k); }); placar(); filtrar(); pintarTema();
+  montar(); montarP(); pintarPlanos();
+  ordem.forEach(function(k){ pintar(k); pintarP(k); }); placar(); filtrar(); resumoP(); filtrarP(); pintarTema();
 })();
 </script>
 </body>
