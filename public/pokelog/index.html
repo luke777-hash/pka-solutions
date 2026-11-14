@@ -137,6 +137,12 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
 .marca svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .marca[aria-pressed="true"].log{background:var(--pl);border-color:var(--pl);color:var(--pl-ink)}
 .marca[aria-pressed="true"].sh{background:var(--shiny-soft);border-color:var(--shiny);color:var(--shiny)}
+.marca.pl svg{stroke-width:2}
+.marca[aria-pressed="true"].pl{background:var(--pl-soft);border-color:var(--pl);color:var(--pl)}
+.poke.planejado{box-shadow:inset 0 0 0 1.5px var(--pl)}
+.placar .plano{grid-column:1/-1;margin:2px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.placar .plano b{color:var(--fg)}
+.placar .plano .t{font-weight:700;color:var(--pl)}
 .poke.brilha::after{content:"✦";position:absolute;top:6px;right:8px;color:var(--shiny);font-size:15px;animation:brilho 1.8s ease-in-out infinite}
 @keyframes brilho{50%{opacity:.35;transform:scale(.8)}}
 .pop{animation:pop .35s ease}
@@ -189,6 +195,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     <div class="detalhe" id="detalhe"></div>
     <div class="barra" id="barra"><i></i></div>
     <p class="msg" id="msg"></p>
+    <p class="plano" id="plano"></p>
   </div>
 </header>
 
@@ -204,6 +211,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
         <button type="button" data-f="todos" aria-pressed="true">Todos</button>
         <button type="button" data-f="faltando" aria-pressed="false">Faltando</button>
         <button type="button" data-f="feitos" aria-pressed="false">Feitos</button>
+        <button type="button" data-f="plano" aria-pressed="false">No plano</button>
       </div>
       <div class="seg" id="tipo" role="group" aria-label="Tipo de pokelog"></div>
     </div>
@@ -212,8 +220,8 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
   <div id="grupos"></div>
 
   <footer class="fim">
-    <p>As marcações ficam salvas só neste navegador. Animações dos pokémons: Pokémon Showdown, via PokeAPI.</p>
-    <button type="button" class="limpar" id="limpar">Limpar marcações</button>
+    <p>As marcações e o plano ficam salvos só neste navegador. Animações dos pokémons: Pokémon Showdown, via PokeAPI.</p>
+    <span style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" class="limpar" id="limparPlano">Limpar plano</button><button type="button" class="limpar" id="limpar">Limpar marcações</button></span>
   </footer>
 </main>
 
@@ -258,10 +266,18 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
   function salvar(){ try{ localStorage.setItem(CHAVE, JSON.stringify(estado)); }catch(e){} }
   function e(k){ return estado[k] || (estado[k] = {log:false, sh:false}); }
 
+  // plano: pokémons que a pessoa pretende fazer (o que já foi feito continua vindo das marcações Log e Shiny)
+  var CHAVE_PLANO = "pkahub-pokelog-plano";
+  var plano = {};
+  try{ plano = JSON.parse(localStorage.getItem(CHAVE_PLANO)||"{}") || {}; }catch(err){ plano = {}; }
+  Object.keys(plano).forEach(function(k){ if(plano[k] !== true) delete plano[k]; });
+  function salvarPlano(){ try{ localStorage.setItem(CHAVE_PLANO, JSON.stringify(plano)); }catch(err){} }
+
   var filtro = "todos", termo = "", nivel = "todos", tipo = "todos";
 
   function el(tag, cls, txt){ var x=document.createElement(tag); if(cls) x.className=cls; if(txt!=null) x.textContent=txt; return x; }
   var ICON_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17 19 7.5"/></svg>';
+  var ICON_PLANO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-3.5L7 20Z"/></svg>';
   var ICON_SETA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 
   function imagem(sp, shiny){
@@ -349,9 +365,12 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
           bSh.setAttribute("aria-label", "Primeiro pokelog do Shiny " + sp.nome + ", " + P.pontosShiny + " pontos");
           bLog.onclick = function(){ e(sp.k).log = !e(sp.k).log; mudou(sp.k, bLog); };
           bSh.onclick = function(){ e(sp.k).sh = !e(sp.k).sh; mudou(sp.k, bSh); };
-          marcas.appendChild(bLog); marcas.appendChild(bSh); box.appendChild(marcas);
+          var bPl = el("button","marca pl"); bPl.type="button"; bPl.innerHTML = ICON_PLANO + "<span>Plano</span>";
+          bPl.setAttribute("aria-label", "Pôr " + sp.nome + " no plano");
+          bPl.onclick = function(){ if(plano[sp.k]) delete plano[sp.k]; else plano[sp.k] = true; salvarPlano(); mudou(sp.k, bPl, true); };
+          marcas.appendChild(bLog); marcas.appendChild(bSh); marcas.appendChild(bPl); box.appendChild(marcas);
           lista.appendChild(box);
-          (refs[sp.k] || (refs[sp.k] = [])).push({box:box, log:bLog, sh:bSh, img:img, sp:sp, card:card});
+          (refs[sp.k] || (refs[sp.k] = [])).push({box:box, log:bLog, sh:bSh, pl:bPl, img:img, sp:sp, card:card});
         });
         card.appendChild(lista);
         if(r[1]) card.appendChild(el("p","nota", r[1]));
@@ -372,21 +391,30 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
       r.sh.setAttribute("aria-pressed", String(s.sh));
       r.box.classList.toggle("faltando", !s.log);
       r.box.classList.toggle("brilha", s.sh);
+      r.pl.setAttribute("aria-pressed", String(!!plano[k]));
+      r.pl.setAttribute("aria-label", (plano[k] ? "Tirar " + r.sp.nome + " do plano" : "Pôr " + r.sp.nome + " no plano"));
+      r.box.classList.toggle("planejado", !!plano[k]);
       var quer = s.sh ? "shiny" : "normal";
       if(r.img.dataset.v !== quer){ var novo = imagem(r.sp, s.sh); r.img.replaceWith(novo); r.img = novo; }
       if(anima && anima.closest && r.box.contains(anima)){ r.box.classList.remove("pop"); void r.box.offsetWidth; r.box.classList.add("pop"); }
     });
   }
 
-  function mudou(k, botao){ salvar(); pintar(k, botao); placar(); filtrar(); }
+  function mudou(k, botao, soPlano){ if(!soPlano) salvar(); pintar(k, botao); placar(); filtrar(); }
 
   function placar(){
-    var logs=0, sh=0, porGrupo={};
+    var logs=0, sh=0, porGrupo={}, nPlano=0, ptsPlano=0, faltaPlano=0;
     ordem.forEach(function(k){
       var s = estado[k]; var g = especies[k].grupo;
       porGrupo[g] = porGrupo[g] || {feitos:0,total:0,pts:0}; porGrupo[g].total++;
       if(s && s.log){ logs++; porGrupo[g].feitos++; porGrupo[g].pts += P.pontosLog; }
       if(s && s.sh){ sh++; porGrupo[g].pts += P.pontosShiny; }
+      if(plano[k]){
+        nPlano++; porGrupo[g].plano = (porGrupo[g].plano||0) + 1;
+        ptsPlano += P.pontosLog + P.pontosShiny;
+        if(!(s && s.log)) faltaPlano += P.pontosLog;
+        if(!(s && s.sh)) faltaPlano += P.pontosShiny;
+      }
     });
     var pts = logs*P.pontosLog + sh*P.pontosShiny;
     document.getElementById("pts").innerHTML = nf.format(pts) + "<small>/ " + nf.format(P.meta) + "</small>";
@@ -398,9 +426,12 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     document.getElementById("msg").textContent = falta > 0
       ? "Faltam " + nf.format(falta) + " pontos para o ATK 5 (" + Math.ceil(falta/(P.pontosLog+P.pontosShiny)) + " pokelogs fazendo também o primeiro do shiny)."
       : "Meta do ATK 5 atingida!";
+    var fim = pts + faltaPlano, linha = document.getElementById("plano");
+    if(!nPlano) linha.innerHTML = '<span class="t">Plano:</span> vazio. Use o botão <b>Plano</b> nos pokémons que você pretende fazer.';
+    else linha.innerHTML = '<span class="t">Plano:</span> <b>' + nPlano + '</b> ' + (nPlano > 1 ? "pokelogs" : "pokelog") + ' (' + nf.format(ptsPlano) + ' pts com o primeiro do shiny), faltam <b>' + nf.format(faltaPlano) + '</b> pts. Terminando o plano você chega a <b>' + nf.format(fim) + '</b> de ' + nf.format(P.meta) + (fim >= P.meta ? ", o que alcança o ATK 5." : ", e ainda faltariam " + nf.format(P.meta - fim) + " para o ATK 5.");
     Array.prototype.forEach.call(host.querySelectorAll(".soma"), function(x){
       var v = porGrupo[x.dataset.g] || {feitos:0,total:0,pts:0};
-      x.innerHTML = "<b>" + v.feitos + "</b> de " + v.total + " feitos · " + nf.format(v.pts) + " pts";
+      x.innerHTML = "<b>" + v.feitos + "</b> de " + v.total + " feitos · " + nf.format(v.pts) + " pts" + (v.plano ? " · " + v.plano + " no plano" : "");
       x.appendChild(el("span","achados"));
     });
     Array.prototype.forEach.call(host.querySelectorAll(".mini"), function(x){
@@ -424,7 +455,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
         var feitos = card._pokes.every(function(k){ return estado[k] && estado[k].log; });
         card.classList.toggle("feita", feitos);
         var ok = (!t || card._texto.indexOf(t) >= 0) &&
-                 (filtro === "todos" || (filtro === "feitos" ? feitos : !feitos)) &&
+                 (filtro === "todos" || (filtro === "plano" ? card._pokes.some(function(k){ return plano[k]; }) : (filtro === "feitos" ? feitos : !feitos))) &&
                  (tipo === "todos" || card._tipos.indexOf(tipo) >= 0);
         card.hidden = !ok; if(ok) vis++;
       });
@@ -475,6 +506,11 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
   document.getElementById("limpar").addEventListener("click", function(){
     if(!confirm("Apagar todas as marcações de pokelog deste navegador?")) return;
     estado = {}; salvar(); ordem.forEach(function(k){ pintar(k); }); placar(); filtrar();
+  });
+  document.getElementById("limparPlano").addEventListener("click", function(){
+    if(!Object.keys(plano).length) return;
+    if(!confirm("Tirar todos os pokémons do plano? As marcações de Log e Shiny não mudam.")) return;
+    plano = {}; salvarPlano(); ordem.forEach(function(k){ pintar(k); }); placar(); filtrar();
   });
 
   /* ---------- tema (mesma chave do hub) ---------- */
