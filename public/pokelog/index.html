@@ -131,12 +131,24 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
 .poke.faltando img{filter:saturate(.75)}
 .poke .nome{font-weight:700;font-size:14.5px;line-height:1.2;text-align:center}
 .poke .nome .rep{display:block;font-size:11.5px;font-weight:500;color:var(--faint)}
+.poke .elem{display:block;font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.01em}
+.poke.fora-elem{opacity:.38}
+.sel-elem{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 4px 0 12px;font-size:14px;font-weight:600;color:var(--muted)}
+.sel-elem select{font:inherit;font-weight:600;color:var(--fg);background:transparent;border:0;padding:8px 6px;cursor:pointer;outline:none}
+.sel-elem:focus-within{outline:2px solid var(--pl);outline-offset:2px}
+.sel-elem.ativo{border-color:var(--pl)}
 .marcas{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
 .marca{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:background-color .2s ease,color .2s ease,border-color .2s ease,transform .15s ease}
 .marca:active{transform:scale(.95)}
 .marca svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .marca[aria-pressed="true"].log{background:var(--pl);border-color:var(--pl);color:var(--pl-ink)}
 .marca[aria-pressed="true"].sh{background:var(--shiny-soft);border-color:var(--shiny);color:var(--shiny)}
+.marca.pl svg{stroke-width:2}
+.marca[aria-pressed="true"].pl{background:var(--pl-soft);border-color:var(--pl);color:var(--pl)}
+.poke.planejado{box-shadow:inset 0 0 0 1.5px var(--pl)}
+.placar .plano{grid-column:1/-1;margin:2px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.placar .plano b{color:var(--fg)}
+.placar .plano .t{font-weight:700;color:var(--pl)}
 .poke.brilha::after{content:"✦";position:absolute;top:6px;right:8px;color:var(--shiny);font-size:15px;animation:brilho 1.8s ease-in-out infinite}
 @keyframes brilho{50%{opacity:.35;transform:scale(.8)}}
 .pop{animation:pop .35s ease}
@@ -149,6 +161,95 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
 .fim a{color:var(--fg)}
 .limpar{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 14px;font-size:14px;font-weight:600;cursor:pointer}
 .limpar:hover{border-color:#c2412e;color:#c2412e}
+
+/* plano: botão Plano nos cards e a rota sempre num painel ao lado (recolhível) ou numa gaveta embaixo no celular */
+.area{display:grid;gap:22px;min-width:0}
+.conteudo{display:grid;gap:22px;min-width:0}
+main.wrap,.topo.wrap{max-width:1440px}
+.area{grid-template-columns:minmax(0,1fr) 340px;align-items:start;transition:grid-template-columns .3s ease}
+.area.recolhida{grid-template-columns:minmax(0,1fr) 76px}
+.pr-recolher{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:30px;height:30px;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.pr-recolher:hover{border-color:var(--pl);color:var(--fg)}
+.pr-recolher svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pr-trilho{display:none;flex-direction:column;align-items:center;gap:10px;padding:12px 0 14px;overflow-y:auto}
+.area.recolhida .pr-cab,.area.recolhida .pr-corpo{display:none}
+.area.recolhida .pr-trilho{display:flex}
+.pr-trilho .qtd{font:800 13px/1.2 var(--f-body);color:var(--muted);text-align:center}
+.pr-trilho .mini-p{position:relative;width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:2px solid var(--line-strong);display:grid;place-items:center;cursor:pointer;padding:0}
+.pr-trilho .mini-p img{max-width:36px;max-height:36px;object-fit:contain;pointer-events:none}
+.pr-trilho .mini-p.feita{border-color:var(--pl);background:var(--pl-soft)}
+.pr-trilho .mini-p span{position:absolute;top:-5px;left:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:var(--fg);color:var(--bg);font:800 11px/18px var(--f-body)}
+.pr-trilho .mini-p.feita span{background:var(--pl);color:var(--pl-ink)}
+.painel-rota.recebe{border-color:var(--pl);box-shadow:0 0 0 3px var(--pl-soft)}
+@media (hover:hover) and (pointer:fine){.poke[draggable="true"]{cursor:grab}}
+.painel-rota{position:sticky;top:12px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;animation:entra .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes entra{from{opacity:0;transform:translateX(16px)}}
+.pr-cab{display:grid;gap:2px;padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+.pr-cab .l1{display:flex;align-items:center;gap:8px}
+.pr-cab h2{margin:0;flex:1;font:800 19px/1.2 var(--f-display)}
+.pr-cab .res{font-size:13.5px;color:var(--muted)}
+.pr-cab .res b{color:var(--fg)}
+.pr-gaveta{display:none;border:0;background:none;padding:4px;cursor:pointer;color:var(--muted)}
+.pr-gaveta svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
+.rp-link{border:0;background:none;padding:2px 4px;font:600 13px var(--f-body);color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rp-link:hover{color:#c2412e}
+.pr-corpo{overflow-y:auto;padding:12px 12px 16px;overscroll-behavior:contain}
+.rp-vazio{margin:4px 4px 0;font-size:14px;color:var(--muted)}
+.trilha-v{list-style:none;margin:0;padding:0;display:grid}
+.parada{position:relative;padding-top:14px}
+.parada:first-child{padding-top:0}
+.parada:not(:last-child)::after{content:"";position:absolute;left:33px;top:58px;bottom:-18px;width:4px;border-radius:2px;background:repeating-linear-gradient(180deg,var(--pl) 0 7px,transparent 7px 12px);background-size:4px 24px;animation:desce 1s linear infinite;transform-origin:top center;z-index:0}
+.parada+.parada:not(:last-child)::after{top:72px}
+.parada:has(+ .nova)::after{animation:desce 1s linear infinite,estica .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes desce{to{background-position:0 24px}}
+@keyframes estica{from{transform:scaleY(0)}}
+.ponto{position:relative;z-index:1;width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;border:1px solid transparent;background:none;border-radius:12px;padding:4px 8px 4px 4px;cursor:pointer;text-align:left;color:inherit;font:inherit;transition:background-color .2s ease,border-color .2s ease}
+.ponto:hover{background:var(--surface-2)}
+.parada.aberta .ponto{background:var(--surface-2);border-color:var(--line)}
+.ponto .av{position:relative;width:58px;height:58px;border-radius:50%;background:var(--surface-2);border:2px solid var(--line-strong);display:grid;place-items:center;overflow:visible;transition:border-color .2s ease}
+.ponto .av img{max-width:48px;max-height:48px;object-fit:contain;pointer-events:none}
+.ponto .num{position:absolute;top:-4px;left:-4px;min-width:21px;height:21px;padding:0 5px;border-radius:99px;background:var(--fg);color:var(--bg);font:800 12px/21px var(--f-body);text-align:center}
+.ponto .nm{display:block;font-weight:700;font-size:15px;line-height:1.2}
+.ponto .sub-p{display:block;font-size:12.5px;color:var(--muted);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ponto .ok{font-size:12px;font-weight:700;color:var(--pl)}
+.ponto .pega{color:var(--faint);cursor:grab;display:grid;place-items:center}
+.ponto .pega svg{width:16px;height:16px;fill:currentColor}
+.parada.feita .av{border-color:var(--pl);background:var(--pl-soft)}
+.parada.feita .num{background:var(--pl);color:var(--pl-ink)}
+.parada.nova .av{animation:chega .5s cubic-bezier(.2,.8,.2,1) .15s both}
+@keyframes chega{from{transform:scale(.3);opacity:0}}
+.parada.arrastando{opacity:.4}
+.parada.alvo .ponto{border-color:var(--pl);border-style:dashed}
+.rp-det{position:relative;z-index:1;margin:6px 4px 2px 72px;display:grid;gap:8px;animation:abre .25s ease}
+.rp-det .inf{font-size:13px;color:var(--muted)}
+.rp-det .acoes{display:flex;flex-wrap:wrap;gap:6px}
+.rp-det input{width:100%;font:inherit;font-size:13.5px;color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.mini-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+.mini-btn:hover:not(:disabled){border-color:var(--pl);color:var(--fg)}
+.mini-btn:disabled{opacity:.4;cursor:default}
+.mini-btn.tira:hover{border-color:#c2412e;color:#c2412e}
+.poke .parada-n{position:absolute;top:6px;left:8px;min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:var(--pl);color:var(--pl-ink);font:800 12.5px/22px var(--f-body);text-align:center}
+.pisca{animation:pisca 1.2s ease}
+@keyframes pisca{0%,100%{box-shadow:inset 0 0 0 1.5px var(--pl)}30%{box-shadow:inset 0 0 0 4px var(--pl)}}
+.marca.pl{animation:aparece .3s ease}
+@keyframes aparece{from{opacity:0;transform:scale(.8)}}
+
+/* celular e telas estreitas: a rota vira uma gaveta presa embaixo */
+@media (max-width:980px){
+  .area,.area.recolhida{grid-template-columns:1fr}
+  body{padding-bottom:74px}
+  .pr-recolher{display:none}
+  .area.recolhida .pr-cab{display:grid}
+  .area.recolhida .pr-trilho{display:none}
+  .painel-rota.aberta .pr-corpo{display:block}
+  .painel-rota{position:fixed;left:8px;right:8px;bottom:8px;top:auto;z-index:20;max-height:calc(100dvh - 90px);box-shadow:0 -6px 24px rgba(0,0,0,.18);animation:sobe .35s cubic-bezier(.2,.8,.2,1)}
+  @keyframes sobe{from{transform:translateY(30px);opacity:0}}
+  .pr-gaveta{display:block}
+  .painel-rota:not(.aberta) .pr-corpo{display:none}
+  .painel-rota:not(.aberta) .pr-cab{border-bottom:0;cursor:pointer}
+  .painel-rota.aberta .pr-gaveta svg{transform:rotate(180deg)}
+  .painel-rota.aberta .pr-corpo{max-height:58dvh}
+}
 
 @media (max-width:620px){
   .wrap{padding-inline:14px}
@@ -189,10 +290,13 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     <div class="detalhe" id="detalhe"></div>
     <div class="barra" id="barra"><i></i></div>
     <p class="msg" id="msg"></p>
+    <p class="plano" id="plano"></p>
   </div>
 </header>
 
 <main class="wrap">
+  <div class="area">
+  <div class="conteudo">
   <section class="avisos" id="avisos" aria-label="Avisos importantes do guia"></section>
 
   <div id="ancora" style="margin-bottom:-22px"></div>
@@ -204,15 +308,31 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
         <button type="button" data-f="todos" aria-pressed="true">Todos</button>
         <button type="button" data-f="faltando" aria-pressed="false">Faltando</button>
         <button type="button" data-f="feitos" aria-pressed="false">Feitos</button>
+        <button type="button" data-f="plano" aria-pressed="false">No plano</button>
       </div>
       <div class="seg" id="tipo" role="group" aria-label="Tipo de pokelog"></div>
+      <label class="sel-elem" id="selElem">Elemento <select id="elemento" aria-label="Filtrar por elemento do pokémon"><option value="todos">Todos</option></select></label>
     </div>
   </div>
 
   <div id="grupos"></div>
+  </div>
+
+  <aside class="painel-rota" id="painelRota" aria-label="Rota do plano">
+    <div class="pr-cab" id="prCab">
+      <div class="l1"><h2>Rota do plano</h2><button type="button" class="rp-link" id="limparPlano" hidden>Limpar</button><button type="button" class="pr-recolher" id="prRecolher" aria-label="Recolher a rota" title="Recolher a rota"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><button type="button" class="pr-gaveta" id="prGaveta" aria-label="Abrir a rota" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button></div>
+      <span class="res" id="rpResumo"></span>
+    </div>
+    <div class="pr-trilho" id="prTrilho"></div>
+    <div class="pr-corpo">
+      <p class="rp-vazio" id="rpVazio">Toque em <b>Plano</b> nos pokémons (ou arraste o card até aqui), na ordem em que pretende fazer. Cada um vira uma parada desta rota. Arraste as paradas, ou use Subir/Descer, para mudar a ordem.</p>
+      <ol class="trilha-v" id="trilha"></ol>
+    </div>
+  </aside>
+  </div>
 
   <footer class="fim">
-    <p>As marcações ficam salvas só neste navegador. Animações dos pokémons: Pokémon Showdown, via PokeAPI.</p>
+    <p>As marcações e o plano ficam salvos só neste navegador. Animações dos pokémons: Pokémon Showdown, via PokeAPI.</p>
     <button type="button" class="limpar" id="limpar">Limpar marcações</button>
   </footer>
 </main>
@@ -230,6 +350,10 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
   var DEX = {"caterpie":10,"pineco":204,"weedle":13,"cleffa":173,"flabebe":669,"igglybuff":174,"oddish":43,"paras":46,"pidgey":16,"rattata":19,"spearow":21,"abra":63,"drowzee":96,"aipom":190,"swinub":220,"smoochum":238,"chimchar":390,"clefairy":35,"combee":415,"cubone":104,"sandshrew":27,"phanpy":231,"cyndaquil":155,"slugma":218,"diglett":50,"eevee":133,"meowth":52,"floette":670,"snubbull":209,"gastly":92,"geodude":74,"gible":443,"growlithe":58,"charmander":4,"houndour":228,"deino":633,"krabby":98,"magnemite":81,"magby":240,"mareep":179,"pichu":172,"natu":177,"ponyta":77,"rhyhorn":111,"larvitar":246,"shieldon":410,"shinx":403,"skiddo":672,"slowpoke":79,"snover":459,"spinarak":167,"squirtle":7,"totodile":158,"marill":183,"starly":396,"timburr":532,"togepi":175,"trubbish":568,"turtwig":387,"voltorb":100,"vulpix":37,"wooper":194,"wurmple":265,"aron":304,"bagon":371,"baltoy":343,"barboach":339,"beldum":374,"cacnea":331,"charmeleon":5,"corphish":341,"dratini":147,"duskull":355,"electrode":101,"farfetchd":83,"fearow":22,"gabite":444,"graveler":75,"kadabra":64,"lotad":270,"machoke":67,"meditite":307,"murkrow":198,"numel":322,"parasect":47,"pidgeotto":17,"pikachu":25,"poochyena":261,"quilava":156,"ralts":280,"raticate":20,"shuckle":213,"shuppet":353,"slowbro":80,"snorunt":361,"spheal":363,"staravia":397,"swablu":333,"taillow":276,"torchic":255,"trapinch":328,"treecko":252,"tyrogue":236,"whismur":293,"yanma":193,"ariados":168,"carvanha":318,"chansey":113,"clefable":36,"cloyster":91,"combusken":256,"cranidos":408,"croconaw":159,"dodrio":85,"dragonair":148,"dugtrio":51,"dewgong":87,"espeon":196,"golduck":55,"grotle":388,"grovyle":253,"gulpin":316,"hitmonchan":107,"hitmonlee":106,"hitmontop":237,"hypno":97,"kirlia":281,"lairon":305,"lombre":271,"loudred":294,"luxio":404,"makuhita":296,"marowak":105,"marshtomp":259,"metang":375,"minun":312,"plusle":311,"monferno":391,"noctowl":164,"persian":53,"politoed":186,"primeape":57,"pupitar":247,"quagsire":195,"riolu":447,"sandslash":28,"sealeo":364,"shelgon":372,"sneasel":215,"starmie":121,"tangela":114,"togetic":176,"umbreon":197,"venomoth":49,"vibrava":329,"wailmer":320,"wigglytuff":40};
 
   // tipos de pokelog, lidos da observação de cada rota no guia
+  var ELEM_LISTA = [["normal","Normal"],["fire","Fire"],["water","Water"],["grass","Grass"],["electric","Electric"],["ice","Ice"],
+    ["fighting","Fighting"],["poison","Poison"],["ground","Ground"],["flying","Flying"],["psychic","Psychic"],["bug","Bug"],
+    ["rock","Rock"],["ghost","Ghost"],["dragon","Dragon"],["dark","Dark"],["steel","Steel"],["fairy","Fairy"]];
+  var ELEM_NOME = {}; ELEM_LISTA.forEach(function(x){ ELEM_NOME[x[0]] = x[1]; });
   var TIPOS = [
     {id:"shard", nome:"Arcane Shard", re:/arcane shard/i},
     {id:"inst", nome:"Instância", re:/inst[aâ]ncia/i}
@@ -247,7 +371,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
       r.tipos.forEach(function(t){ porTipo[t] = (porTipo[t]||0) + 1; });
       r.pokes.forEach(function(n){
         var k = chaveDe(n);
-        if(!especies[k]){ especies[k] = {k:k, nome:n, grupo:g.id, dex:DEX[k]}; ordem.push(k); }
+        if(!especies[k]){ especies[k] = {k:k, nome:n, grupo:g.id, dex:DEX[k], rota:r, elem:((window.POKELOG_ELEMENTOS||{})[DEX[k]]||"").split("/").filter(Boolean)}; ordem.push(k); }
       });
     });
   });
@@ -258,10 +382,33 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
   function salvar(){ try{ localStorage.setItem(CHAVE, JSON.stringify(estado)); }catch(e){} }
   function e(k){ return estado[k] || (estado[k] = {log:false, sh:false}); }
 
-  var filtro = "todos", termo = "", nivel = "todos", tipo = "todos";
+  // plano: pokémons que a pessoa pretende fazer (o que já foi feito continua vindo das marcações Log e Shiny)
+  var CHAVE_PLANO = "pkahub-pokelog-plano";
+  // guardado como lista, na ordem da rota; "plano" é só um atalho pokémon -> parada
+  var CHAVE_ROTA = "pkahub-pokelog-rota";
+  var rota = [], plano = {};
+  try{ rota = JSON.parse(localStorage.getItem(CHAVE_ROTA)||"[]"); }catch(err){ rota = []; }
+  if(!Array.isArray(rota)) rota = [];
+  function indexar(){
+    var visto = {};
+    rota = rota.filter(function(it){ if(!it || typeof it.k !== "string" || !especies[it.k] || visto[it.k]) return false; visto[it.k] = true; if(typeof it.nota !== "string") it.nota = ""; return true; });
+    plano = {}; rota.forEach(function(it, i){ plano[it.k] = i + 1; });
+  }
+  indexar();
+  function salvarPlano(){ indexar(); try{ localStorage.setItem(CHAVE_ROTA, JSON.stringify(rota)); }catch(err){} }
+  var novaParada = null, aberta = null;
+  function alternarPlano(k){
+    if(plano[k]){ rota = rota.filter(function(it){ return it.k !== k; }); if(aberta === k) aberta = null; }
+    else { rota.push({k:k, nota:""}); novaParada = k; }
+    salvarPlano();
+  }
+
+  var filtro = "todos", termo = "", nivel = "todos", tipo = "todos", elemento = "todos";
 
   function el(tag, cls, txt){ var x=document.createElement(tag); if(cls) x.className=cls; if(txt!=null) x.textContent=txt; return x; }
   var ICON_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17 19 7.5"/></svg>';
+  var ARRASTA_CARD = matchMedia("(hover:hover) and (pointer:fine)").matches;
+  var ICON_PLANO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-3.5L7 20Z"/></svg>';
   var ICON_SETA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 
   function imagem(sp, shiny){
@@ -337,10 +484,11 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
         var lista = el("div","pokes");
         r.pokes.forEach(function(n){
           var sp = especies[chaveDe(n)];
-          var box = el("div","poke");
+          var box = el("div","poke"); box._k = sp.k; if(ARRASTA_CARD) box.draggable = true;
           var foto = el("div","foto"); var img = imagem(sp, e(sp.k).sh); foto.appendChild(img); box.appendChild(foto);
           var nome = el("div","nome", sp.nome);
           if(sp.grupo !== g.id){ var rep = el("span","rep","conta no grupo " + sp.grupo); nome.appendChild(rep); }
+          if(sp.elem.length) nome.appendChild(el("span","elem", sp.elem.map(function(x){ return ELEM_NOME[x] || x; }).join(" · ")));
           box.appendChild(nome);
           var marcas = el("div","marcas");
           var bLog = el("button","marca log"); bLog.type="button"; bLog.innerHTML = ICON_OK + "<span>Log +" + P.pontosLog + "</span>";
@@ -349,9 +497,13 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
           bSh.setAttribute("aria-label", "Primeiro pokelog do Shiny " + sp.nome + ", " + P.pontosShiny + " pontos");
           bLog.onclick = function(){ e(sp.k).log = !e(sp.k).log; mudou(sp.k, bLog); };
           bSh.onclick = function(){ e(sp.k).sh = !e(sp.k).sh; mudou(sp.k, bSh); };
-          marcas.appendChild(bLog); marcas.appendChild(bSh); box.appendChild(marcas);
+          var num = el("span","parada-n"); num.hidden = true; box.appendChild(num);
+          var bPl = el("button","marca pl"); bPl.type="button"; bPl.innerHTML = ICON_PLANO + "<span>Plano</span>";
+          bPl.setAttribute("aria-label", "Pôr " + sp.nome + " no plano");
+          bPl.onclick = function(){ alternarPlano(sp.k); tudo(); };
+          marcas.appendChild(bLog); marcas.appendChild(bSh); marcas.appendChild(bPl); box.appendChild(marcas);
           lista.appendChild(box);
-          (refs[sp.k] || (refs[sp.k] = [])).push({box:box, log:bLog, sh:bSh, img:img, sp:sp, card:card});
+          (refs[sp.k] || (refs[sp.k] = [])).push({box:box, log:bLog, sh:bSh, pl:bPl, img:img, sp:sp, card:card, num:num});
         });
         card.appendChild(lista);
         if(r[1]) card.appendChild(el("p","nota", r[1]));
@@ -372,21 +524,33 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
       r.sh.setAttribute("aria-pressed", String(s.sh));
       r.box.classList.toggle("faltando", !s.log);
       r.box.classList.toggle("brilha", s.sh);
+      r.pl.setAttribute("aria-pressed", String(!!plano[k]));
+      r.pl.querySelector("span").textContent = plano[k] ? "No plano" : "Plano";
+      r.num.hidden = !plano[k]; r.num.textContent = plano[k] || "";
+      r.pl.setAttribute("aria-label", (plano[k] ? "Tirar " + r.sp.nome + " do plano" : "Pôr " + r.sp.nome + " no plano"));
+      r.box.classList.toggle("planejado", !!plano[k]);
       var quer = s.sh ? "shiny" : "normal";
       if(r.img.dataset.v !== quer){ var novo = imagem(r.sp, s.sh); r.img.replaceWith(novo); r.img = novo; }
       if(anima && anima.closest && r.box.contains(anima)){ r.box.classList.remove("pop"); void r.box.offsetWidth; r.box.classList.add("pop"); }
     });
   }
 
-  function mudou(k, botao){ salvar(); pintar(k, botao); placar(); filtrar(); }
+  function mudou(k, botao, soPlano){ if(!soPlano) salvar(); pintar(k, botao); placar(); filtrar(); pintarRota(); }
+  function tudo(){ ordem.forEach(function(k){ pintar(k); }); placar(); filtrar(); pintarRota(); }
 
   function placar(){
-    var logs=0, sh=0, porGrupo={};
+    var logs=0, sh=0, porGrupo={}, nPlano=0, ptsPlano=0, faltaPlano=0;
     ordem.forEach(function(k){
       var s = estado[k]; var g = especies[k].grupo;
       porGrupo[g] = porGrupo[g] || {feitos:0,total:0,pts:0}; porGrupo[g].total++;
       if(s && s.log){ logs++; porGrupo[g].feitos++; porGrupo[g].pts += P.pontosLog; }
       if(s && s.sh){ sh++; porGrupo[g].pts += P.pontosShiny; }
+      if(plano[k]){
+        nPlano++; porGrupo[g].plano = (porGrupo[g].plano||0) + 1;
+        ptsPlano += P.pontosLog + P.pontosShiny;
+        if(!(s && s.log)) faltaPlano += P.pontosLog;
+        if(!(s && s.sh)) faltaPlano += P.pontosShiny;
+      }
     });
     var pts = logs*P.pontosLog + sh*P.pontosShiny;
     document.getElementById("pts").innerHTML = nf.format(pts) + "<small>/ " + nf.format(P.meta) + "</small>";
@@ -398,9 +562,12 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     document.getElementById("msg").textContent = falta > 0
       ? "Faltam " + nf.format(falta) + " pontos para o ATK 5 (" + Math.ceil(falta/(P.pontosLog+P.pontosShiny)) + " pokelogs fazendo também o primeiro do shiny)."
       : "Meta do ATK 5 atingida!";
+    var fim = pts + faltaPlano, linha = document.getElementById("plano");
+    if(!nPlano) linha.innerHTML = '<span class="t">Plano:</span> vazio. Use o botão <b>Plano</b> nos pokémons que você pretende fazer.';
+    else linha.innerHTML = '<span class="t">Plano:</span> <b>' + nPlano + '</b> ' + (nPlano > 1 ? "pokelogs" : "pokelog") + ' (' + nf.format(ptsPlano) + ' pts com o primeiro do shiny), faltam <b>' + nf.format(faltaPlano) + '</b> pts. Terminando o plano você chega a <b>' + nf.format(fim) + '</b> de ' + nf.format(P.meta) + (fim >= P.meta ? ", o que alcança o ATK 5." : ", e ainda faltariam " + nf.format(P.meta - fim) + " para o ATK 5.");
     Array.prototype.forEach.call(host.querySelectorAll(".soma"), function(x){
       var v = porGrupo[x.dataset.g] || {feitos:0,total:0,pts:0};
-      x.innerHTML = "<b>" + v.feitos + "</b> de " + v.total + " feitos · " + nf.format(v.pts) + " pts";
+      x.innerHTML = "<b>" + v.feitos + "</b> de " + v.total + " feitos · " + nf.format(v.pts) + " pts" + (v.plano ? " · " + v.plano + " no plano" : "");
       x.appendChild(el("span","achados"));
     });
     Array.prototype.forEach.call(host.querySelectorAll(".mini"), function(x){
@@ -413,7 +580,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     });
   }
 
-  function filtroAtivo(){ return !!termo.trim() || filtro !== "todos" || tipo !== "todos"; }
+  function filtroAtivo(){ return !!termo.trim() || filtro !== "todos" || tipo !== "todos" || elemento !== "todos"; }
 
   function filtrar(){
     var t = semAcento(termo.trim()), ativo = filtroAtivo();
@@ -424,9 +591,12 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
         var feitos = card._pokes.every(function(k){ return estado[k] && estado[k].log; });
         card.classList.toggle("feita", feitos);
         var ok = (!t || card._texto.indexOf(t) >= 0) &&
-                 (filtro === "todos" || (filtro === "feitos" ? feitos : !feitos)) &&
-                 (tipo === "todos" || card._tipos.indexOf(tipo) >= 0);
+                 (filtro === "todos" || (filtro === "plano" ? card._pokes.some(function(k){ return plano[k]; }) : (filtro === "feitos" ? feitos : !feitos))) &&
+                 (tipo === "todos" || card._tipos.indexOf(tipo) >= 0) &&
+                 (elemento === "todos" || card._pokes.some(function(k){ return especies[k].elem.indexOf(elemento) >= 0; }));
         card.hidden = !ok; if(ok) vis++;
+        // numa rota com vários pokémons, os que não são do elemento escolhido ficam apagados
+        Array.prototype.forEach.call(card.querySelectorAll(".poke"), function(b){ b.classList.toggle("fora-elem", elemento !== "todos" && especies[b._k].elem.indexOf(elemento) < 0); });
       });
       sec._vis = vis;
       sec._vazio.hidden = vis > 0;
@@ -466,6 +636,18 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     Array.prototype.forEach.call(this.querySelectorAll("button"), function(x){ x.setAttribute("aria-pressed", String(x === b)); });
     filtrar(); abrirComResultado();
   });
+  // filtro por elemento (nomes iguais aos do Planejador 2x2x2)
+  var selElem = document.getElementById("elemento");
+  ELEM_LISTA.forEach(function(x){
+    var q = ordem.filter(function(k){ return especies[k].elem.indexOf(x[0]) >= 0; }).length;
+    if(!q) return;
+    var o = el("option", null, x[1] + " (" + q + ")"); o.value = x[0]; selElem.appendChild(o);
+  });
+  selElem.addEventListener("change", function(){
+    elemento = selElem.value;
+    document.getElementById("selElem").classList.toggle("ativo", elemento !== "todos");
+    filtrar(); abrirComResultado();
+  });
   tipoBox.addEventListener("click", function(ev){
     var b = ev.target.closest("button"); if(!b) return;
     tipo = b.dataset.t;
@@ -476,6 +658,155 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     if(!confirm("Apagar todas as marcações de pokelog deste navegador?")) return;
     estado = {}; salvar(); ordem.forEach(function(k){ pintar(k); }); placar(); filtrar();
   });
+  document.getElementById("limparPlano").addEventListener("click", function(){
+    if(!Object.keys(plano).length) return;
+    if(!confirm("Tirar todos os pokémons do plano? As marcações de Log e Shiny não mudam.")) return;
+    rota = []; aberta = null; salvarPlano(); tudo();
+  });
+
+  /* ---------- painel da rota ---------- */
+  var trilha = document.getElementById("trilha"), painel = document.getElementById("painelRota");
+  var arrastado = null;
+  var ICON_PEGA = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+  function pintarRota(){
+    trilha.innerHTML = "";
+    var feitos = 0, falta = 0;
+    rota.forEach(function(it, i){
+      var sp = especies[it.k], s = estado[it.k] || {}, r = sp.rota;
+      if(s.log) feitos++;
+      if(!s.log) falta += P.pontosLog; if(!s.sh) falta += P.pontosShiny;
+      var li = el("li","parada"); li.dataset.i = i; li.draggable = true;
+      li.classList.toggle("feita", !!s.log); li.classList.toggle("aberta", aberta === it.k);
+      if(it.k === novaParada) li.classList.add("nova");
+      var b = el("button","ponto"); b.type = "button";
+      var av = el("span","av"); av.appendChild(imagem(sp, !!s.sh)); av.appendChild(el("span","num", String(i + 1))); b.appendChild(av);
+      var t = el("span"); t.appendChild(el("span","nm", sp.nome));
+      var st = [];
+      if(s.log) st.push("Log feito"); if(s.sh) st.push("Shiny feito");
+      t.appendChild(el("span","sub-p", it.nota || (sp.grupo + " mobs" + (r[1] ? " · " + r[1] : ""))));
+      if(st.length) t.appendChild(el("span","ok", "✓ " + st.join(" · ")));
+      b.appendChild(t);
+      var pega = el("span","pega"); pega.innerHTML = ICON_PEGA; pega.title = "Arraste para mudar a ordem"; b.appendChild(pega);
+      b.setAttribute("aria-label", "Parada " + (i + 1) + ": " + sp.nome + (s.log ? ", feito" : "") + ". Abrir detalhes");
+      b.setAttribute("aria-expanded", String(aberta === it.k));
+      b.onclick = function(){ aberta = aberta === it.k ? null : it.k; pintarRota(); };
+      li.appendChild(b);
+      if(aberta === it.k) li.appendChild(detalhe(it, i));
+      // arrastar para mudar a ordem
+      li.addEventListener("dragstart", function(ev){ if(ev.target.closest("input")){ ev.preventDefault(); return; } arrastado = i; li.classList.add("arrastando"); try{ ev.dataTransfer.setData("text/plain", String(i)); ev.dataTransfer.effectAllowed = "move"; }catch(err){} });
+      li.addEventListener("dragend", function(){ li.classList.remove("arrastando"); arrastado = null; });
+      li.addEventListener("dragover", function(ev){ if(arrastado === null) return; ev.preventDefault(); li.classList.add("alvo"); });
+      li.addEventListener("dragleave", function(){ li.classList.remove("alvo"); });
+      li.addEventListener("drop", function(ev){ ev.preventDefault(); li.classList.remove("alvo"); if(arrastado === null || arrastado === i) return; mover(arrastado, i); });
+      trilha.appendChild(li);
+    });
+    var n = rota.length;
+    document.getElementById("rpVazio").hidden = n > 0;
+    document.getElementById("limparPlano").hidden = !n;
+    document.getElementById("rpResumo").innerHTML = n ? "<b>" + n + "</b> " + (n > 1 ? "paradas" : "parada") + " · <b>" + feitos + "</b> feitas · faltam <b>" + nf.format(falta) + "</b> pts" : "Nenhuma parada ainda";
+    var trilho = document.getElementById("prTrilho"); trilho.innerHTML = "";
+    var ab = el("button","pr-recolher"); ab.type = "button"; ab.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>'; ab.setAttribute("aria-label","Abrir a rota"); ab.title = "Abrir a rota";
+    ab.onclick = function(){ recolher(false, true); };
+    trilho.appendChild(ab);
+    trilho.appendChild(el("span","qtd", n + (n === 1 ? " parada" : " paradas")));
+    rota.forEach(function(it, i){
+      var sp = especies[it.k], s = estado[it.k] || {};
+      var m = el("button","mini-p"); m.type = "button"; m.classList.toggle("feita", !!s.log); m.title = (i + 1) + ". " + sp.nome;
+      m.setAttribute("aria-label", "Parada " + (i + 1) + ": " + sp.nome);
+      m.appendChild(imagem(sp, !!s.sh)); m.appendChild(el("span", null, String(i + 1)));
+      m.onclick = function(){ aberta = it.k; recolher(false, true); pintarRota(); };
+      trilho.appendChild(m);
+    });
+    if(novaParada){
+      var nova = trilha.querySelector(".nova");
+      if(nova){ var corpo = nova.closest(".pr-corpo"); corpo.scrollTop = corpo.scrollHeight; }
+      novaParada = null;
+    }
+  }
+  function mover(de, para){
+    if(para < 0 || para >= rota.length) return;
+    var x = rota.splice(de, 1)[0]; rota.splice(para, 0, x); salvarPlano(); tudo();
+  }
+  function detalhe(it, i){
+    var sp = especies[it.k], s = e(it.k), r = sp.rota;
+    var det = el("div","rp-det");
+    det.appendChild(el("span","inf", "Pokelog de " + sp.grupo + " mobs" + (r.pokes.length > 1 ? " · rota " + r[0] : "") + (r[1] ? " · " + r[1] : "")));
+    var ac = el("div","acoes");
+    var bLog = el("button","marca log"); bLog.type = "button"; bLog.innerHTML = ICON_OK + "<span>Log +" + P.pontosLog + "</span>"; bLog.setAttribute("aria-pressed", String(!!s.log));
+    var bSh = el("button","marca sh"); bSh.type = "button"; bSh.innerHTML = "<span>✦ Shiny +" + P.pontosShiny + "</span>"; bSh.setAttribute("aria-pressed", String(!!s.sh));
+    bLog.onclick = function(){ s.log = !s.log; salvar(); tudo(); };
+    bSh.onclick = function(){ s.sh = !s.sh; salvar(); tudo(); };
+    ac.appendChild(bLog); ac.appendChild(bSh); det.appendChild(ac);
+    var nota = el("input"); nota.type = "text"; nota.maxLength = 120; nota.placeholder = "Anotação (opcional)"; nota.value = it.nota; nota.setAttribute("aria-label", "Anotação sobre " + sp.nome);
+    nota.addEventListener("input", function(){
+      it.nota = nota.value; salvarPlano();
+      var sub = det.parentNode && det.parentNode.querySelector(".sub-p");
+      if(sub) sub.textContent = it.nota || (sp.grupo + " mobs" + (r[1] ? " · " + r[1] : ""));
+    });
+    det.appendChild(nota);
+    var ac2 = el("div","acoes");
+    var bAnt = el("button","mini-btn", "↑ Subir"); bAnt.type = "button"; bAnt.disabled = i === 0; bAnt.onclick = function(){ mover(i, i - 1); };
+    var bDep = el("button","mini-btn", "↓ Descer"); bDep.type = "button"; bDep.disabled = i === rota.length - 1; bDep.onclick = function(){ mover(i, i + 1); };
+    var bVer = el("button","mini-btn", "Ver no guia"); bVer.type = "button"; bVer.onclick = function(){ verNoGuia(it.k); };
+    var bTira = el("button","mini-btn tira", "Tirar da rota"); bTira.type = "button"; bTira.onclick = function(){ alternarPlano(it.k); tudo(); };
+    [bAnt, bDep, bVer, bTira].forEach(function(x){ ac2.appendChild(x); });
+    det.appendChild(ac2);
+    return det;
+  }
+
+  /* gaveta no celular */
+  function gaveta(abrir){
+    painel.classList.toggle("aberta", abrir);
+    document.getElementById("prGaveta").setAttribute("aria-expanded", String(abrir));
+    document.getElementById("prGaveta").setAttribute("aria-label", abrir ? "Fechar a rota" : "Abrir a rota");
+  }
+  document.getElementById("prCab").addEventListener("click", function(ev){
+    if(ev.target.closest("#limparPlano")) return;
+    if(matchMedia("(max-width:980px)").matches) gaveta(!painel.classList.contains("aberta"));
+  });
+
+  /* recolher o painel no computador */
+  var CHAVE_RECOLHE = "pkahub-pokelog-rota-recolhida";
+  var area = painel.parentNode;
+  function recolher(sim, guardar){
+    area.classList.toggle("recolhida", sim);
+    if(guardar){ try{ localStorage.setItem(CHAVE_RECOLHE, sim ? "1" : "0"); }catch(err){} }
+  }
+  document.getElementById("prRecolher").addEventListener("click", function(ev){ ev.stopPropagation(); recolher(true, true); });
+  try{ if(localStorage.getItem(CHAVE_RECOLHE) === "1") recolher(true, false); }catch(err){}
+
+  /* arrastar um card do guia até a rota (computador) */
+  var cardArrastado = null;
+  if(ARRASTA_CARD){
+    host.addEventListener("dragstart", function(ev){
+      var box = ev.target.closest && ev.target.closest(".poke"); if(!box || !box._k) return;
+      cardArrastado = box._k;
+      try{ ev.dataTransfer.setData("text/plain", box._k); ev.dataTransfer.effectAllowed = "copy"; }catch(err){}
+    });
+    host.addEventListener("dragend", function(){ cardArrastado = null; painel.classList.remove("recebe"); });
+    painel.addEventListener("dragover", function(ev){ if(cardArrastado === null) return; ev.preventDefault(); painel.classList.add("recebe"); });
+    painel.addEventListener("dragleave", function(ev){ if(!painel.contains(ev.relatedTarget)) painel.classList.remove("recebe"); });
+    painel.addEventListener("drop", function(ev){
+      if(cardArrastado === null) return; ev.preventDefault(); painel.classList.remove("recebe");
+      var k = cardArrastado; cardArrastado = null;
+      var alvo = ev.target.closest && ev.target.closest(".parada");
+      if(plano[k]) rota = rota.filter(function(it){ return it.k !== k; });
+      var item = {k:k, nota:""};
+      rota.forEach(function(it){ if(it.k === k) item = it; });
+      if(alvo){ var i = +alvo.dataset.i; rota.splice(Math.min(i, rota.length), 0, item); } else rota.push(item);
+      novaParada = k; salvarPlano(); tudo();
+    });
+  }
+
+  function verNoGuia(k){
+    var r = (refs[k]||[])[0]; if(!r) return;
+    var sec = r.box.closest(".grupo"); sec.hidden = false; sec.open = true;
+    if(r.card.hidden){ termo = ""; document.getElementById("busca").value = ""; filtro = "todos"; Array.prototype.forEach.call(document.querySelectorAll("#seg button"), function(x){ x.setAttribute("aria-pressed", String(x.dataset.f === "todos")); }); filtrar(); }
+    if(nivel !== "todos" && nivel !== especies[k].grupo){ document.querySelector('#niveis button[data-n="' + especies[k].grupo + '"]').click(); }
+    if(matchMedia("(max-width:980px)").matches) gaveta(false);
+    r.box.scrollIntoView({behavior:"smooth", block:"center"});
+    r.box.classList.remove("pisca"); void r.box.offsetWidth; r.box.classList.add("pisca");
+  }
 
   /* ---------- tema (mesma chave do hub) ---------- */
   var bTema = document.getElementById("tema");
@@ -499,7 +830,7 @@ main.wrap{padding-block:22px 64px;display:grid;gap:22px}
     pintarTema();
   });
 
-  montar(); ordem.forEach(function(k){ pintar(k); }); placar(); filtrar(); pintarTema();
+  montar(); tudo(); pintarTema();
 })();
 </script>
 </body>
