@@ -328,3 +328,9 @@ test("[ataque 10] apagar tudo pode ser desfeito", async () => {
   r = await chamar({ acao: "desfazer", token: t });
   assert.equal(r.j.dados.imports.length, 0);
 });
+
+test("[rodada 2] muitas guilds criadas por outros IPs não impedem uma guild nova", async () => {
+  for (let i = 0; i < 120; i++) await chamar({ acao: "criar", codigo: "massa-" + i, senha: "senha1234" }, { ip: "10.20." + Math.floor(i / 5) + ".1" });
+  const r = await chamar({ acao: "criar", codigo: "guild-legitima", senha: "senha1234" }, { ip: "10.21.0.1" });
+  assert.equal(r.st, 200);
+});

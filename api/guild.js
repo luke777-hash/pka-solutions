@@ -19,7 +19,6 @@ const VERSAO_DADOS = 1;
 export const LIMITES = {
   ip: [600, 600],                 // qualquer pedido, por IP: 600 a cada 10 min
   criar: [5, 3600],               // criar guild, por IP: 5 por hora
-  criarTotal: [100, 3600],        // criar guild, somando todos: 100 por hora
   entrarIp: [30, 900],            // tentativas de login, por IP: 30 a cada 15 min
   erroGuildIp: [10, 900],         // senhas erradas numa guild vindas do mesmo IP: 10 a cada 15 min
   erroGuild: [50, 900],           // senhas erradas numa guild, de qualquer IP: 50 a cada 15 min
@@ -230,7 +229,6 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
         if (acao === "criar") {
           if (senha.length < SENHA_MIN) return responder(400, { erro: "A senha precisa ter pelo menos " + SENHA_MIN + " caracteres." });
           if (await estourou("criar:" + ipHash, LIMITES.criar)) return responder(429, { erro: "Muitas guilds criadas daqui. Espere uma hora." });
-          if (await estourou("criar-total", LIMITES.criarTotal)) { log("criar_limite_total", {}); return responder(429, { erro: "Muitas guilds novas nesta hora. Tente mais tarde." }); }
           const sal = randomBytes(16).toString("hex");
           const ok = await db("SET", K(cod, "acesso"), JSON.stringify({ sal, hash: hash(senha, sal), ger: 1, criadoEm: new Date().toISOString() }), "NX");
           if (ok !== "OK") return responder(409, { erro: "Já existe uma guild com esse código. Use Entrar, ou escolha outro código." });
