@@ -270,7 +270,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
       <p class="nota">Use o código e a senha que o líder da guild criou no primeiro acesso. Todos os admins entram com os mesmos e veem as mesmas importações, metas e alertas.</p>
       <div class="campos" style="margin-top:12px">
         <label class="campo">Código da guild<input type="text" id="eCodigo" autocomplete="username" placeholder="ex.: intocaveis-sun" required></label>
-        <label class="campo">Senha<input type="password" id="eSenha" autocomplete="current-password" required minlength="6"></label>
+        <label class="campo">Senha<input type="password" id="eSenha" autocomplete="current-password" required minlength="6" maxlength="200"></label>
       </div>
       <div class="acoes">
         <button class="btn pri" type="submit" id="eEntrar">Entrar</button>
@@ -282,8 +282,8 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
       <p class="nota">Faça isso uma vez só, normalmente o líder. Escolha um código para a guild (o nome e o servidor, por exemplo) e uma senha. Depois passe os dois para os outros admins, que entram pela aba Entrar.</p>
       <div class="campos" style="margin-top:12px">
         <label class="campo">Código da guild<input type="text" id="pCodigo" autocomplete="username" placeholder="ex.: intocaveis-sun" required minlength="3"></label>
-        <label class="campo">Senha (mínimo 6)<input type="password" id="pSenha" autocomplete="new-password" required minlength="6"></label>
-        <label class="campo">Repita a senha<input type="password" id="pSenha2" autocomplete="new-password" required minlength="6"></label>
+        <label class="campo">Senha (mínimo 8)<input type="password" id="pSenha" autocomplete="new-password" required minlength="8" maxlength="200"></label>
+        <label class="campo">Repita a senha<input type="password" id="pSenha2" autocomplete="new-password" required minlength="8" maxlength="200"></label>
       </div>
       <div class="acoes">
         <button class="btn pri" type="submit" id="pCriar">Criar acesso da guild</button>
@@ -461,10 +461,17 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
             <div id="acessoNuvem">
               <p class="nota">Você está na guild <b id="aCodigo"></b>. Os dados ficam no servidor do PKA-HUB e todo admin com a senha vê o mesmo.</p>
               <div class="grupo-campo">
-                <div class="campos"><label class="campo">Nova senha<input type="password" id="aSenha" autocomplete="new-password" minlength="6"></label></div>
+                <div class="campos"><label class="campo">Senha atual<input type="password" id="aAtual" autocomplete="current-password" maxlength="200"></label><label class="campo">Nova senha (mínimo 8)<input type="password" id="aSenha" autocomplete="new-password" minlength="8" maxlength="200"></label></div>
                 <div class="acoes" style="margin-top:0"><button class="btn peq" type="button" id="aTrocar">Trocar senha</button><span class="status" id="aStatus" role="status"></span></div>
               </div>
+              <p class="nota">Trocar a senha desconecta todos os outros admins. Eles entram de novo com a senha nova.</p>
             </div>
+          </div>
+
+          <div class="cartao">
+            <h2>Cópia de segurança</h2>
+            <p class="nota">Baixa um arquivo com as importações e os ajustes desta guild (sem o webhook e sem a senha). Restaurar troca tudo o que está no servidor pelo que está no arquivo.</p>
+            <div class="acoes"><button class="btn peq" type="button" id="bkBaixar">Baixar cópia</button><button class="btn peq" type="button" id="bkRestaurar">Restaurar de um arquivo</button><input type="file" id="bkArquivo" accept=".json,application/json" hidden><span class="status" id="bkStatus" role="status"></span></div>
           </div>
 
           <div class="cartao">
@@ -486,6 +493,8 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
 
   // ---------- guardar ----------
   var dados = { imports: [], cfg: {} };
+  // lê só o que é do próprio objeto (um membro chamado "constructor" não pode quebrar a página)
+  function de(o, k){ return o && Object.prototype.hasOwnProperty.call(o, k) ? o[k] : undefined; }
   function padraoCfg(){ return { metaPontos: null, metaContrib: null, regra: "todas", diasInativo: 3, saldo: null, isentos: {}, discord: {}, hookNome: "", alertaAuto: true, guild: "" }; }
   function lsLer(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   function lsGravar(k, v){ try{ if(v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
@@ -648,7 +657,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     // ritmo: espera a parte da meta dos dias que já fecharam (no 1º dia ninguém está atrasado)
     r.diasFechados = Math.floor(fr * 7);
     r.membros.forEach(function(m){
-      m.isento = !!dados.cfg.isentos[m.name];
+      m.isento = de(dados.cfg.isentos, m.name) === true;
       var a = G.avaliar(m, mt, r.diasFechados / 7);
       m.situacao = m.isento ? "isento" : a.situacao;
       m.faltaPontos = a.faltaPontos; m.faltaContrib = a.faltaContrib;
@@ -786,7 +795,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     var ini = G.inicioSemana(semana.ultima), fim = new Date(ini); fim.setDate(fim.getDate() + 6);
     return dm(ini) + " a " + dm(fim);
   }
-  function marcacao(m){ var id = (dados.cfg.discord[m.name] || "").trim(); return G.idDiscordValido(id) ? " <@" + id + ">" : ""; }
+  function marcacao(m){ var id = String(de(dados.cfg.discord, m.name) || "").trim(); return G.idDiscordValido(id) ? " <@" + id + ">" : ""; }
   function linhaMembro(m, tipo){
     if(tipo === "inativos") return "• **" + m.name + "**" + marcacao(m) + " · último acesso " + m.lastLogin.slice(0, 16) + " (" + plural(Math.floor(m.dias), "dia", "dias") + ")";
     var p = [];
@@ -834,7 +843,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     $("cobNota").textContent = notas[tipoCob];
     $("cobTodos").hidden = !lista.length;
     ul.innerHTML = lista.length ? lista.map(function(m){
-      var k = tipoCob + "|" + m.name, temId = G.idDiscordValido(dados.cfg.discord[m.name]);
+      var k = tipoCob + "|" + m.name, temId = G.idDiscordValido(String(de(dados.cfg.discord, m.name) || ""));
       var det = tipoCob === "inativos" ? "Último acesso " + esc(m.lastLogin) : esc(textoFalta(m));
       return '<li><label><input type="checkbox" data-k="' + esc(k) + '"' + (desmarcados[k] ? "" : " checked") + '><span><b>' + esc(m.name) + "</b>" + (temId ? '<span class="tag-id">Discord</span>' : "") + "</span><small>" + det + "</small></label></li>";
     }).join("") : '<li class="vazio">Ninguém nesta lista.</li>';
@@ -873,7 +882,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     tipoCob = "abaixo"; desmarcados = {};
     var g = gerarTexto();
     tipoCob = antes; desmarcados = desm;
-    var ids = g.membros.map(function(m){ return (dados.cfg.discord[m.name] || "").trim(); }).filter(G.idDiscordValido);
+    var ids = g.membros.map(function(m){ return String(de(dados.cfg.discord, m.name) || "").trim(); }).filter(G.idDiscordValido);
     var st = $("impStatus");
     api("enviar", { texto: g.texto, ids: ids, nome: dados.cfg.hookNome || "", auto: true }).then(function(j){
       if(!j.pulado){ ultimoAlertaAuto = diaHoje(); st.textContent += ". Alerta de cobrança enviado no Discord (" + plural(lista.length, "membro", "membros") + ")."; }
@@ -903,7 +912,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
   }
   $("cobDiscord").addEventListener("click", function(){
     var b = this, g = gerarTexto();
-    var ids = g.membros.map(function(m){ return (dados.cfg.discord[m.name] || "").trim(); }).filter(G.idDiscordValido);
+    var ids = g.membros.map(function(m){ return String(de(dados.cfg.discord, m.name) || "").trim(); }).filter(G.idDiscordValido);
     b.disabled = true;
     enviarDiscord($("cobTexto").value, ids, $("cobStatus")).then(function(){ b.disabled = false; });
   });
@@ -988,8 +997,8 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     $("grpRegra").hidden = !(dados.cfg.metaPontos > 0 && dados.cfg.metaContrib > 0);
     var ms = semana.membros.slice().sort(function(a, b){ return a.name.localeCompare(b.name, "pt-BR"); });
     $("membrosCfg").innerHTML = ms.map(function(m, i){
-      var id = dados.cfg.discord[m.name] || "";
-      return '<div class="m"><b>' + esc(m.name) + '</b><label><input type="checkbox" data-i="' + i + '"' + (dados.cfg.isentos[m.name] ? " checked" : "") + "> Isento</label>" +
+      var id = String(de(dados.cfg.discord, m.name) || "");
+      return '<div class="m"><b>' + esc(m.name) + '</b><label><input type="checkbox" data-i="' + i + '"' + (de(dados.cfg.isentos, m.name) === true ? " checked" : "") + "> Isento</label>" +
         '<input type="text" inputmode="numeric" data-i="' + i + '" value="' + esc(id) + '" placeholder="ID do Discord" aria-label="ID do Discord de ' + esc(m.name) + '"' + (id && !G.idDiscordValido(id) ? ' class="ruim"' : "") + "></div>";
     }).join("");
     [].forEach.call($("membrosCfg").querySelectorAll("input"), function(inp){
@@ -1079,7 +1088,34 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
   $("btnSair").addEventListener("click", function(){ sairNuvem(); abaEntrar("entrar"); });
   $("aTrocar").addEventListener("click", function(){
     var st = $("aStatus"), v = $("aSenha").value;
-    api("senha", { nova: v }).then(function(){ $("aSenha").value = ""; st.className = "status"; st.textContent = "Senha trocada. Passe a nova para os outros admins."; })
+    if(v.length < 8){ st.className = "status erro"; st.textContent = "A nova senha precisa ter pelo menos 8 caracteres."; return; }
+    api("senha", { atual: $("aAtual").value, nova: v }).then(function(j){
+      sessao = { token: j.token, codigo: j.codigo }; lsGravar(CHAVE_SESSAO, JSON.stringify(sessao));
+      $("aAtual").value = ""; $("aSenha").value = ""; st.className = "status"; st.textContent = "Senha trocada. Os outros admins foram desconectados; passe a nova para eles.";
+    }).catch(function(e){ st.className = "status erro"; st.textContent = e.message; });
+  });
+  $("bkBaixar").addEventListener("click", function(){
+    var st = $("bkStatus"); st.className = "status"; st.textContent = "Gerando…";
+    api("backup").then(function(j){
+      var blob = new Blob([JSON.stringify(j, null, 1)], { type: "application/json" });
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "guild-" + j.codigo + "-" + String(j.geradoEm).slice(0, 10) + ".json";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+      st.textContent = "Cópia baixada.";
+    }).catch(function(e){ st.className = "status erro"; st.textContent = e.message; });
+  });
+  $("bkRestaurar").addEventListener("click", function(){ $("bkArquivo").click(); });
+  $("bkArquivo").addEventListener("change", function(){
+    var f = this.files && this.files[0], st = $("bkStatus"); this.value = "";
+    if(!f) return;
+    if(f.size > 1400000){ st.className = "status erro"; st.textContent = "Arquivo grande demais para uma cópia da guild."; return; }
+    f.text().then(function(t){
+      var bk; try{ bk = JSON.parse(t); }catch(e){ throw new Error("Esse arquivo não é um JSON válido."); }
+      if(!bk || bk.tipo !== "pka-guild-backup") throw new Error("Esse arquivo não é uma cópia de segurança da Gestão da Guild.");
+      if(!confirm("Restaurar troca as importações e os ajustes que estão no servidor pelos do arquivo. Continuar?")) return null;
+      st.className = "status"; st.textContent = "Restaurando…";
+      return api("restaurar", { backup: bk });
+    }).then(function(j){ if(!j) return; aplicarRemoto(j); tudo(); st.className = "status"; st.textContent = "Cópia restaurada."; })
       .catch(function(e){ st.className = "status erro"; st.textContent = e.message; });
   });
   var carregando = false;

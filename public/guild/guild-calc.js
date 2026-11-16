@@ -201,7 +201,7 @@
         dContrib: a ? m.contribution - a.contribution : null
       };
     });
-    var nomesUltima = {};
+    var nomesUltima = Object.create(null);
     ultima.im.members.forEach(function(m){ nomesUltima[m.name] = 1; });
     var sairam = [];
     naSemana.forEach(function(x){ x.im.members.forEach(function(m){ if(!nomesUltima[m.name] && sairam.indexOf(m.name) < 0) sairam.push(m.name); }); });
