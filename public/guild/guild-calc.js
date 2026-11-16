@@ -74,6 +74,21 @@
     return isFinite(n) ? n : 0;
   }
 
+  // valor digitado pelo líder: aceita "1k" (mil), "1,5k", "2kk" (milhão), "$9.650" e "9650"
+  function lerValor(v){
+    var s = String(v == null ? "" : v).trim().toLowerCase().replace(/[$\s]/g, "");
+    if(!s) return null;
+    var m = /^(-?[\d.,]+)(k*)$/.exec(s);
+    if(!m) return null;
+    var num = m[1], ks = m[2].length, x;
+    if(ks){
+      var dec = /^(-?\d+)[.,](\d{1,2})$/.exec(num);
+      x = dec ? parseFloat(dec[1] + "." + dec[2]) : parseFloat(num.replace(/[.,]/g, ""));
+    } else x = parseFloat(num.replace(/[.,]/g, ""));
+    if(!isFinite(x)) return null;
+    return Math.round(x * Math.pow(1000, ks));
+  }
+
   // ---------- importação ----------
   var APELIDOS = {
     name: ["name", "nome", "player", "jogador"],
@@ -224,6 +239,18 @@
     };
   }
 
+  // como fechar o $ que falta no caixa: só com um tipo de daily, com diamond (doações no mesmo dia) ou com doações de $100k
+  function comoCompletarSaldo(falta){
+    falta = Math.max(0, Math.ceil(falta));
+    var r = {};
+    DAILIES.forEach(function(d){ r[d.id] = Math.ceil(falta / d.saldo); });
+    r.diamondDoacoes = Math.ceil(falta / DIAMOND_SALDO);
+    r.diamonds = diamondsTotal(r.diamondDoacoes);
+    r.dolar = Math.ceil(falta / DOACAO_DOLAR.saldo);
+    r.dolarDias = Math.ceil(r.dolar / DOACAO_DOLAR.vezes);
+    return r;
+  }
+
   // ---------- quanto rende ----------
   // q: { normal, wildscape, primal, dolar (vezes de $100k), diamond (doações) }
   function rendimento(q){
@@ -263,7 +290,7 @@
     lerDataExport: lerDataExport, lerDataBR: lerDataBR, dataDoNomeArquivo: dataDoNomeArquivo, chaveData: chaveData,
     inicioSemana: inicioSemana, chaveSemana: chaveSemana, fimSemana: fimSemana, fracaoSemana: fracaoSemana, diasDesde: diasDesde,
     lerInteiro: lerInteiro, lerCSV: lerCSV, lerArquivo: lerArquivo,
-    valoresDaSemana: valoresDaSemana, avaliar: avaliar, comoCompletar: comoCompletar, rendimento: rendimento,
+    valoresDaSemana: valoresDaSemana, avaliar: avaliar, comoCompletar: comoCompletar, comoCompletarSaldo: comoCompletarSaldo, lerValor: lerValor, rendimento: rendimento,
     webhookValido: webhookValido, dividirMensagem: dividirMensagem, idDiscordValido: idDiscordValido
   };
 })();

@@ -118,3 +118,23 @@ test("dias desde o último acesso", () => {
   assert.ok(Math.abs(G.diasDesde("13/11/2026 23:30:47", ref) - 2.062) < 0.01);
   assert.equal(G.diasDesde("", ref), null);
 });
+
+test("valores com k e kk", () => {
+  assert.equal(G.lerValor("1k"), 1000);
+  assert.equal(G.lerValor("1,5k"), 1500);
+  assert.equal(G.lerValor("1.5K"), 1500);
+  assert.equal(G.lerValor("2kk"), 2000000);
+  assert.equal(G.lerValor("$9.650"), 9650);
+  assert.equal(G.lerValor("263k"), 263000);
+  assert.equal(G.lerValor("1.000k"), 1000000);
+  assert.equal(G.lerValor(""), null);
+  assert.equal(G.lerValor("abc"), null);
+});
+
+test("como fechar o $ que falta", () => {
+  const c = j(G.comoCompletarSaldo(1000));
+  assert.equal(c.primal, 2); assert.equal(c.wildscape, 4); assert.equal(c.normal, 7);
+  assert.equal(c.diamondDoacoes, 1); assert.equal(c.diamonds, 1);
+  assert.equal(c.dolar, 4); assert.equal(c.dolarDias, 2);
+  assert.equal(j(G.comoCompletarSaldo(3000)).diamonds, 7);
+});

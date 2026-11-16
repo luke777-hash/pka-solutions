@@ -319,7 +319,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
           <div class="cartao">
             <h2>Bosses</h2>
             <p class="nota">O saldo não vem no arquivo exportado. Copie o <b>Saldo</b> da janela da guild.</p>
-            <div class="campos" style="margin:10px 0 6px"><label class="campo">Saldo atual da guild<input type="text" inputmode="numeric" id="saldo" placeholder="ex.: 9.650"></label></div>
+            <div class="campos" style="margin:10px 0 6px"><label class="campo">Saldo atual da guild<input type="text" inputmode="decimal" id="saldo" placeholder="ex.: 9.650 ou 9,6k"></label></div>
             <div id="bosses"></div>
             <p class="nota" style="margin-top:6px">"Com nível" conta quem tem o nível mínimo na última importação. O jogo também pede Premium, 3 dias na guild e não usar multicliente, e isso o arquivo não mostra.</p>
           </div>
@@ -357,7 +357,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
             <div class="grupo-campo">
               <div class="campos">
                 <label class="campo">Pontos de daily<input type="text" inputmode="numeric" id="metaPontos" placeholder="sem meta"></label>
-                <label class="campo">Contribuição ($)<input type="text" inputmode="numeric" id="metaContrib" placeholder="sem meta"></label>
+                <label class="campo">Contribuição ($)<input type="text" inputmode="decimal" id="metaContrib" placeholder="ex.: 1k ou 1.000"></label>
               </div>
             </div>
             <div class="grupo-campo" id="grpRegra">
@@ -440,11 +440,18 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
   function dmh(d){ return dm(d) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
   function cargo(r){ return String(r || "").replace(/^(the|a|an)\s+/i, ""); }
   function inteiro(v){ var s = String(v == null ? "" : v).trim(); if(!s) return null; var x = G.lerInteiro(s); return x > 0 ? x : null; }
+  function valor(v){ var x = G.lerValor(v); return x > 0 ? x : null; }
   function plural(q, um, varios){ return n(q) + " " + (q === 1 ? um : varios); }
   function textoDailies(falta){
     var c = G.comoCompletar(falta);
     var op = [plural(c.primal, "Primal", "Primal"), plural(c.wildscape, "Wildscape", "Wildscape"), plural(c.normal, "Normal", "Normal")];
     return op.join(" ou ");
+  }
+  function textoSaldo(falta){
+    var c = G.comoCompletarSaldo(falta);
+    return n(c.primal) + " Primal ou " + n(c.wildscape) + " Wildscape ou " + n(c.normal) + " Normal; ou " +
+      plural(c.diamondDoacoes, "doação", "doações") + " em diamond (" + plural(c.diamonds, "diamond", "diamonds") + " no mesmo dia); ou " +
+      n(c.dolar) + "× $100k" + (c.dolarDias > 1 ? " (" + c.dolarDias + " dias)" : "");
   }
 
   // ---------- guild e semanas ----------
@@ -575,7 +582,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
   function textoFalta(m){
     var p = [];
     if(m.faltaPontos > 0) p.push("Faltam " + plural(m.faltaPontos, "ponto", "pontos") + ": " + textoDailies(m.faltaPontos));
-    if(m.faltaContrib > 0) p.push("Faltam " + din(m.faltaContrib) + " de contribuição");
+    if(m.faltaContrib > 0) p.push("Faltam " + din(m.faltaContrib) + " de contribuição: " + textoSaldo(m.faltaContrib));
     return p.join(". ");
   }
   function pintarPainel(){
@@ -665,7 +672,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     if(tipo === "inativos") return "• **" + m.name + "**" + marcacao(m) + " · último acesso " + m.lastLogin.slice(0, 16) + " (" + plural(Math.floor(m.dias), "dia", "dias") + ")";
     var p = [];
     if(dados.cfg.metaPontos > 0) p.push(n(m.pontos) + "/" + n(dados.cfg.metaPontos) + " pontos" + (m.faltaPontos > 0 ? " (faltam " + n(m.faltaPontos) + ": " + textoDailies(m.faltaPontos) + ")" : ""));
-    if(dados.cfg.metaContrib > 0) p.push(din(m.contrib) + " de " + din(dados.cfg.metaContrib) + (m.faltaContrib > 0 ? " (faltam " + din(m.faltaContrib) + ")" : ""));
+    if(dados.cfg.metaContrib > 0) p.push(din(m.contrib) + " de " + din(dados.cfg.metaContrib) + (m.faltaContrib > 0 ? " (faltam " + din(m.faltaContrib) + ": " + textoSaldo(m.faltaContrib) + ")" : ""));
     return "• **" + m.name + "**" + marcacao(m) + " · " + p.join(" · ");
   }
   function gerarTexto(){
@@ -802,7 +809,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     }).join("");
     pintarRend();
   }
-  $("saldo").addEventListener("change", function(){ dados.cfg.saldo = this.value.trim() === "" ? null : G.lerInteiro(this.value); salvar(); pintarCaixa(); });
+  $("saldo").addEventListener("change", function(){ dados.cfg.saldo = this.value.trim() === "" ? null : G.lerValor(this.value); salvar(); pintarCaixa(); });
   function q(id){ return Math.max(0, G.lerInteiro($(id).value)); }
   function pintarRend(){
     var dol = q("qDolar"), dia = q("qDiamond");
@@ -861,8 +868,8 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
       });
     });
   }
-  function cfgNum(id, campo){ $(id).addEventListener("change", function(){ dados.cfg[campo] = inteiro(this.value); salvar(); recalcular(true); }); }
-  cfgNum("metaPontos", "metaPontos"); cfgNum("metaContrib", "metaContrib");
+  function cfgNum(id, campo, ler){ $(id).addEventListener("change", function(){ dados.cfg[campo] = ler(this.value); salvar(); recalcular(true); }); }
+  cfgNum("metaPontos", "metaPontos", inteiro); cfgNum("metaContrib", "metaContrib", valor);
   $("diasInativo").addEventListener("change", function(){ dados.cfg.diasInativo = inteiro(this.value) || 3; salvar(); recalcular(true); });
   [["regra", "regra"], ["modoP", "modoP"], ["modoC", "modoC"]].forEach(function(p){
     [].forEach.call(document.querySelectorAll("input[name=" + p[0] + "]"), function(r){
