@@ -11,16 +11,19 @@ const SESSAO_DIAS = 30;
 const MAX_SEMANAS = 12;           // guarda as importações das últimas 12 semanas
 const MAX_IMPORTS = 300;          // e no máximo 300 importações por guild
 const MAX_CORPO = 1_500_000;      // tamanho máximo de um pedido (caracteres)
+const MAX_GUARDADO = 3_000_000;   // tamanho máximo dos dados de uma guild (a Vercel não responde mais de 4,5 MB)
+const DESFAZER_DIAS = 7;          // por quanto tempo dá para desfazer a última mudança grande
 const SENHA_MIN = 8, SENHA_MIN_ANTIGA = 6, SENHA_MAX = 200;
 const VERSAO_DADOS = 1;
 // limites: [quantas vezes, em quantos segundos]
 export const LIMITES = {
   ip: [600, 600],                 // qualquer pedido, por IP: 600 a cada 10 min
   criar: [5, 3600],               // criar guild, por IP: 5 por hora
+  criarTotal: [100, 3600],        // criar guild, somando todos: 100 por hora
   entrarIp: [30, 900],            // tentativas de login, por IP: 30 a cada 15 min
   erroGuildIp: [10, 900],         // senhas erradas numa guild vindas do mesmo IP: 10 a cada 15 min
   erroGuild: [50, 900],           // senhas erradas numa guild, de qualquer IP: 50 a cada 15 min
-  enviar: [20, 3600],             // mensagens ao Discord por guild: 20 por hora
+  enviar: [30, 3600],             // mensagens (partes) no Discord por guild: 30 por hora
   escrever: [120, 600],           // importar/ajustes/apagar por guild: 120 a cada 10 min
 };
 const WEBHOOK_RE = /^https:\/\/(?:(?:ptb|canary)\.)?discord(?:app)?\.com\/api\/webhooks\/\d{5,25}\/[\w-]{20,200}\/?$/;
@@ -52,7 +55,13 @@ export function webhookValido(u) { return typeof u === "string" && WEBHOOK_RE.te
 export function dividirMensagem(texto, max = 2000) {
   const partes = []; let atual = "";
   for (let l of String(texto).split("\n")) {
-    while (l.length > max) { if (atual) { partes.push(atual); atual = ""; } partes.push(l.slice(0, max)); l = l.slice(max); }
+    while (l.length > max) {
+      if (atual) { partes.push(atual); atual = ""; }
+      let corte = max;
+      const c = l.charCodeAt(corte - 1);
+      if (c >= 0xd800 && c <= 0xdbff) corte--; // não parte um emoji ao meio
+      partes.push(l.slice(0, corte)); l = l.slice(corte);
+    }
     const junto = atual ? atual + "\n" + l : l;
     if (junto.length > max) { partes.push(atual); atual = l; } else atual = junto;
   }
@@ -74,12 +83,19 @@ const numero = (v) => {
   return Number.isFinite(n) ? Math.max(-1e12, Math.min(1e12, n)) : 0;
 };
 // texto de uma linha: sem caracteres de controle
-const texto = (v, max = 60) => (typeof v === "string" || typeof v === "number" ? String(v) : "").replace(/[\u0000-\u001f\u007f]/g, "").slice(0, max);
+const texto = (v, max = 60) => (typeof v === "string" || typeof v === "number" ? String(v) : "").replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").slice(0, max);
 // texto da mensagem: mantém as quebras de linha
-const textoLongo = (v, max) => (typeof v === "string" ? v : "").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "").slice(0, max);
-const DATA_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]) ([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
+const textoLongo = (v, max) => (typeof v === "string" ? v : "").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0009\u000b-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").slice(0, max);
+const DATA_RE = /^(20\d\d)-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]) ([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
+// data que existe no calendário (recusa 31/02, 31/11...)
+function dataValida(s) {
+  const m = typeof s === "string" ? DATA_RE.exec(s) : null;
+  if (!m) return false;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+}
 function importLimpo(im) {
-  if (!im || typeof im !== "object" || !Array.isArray(im.members) || typeof im.exportedAt !== "string" || !DATA_RE.test(im.exportedAt)) return null;
+  if (!im || typeof im !== "object" || !Array.isArray(im.members) || !dataValida(im.exportedAt)) return null;
   const members = im.members.slice(0, 200).filter((m) => m && typeof m === "object").map((m) => ({
     name: texto(m.name), rank: texto(m.rank, 30), level: numero(m.level), status: texto(m.status, 20),
     lastLogin: texto(m.lastLogin, 25), points: numero(m.points), contribution: numero(m.contribution),
@@ -120,7 +136,11 @@ export function migrar(d) {
 function limitarImports(lista) {
   lista.sort((a, z) => (a.exportedAt < z.exportedAt ? -1 : 1));
   const semanas = [...new Set(lista.map((x) => chaveSemana(x.exportedAt)))].sort().slice(-MAX_SEMANAS);
-  return lista.filter((x) => semanas.includes(chaveSemana(x.exportedAt))).slice(-MAX_IMPORTS);
+  lista = lista.filter((x) => semanas.includes(chaveSemana(x.exportedAt))).slice(-MAX_IMPORTS);
+  // se passar do tamanho máximo, saem as importações mais antigas
+  let tam = JSON.stringify(lista).length;
+  while (tam > MAX_GUARDADO - 100_000 && lista.length > 1) tam -= JSON.stringify(lista.shift()).length + 1;
+  return lista;
 }
 
 // ---------- cifra do webhook ----------
@@ -145,12 +165,14 @@ export function decifrar(v, env = process.env) {
   return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString("utf8");
 }
 
-// na Vercel o x-real-ip é posto pela própria Vercel; o x-forwarded-for pode vir do cliente, então fica por último
+// na Vercel o x-real-ip é posto pela própria Vercel; o x-forwarded-for pode ser inventado pelo cliente, então não é usado
 function ipDe(req) {
   const h = req.headers || {};
-  const v = h["x-real-ip"] || String(h["x-forwarded-for"] || "").split(",")[0] || (req.socket && req.socket.remoteAddress) || "";
+  const v = h["x-real-ip"] || (req.socket && req.socket.remoteAddress) || "";
   return String(v).trim().slice(0, 64) || "sem-ip";
 }
+// IPs que já passaram do limite geral: esta instância responde 429 sem gastar comandos no banco
+const bloqueados = new Map();
 function log(evento, extra) { console.log(JSON.stringify({ guild: "evento", evento, ...extra })); }
 
 // ---------- ações ----------
@@ -166,21 +188,27 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
     const db = obterRedis();
     if (!db) return responder(503, { erro: "O banco da guild ainda não foi configurado no site." });
     let b = req.body;
-    if (typeof b === "string") {
-      if (b.length > MAX_CORPO) return responder(413, { erro: "Pedido grande demais." });
-      try { b = JSON.parse(b); } catch { return responder(400, { erro: "JSON inválido." }); }
-    }
-    if (!b || typeof b !== "object" || Array.isArray(b)) return responder(400, { erro: "JSON inválido." });
-    if (JSON.stringify(b).length > MAX_CORPO) return responder(413, { erro: "Pedido grande demais." });
+    try {
+      if (typeof b === "string") {
+        if (b.length > MAX_CORPO) return responder(413, { erro: "Pedido grande demais." });
+        b = JSON.parse(b);
+      }
+      if (!b || typeof b !== "object" || Array.isArray(b)) return responder(400, { erro: "JSON inválido." });
+      // JSON.stringify também falha com objetos aninhados demais (pilha estoura): isso vira 400, não derruba a função
+      if (JSON.stringify(b).length > MAX_CORPO) return responder(413, { erro: "Pedido grande demais." });
+    } catch { return responder(400, { erro: "JSON inválido." }); }
     const acao = typeof b.acao === "string" ? b.acao : "";
     const K = (cod, s) => "guild:" + cod + ":" + s;
     const ipHash = createHash("sha256").update(ipDe(req)).digest("hex").slice(0, 16); // não guarda o IP em si
-    // conta um uso e diz se passou do limite
-    const estourou = async (chave, [max, seg]) => {
-      const n = await db("INCR", "guild-limite:" + chave);
-      if (n === 1) await db("EXPIRE", "guild-limite:" + chave, seg);
+    // conta um uso (ou "peso" usos) e diz se passou do limite
+    const estourou = async (chave, [max, seg], peso = 1) => {
+      const n = await db("INCRBY", "guild-limite:" + chave, peso);
+      if (n === peso) await db("EXPIRE", "guild-limite:" + chave, seg);
       return n > max;
     };
+    const ate = bloqueados.get(ipHash);
+    if (ate && ate > Date.now()) return responder(429, { erro: "Muitos pedidos. Espere alguns minutos." });
+    if (ate) bloqueados.delete(ipHash);
     const novaSessao = async (cod, ger) => {
       const token = randomBytes(24).toString("base64url");
       await db("SET", "guild-sessao:" + token, cod + "|" + ger, "EX", SESSAO_DIAS * 86400);
@@ -188,7 +216,11 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
     };
 
     try {
-      if (await estourou("ip:" + ipHash, LIMITES.ip)) return responder(429, { erro: "Muitos pedidos. Espere alguns minutos." });
+      if (await estourou("ip:" + ipHash, LIMITES.ip)) {
+        if (bloqueados.size > 5000) bloqueados.clear();
+        bloqueados.set(ipHash, Date.now() + 60_000);
+        return responder(429, { erro: "Muitos pedidos. Espere alguns minutos." });
+      }
 
       // ----- criar e entrar -----
       if (acao === "criar" || acao === "entrar") {
@@ -198,6 +230,7 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
         if (acao === "criar") {
           if (senha.length < SENHA_MIN) return responder(400, { erro: "A senha precisa ter pelo menos " + SENHA_MIN + " caracteres." });
           if (await estourou("criar:" + ipHash, LIMITES.criar)) return responder(429, { erro: "Muitas guilds criadas daqui. Espere uma hora." });
+          if (await estourou("criar-total", LIMITES.criarTotal)) { log("criar_limite_total", {}); return responder(429, { erro: "Muitas guilds novas nesta hora. Tente mais tarde." }); }
           const sal = randomBytes(16).toString("hex");
           const ok = await db("SET", K(cod, "acesso"), JSON.stringify({ sal, hash: hash(senha, sal), ger: 1, criadoEm: new Date().toISOString() }), "NX");
           if (ok !== "OK") return responder(409, { erro: "Já existe uma guild com esse código. Use Entrar, ou escolha outro código." });
@@ -207,7 +240,9 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
         }
         if (await estourou("entrar:" + ipHash, LIMITES.entrarIp)) return responder(429, { erro: "Muitas tentativas daqui. Espere 15 minutos." });
         const tentIp = "guild-limite:erro:" + cod + ":" + ipHash, tentG = "guild-limite:erro:" + cod;
-        if (numero(await db("GET", tentIp)) >= LIMITES.erroGuildIp[0] || numero(await db("GET", tentG)) >= LIMITES.erroGuild[0]) {
+        // o limite geral da guild só barra quem já errou a senha dela: um ataque de muitos IPs não tranca o dono para fora
+        const errosIp = numero(await db("GET", tentIp));
+        if (errosIp >= LIMITES.erroGuildIp[0] || (errosIp > 0 && numero(await db("GET", tentG)) >= LIMITES.erroGuild[0])) {
           log("login_bloqueado", { cod });
           return responder(429, { erro: "Muitas senhas erradas. Espere 15 minutos." });
         }
@@ -235,18 +270,24 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
 
       const lerDados = async () => migrar(JSON.parse((await db("GET", K(cod, "dados"))) || "null"));
       const gravar = (d) => db("SET", K(cod, "dados"), JSON.stringify(d));
+      // antes de uma mudança grande, guarda como estava para poder desfazer
+      const guardarAnterior = async (acaoFeita) => {
+        const atual = await db("GET", K(cod, "dados"));
+        if (atual) await db("SET", K(cod, "anterior"), JSON.stringify({ acao: acaoFeita, em: new Date().toISOString(), dados: atual }), "EX", DESFAZER_DIAS * 86400);
+      };
       const resposta = async (d) => {
         const hook = (await db("GET", K(cod, "hook"))) || "";
         const alerta = (await db("GET", K(cod, "alerta-dia"))) || null;
+        const ant = JSON.parse((await db("GET", K(cod, "anterior"))) || "null");
         let final = "";
         try { final = decifrar(hook, env).slice(-4); } catch { final = ""; }
-        return responder(200, { codigo: cod, dados: d, hook: hook ? { configurado: true, final } : { configurado: false }, ultimoAlertaAuto: alerta });
+        return responder(200, { codigo: cod, dados: d, hook: hook ? { configurado: true, final } : { configurado: false }, ultimoAlertaAuto: alerta, desfazer: ant ? { acao: ant.acao, em: ant.em } : null });
       };
 
       if (acao === "ler") return resposta(await lerDados());
       if (acao === "sair") { await db("DEL", "guild-sessao:" + token); return responder(200, { ok: true }); }
 
-      const escreve = ["importar", "apagarImport", "apagarTudo", "cfg", "senha", "hook", "restaurar"].includes(acao);
+      const escreve = ["importar", "apagarImport", "apagarTudo", "cfg", "senha", "hook", "restaurar", "desfazer"].includes(acao);
       if (escreve && (await estourou("escrever:" + cod, LIMITES.escrever))) return responder(429, { erro: "Muitas mudanças seguidas. Espere alguns minutos." });
 
       if (acao === "importar") {
@@ -261,11 +302,13 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
         return resposta(d);
       }
       if (acao === "apagarImport") {
+        await guardarAnterior("apagar importação");
         const d = await lerDados();
         d.imports = d.imports.filter((x) => !(x.guild === b.guild && x.exportedAt === b.exportedAt));
         await gravar(d); return resposta(d);
       }
       if (acao === "apagarTudo") {
+        await guardarAnterior("apagar importações");
         const d = await lerDados(); d.imports = d.imports.filter((x) => x.guild !== b.guild);
         await gravar(d); return resposta(d);
       }
@@ -283,16 +326,39 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
       }
       if (acao === "restaurar") {
         const bk = b.backup;
-        if (!bk || typeof bk !== "object" || bk.tipo !== "pka-guild-backup" || !bk.dados || typeof bk.dados !== "object") return responder(400, { erro: "Esse arquivo não é uma cópia de segurança da Gestão da Guild." });
+        if (!bk || typeof bk !== "object" || bk.tipo !== "pka-guild-backup" || !bk.dados || typeof bk.dados !== "object" || !Array.isArray(bk.dados.imports)) return responder(400, { erro: "Esse arquivo não é uma cópia de segurança da Gestão da Guild." });
+        if (bk.codigo !== cod) return responder(400, { erro: "Essa cópia é de outra guild (" + codigoLimpo(bk.codigo) + "). Só dá para restaurar a cópia desta guild." });
+        if (!(numero(bk.versao) >= 1 && numero(bk.versao) <= VERSAO_DADOS)) return responder(400, { erro: "Essa cópia foi feita por uma versão diferente do site." });
+        await guardarAnterior("restaurar cópia");
         const d = migrar(bk.dados);
         d.imports = limitarImports(d.imports);
         await gravar(d);
         log("backup_restaurado", { cod, imports: d.imports.length });
         return resposta(d);
       }
+      if (acao === "desfazer") {
+        const ant = JSON.parse((await db("GET", K(cod, "anterior"))) || "null");
+        if (!ant || typeof ant.dados !== "string") return responder(400, { erro: "Não há nada para desfazer." });
+        const agora = await db("GET", K(cod, "dados"));
+        await db("SET", K(cod, "dados"), ant.dados);
+        // desfazer de novo volta para o que era
+        if (agora) await db("SET", K(cod, "anterior"), JSON.stringify({ acao: "desfazer", em: new Date().toISOString(), dados: agora }), "EX", DESFAZER_DIAS * 86400);
+        log("desfeito", { cod, acao: ant.acao });
+        return resposta(await lerDados());
+      }
       if (acao === "senha") {
         const atual = typeof b.atual === "string" ? b.atual : "", nova = typeof b.nova === "string" ? b.nova : "";
-        if (atual.length > SENHA_MAX || !confere(atual, ac.sal, ac.hash)) { log("troca_senha_errada", { cod }); return responder(403, { erro: "A senha atual não confere." }); }
+        // mesmo limite de erros do login: um token vazado não serve para ficar chutando a senha atual
+        const tentIp = "guild-limite:erro:" + cod + ":" + ipHash, tentG = "guild-limite:erro:" + cod;
+        const errosIp = numero(await db("GET", tentIp));
+        if (errosIp >= LIMITES.erroGuildIp[0] || (errosIp > 0 && numero(await db("GET", tentG)) >= LIMITES.erroGuild[0])) return responder(429, { erro: "Muitas senhas erradas. Espere 15 minutos." });
+        if (atual.length > SENHA_MAX || !confere(atual, ac.sal, ac.hash)) {
+          for (const [k, lim] of [[tentIp, LIMITES.erroGuildIp], [tentG, LIMITES.erroGuild]]) {
+            if ((await db("INCR", k)) === 1) await db("EXPIRE", k, lim[1]);
+          }
+          log("troca_senha_errada", { cod });
+          return responder(403, { erro: "A senha atual não confere." });
+        }
         if (nova.length < SENHA_MIN || nova.length > SENHA_MAX) return responder(400, { erro: "A nova senha precisa ter de " + SENHA_MIN + " a " + SENHA_MAX + " caracteres." });
         const sal = randomBytes(16).toString("hex"), ger = (+ac.ger || 1) + 1;
         await db("SET", K(cod, "acesso"), JSON.stringify({ sal, hash: hash(nova, sal), ger, criadoEm: ac.criadoEm, trocadaEm: new Date().toISOString() }));
@@ -313,6 +379,7 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
         let url = "";
         try { url = decifrar(await db("GET", K(cod, "hook")), env); } catch { url = ""; }
         if (!url || !webhookValido(url)) return responder(400, { erro: "Nenhum webhook do Discord salvo para esta guild." });
+        if (b.auto !== undefined && typeof b.auto !== "boolean") return responder(400, { erro: "Pedido inválido." });
         const partes = dividirMensagem(textoLongo(b.texto, 20000)).slice(0, 10);
         if (!partes.length) return responder(400, { erro: "A mensagem está vazia." });
         // alerta automático: só o primeiro do dia (dia do horário de Brasília, que é o do server save)
@@ -323,12 +390,13 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch, en
           if (ja) return responder(200, { ok: true, pulado: true });
           if (ok !== "OK") await db("SET", K(cod, "alerta-dia"), hoje, "EX", 36 * 3600);
         }
-        if (await estourou("enviar:" + cod, LIMITES.enviar)) {
+        if (await estourou("enviar:" + cod, LIMITES.enviar, partes.length)) {
           if (b.auto === true) await db("DEL", K(cod, "alerta-dia"));
           return responder(429, { erro: "Muitas mensagens no Discord nesta hora. Espere um pouco." });
         }
         const ids = [...new Set((Array.isArray(b.ids) ? b.ids : []).filter((x) => typeof x === "string" && /^\d{17,20}$/.test(x)))].slice(0, 100);
-        const nome = texto(b.nome, 80).trim();
+        // o Discord recusa nomes com "discord" ou "clyde"; aqui eles somem para o envio não falhar nem enganar
+        const nome = /discord|clyde/i.test(texto(b.nome, 80)) ? "" : texto(b.nome, 80).trim();
         for (const p of partes) {
           const corpo = { content: p, allowed_mentions: { parse: [], users: ids } };
           if (nome) corpo.username = nome;

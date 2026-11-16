@@ -10,7 +10,7 @@ function redisFalso() {
     if (cmd === "GET") return m.has(k) ? m.get(k) : null;
     if (cmd === "SET") { if (op.includes("NX") && m.has(k)) return null; m.set(k, v); return "OK"; }
     if (cmd === "DEL") { m.delete(k); return 1; }
-    if (cmd === "INCR") { const n = (+m.get(k) || 0) + 1; m.set(k, String(n)); return n; }
+    if (cmd === "INCR" || cmd === "INCRBY") { const n = (+m.get(k) || 0) + (cmd === "INCRBY" ? +v : 1); m.set(k, String(n)); return n; }
     if (cmd === "EXPIRE") return 1;
     throw new Error("comando " + cmd);
   };
@@ -233,4 +233,98 @@ test("token de uma guild não lê outra", async () => {
   await chamar({ acao: "criar", codigo: "guild-dois", senha: "senha1234" }, { ip: "10.6.0.1" });
   const r = await chamar({ acao: "ler", token: t1, codigo: "guild-dois" });
   assert.equal(r.j.codigo, "guild-um");
+});
+
+// ---------- achados dos agentes de ataque (cada um virou teste) ----------
+test("[ataque 4] JSON aninhado demais vira 400 e não derruba a função", async () => {
+  let fundo = {}; const raiz = fundo;
+  for (let i = 0; i < 20000; i++) { fundo.a = {}; fundo = fundo.a; }
+  const r = await chamar(raiz);
+  assert.equal(r.st, 400);
+});
+
+test("[ataque 4] datas que não existem no calendário são recusadas", async () => {
+  const { j: { token } } = await chamar({ acao: "entrar", codigo: "intocaveis", senha: "segredo1" });
+  const r = await chamar({ acao: "importar", token, imports: ["2026-02-31", "2026-11-31", "0000-01-01"].map((d) => ({ guild: "Datas", exportedAt: d + " 10:00:00", members: [{ name: "A" }] })) });
+  assert.equal(r.j.dados.imports.filter((x) => x.guild === "Datas").length, 0);
+});
+
+test("[ataque 4] mensagem longa não parte emoji ao meio", () => {
+  const partes = dividirMensagem("a".repeat(1999) + "😀" + "b".repeat(10));
+  assert.ok(partes.every((p) => !/[\ud800-\udbff]$/.test(p)));
+  assert.equal(partes.join(""), "a".repeat(1999) + "😀" + "b".repeat(10));
+});
+
+test("[ataque 1] ataque de muitos IPs não tranca o dono para fora", async () => {
+  await chamar({ acao: "criar", codigo: "alvo-dos", senha: "certa1234" }, { ip: "10.7.0.1" });
+  for (let i = 0; i < LIMITES.erroGuild[0] + 5; i++) await chamar({ acao: "entrar", codigo: "alvo-dos", senha: "errada" + i + "xx" }, { ip: "10.8." + Math.floor(i / 5) + ".1" });
+  const r = await chamar({ acao: "entrar", codigo: "alvo-dos", senha: "certa1234" }, { ip: "10.7.0.1" });
+  assert.equal(r.st, 200);
+});
+
+test("[ataque 1] x-forwarded-for inventado não abre novos limites", async () => {
+  let ultimo;
+  for (let i = 0; i <= LIMITES.criar[0]; i++) {
+    ultimo = await chamar({ acao: "criar", codigo: "xff-" + i, senha: "senha1234" }, { headers: { "x-real-ip": undefined, "x-forwarded-for": "1.2.3." + i } });
+  }
+  assert.equal(ultimo.st, 429);
+});
+
+test("[ataque 2] chutar a senha atual na troca de senha bloqueia como no login", async () => {
+  const t = (await chamar({ acao: "criar", codigo: "chute-atual", senha: "certa1234" }, { ip: "10.9.0.1" })).j.token;
+  let r;
+  for (let i = 0; i < LIMITES.erroGuildIp[0]; i++) r = await chamar({ acao: "senha", token: t, atual: "chute" + i + "xx", nova: "outra12345" }, { ip: "10.9.0.5" });
+  assert.equal(r.st, 403);
+  r = await chamar({ acao: "senha", token: t, atual: "certa1234", nova: "outra12345" }, { ip: "10.9.0.5" });
+  assert.equal(r.st, 429);
+});
+
+test("[ataque 6] limite do Discord conta cada parte da mensagem", async () => {
+  const t = (await chamar({ acao: "criar", codigo: "spam-discord", senha: "senha1234" }, { ip: "10.10.0.1" })).j.token;
+  await chamar({ acao: "hook", token: t, url: HOOK });
+  const grande = ("x".repeat(1990) + "\n").repeat(10);
+  let ok = 0, r;
+  for (let i = 0; i < 6; i++) { r = await chamar({ acao: "enviar", token: t, texto: grande }); if (r.st === 200) ok += r.j.partes; }
+  assert.ok(ok <= LIMITES.enviar[0]);
+  assert.equal(r.st, 429);
+});
+
+test("[ataque 6] auto precisa ser true/false e o nome do bot não pode imitar o Discord", async () => {
+  const { j: { token } } = await chamar({ acao: "entrar", codigo: "intocaveis", senha: "segredo1" });
+  assert.equal((await chamar({ acao: "enviar", token, texto: "x", auto: "true" })).st, 400);
+  const antes = enviados.length;
+  await chamar({ acao: "enviar", token, texto: "oi", nome: "Discord System" });
+  assert.equal(enviados[antes].corpo.username, undefined);
+});
+
+test("[ataque 7] dados de uma guild nunca passam do tamanho máximo", async () => {
+  const t = (await chamar({ acao: "criar", codigo: "gorda", senha: "senha1234" }, { ip: "10.11.0.1" })).j.token;
+  const membros = Array.from({ length: 200 }, (_, i) => ({ name: "M".repeat(55) + i, rank: "r".repeat(30), status: "s".repeat(20), lastLogin: "l".repeat(25), level: 999, points: 1e11, contribution: 1e11 }));
+  for (let lote = 0; lote < 8; lote++) {
+    const ims = Array.from({ length: 6 }, (_, i) => ({ guild: "G", exportedAt: "2026-11-1" + (6 + (i % 4)) + " 1" + lote + ":0" + i + ":00", members: membros }));
+    await chamar({ acao: "importar", token: t, imports: ims });
+  }
+  const tam = (await db("GET", "guild:gorda:dados")).length;
+  assert.ok(tam < 3_000_000, "guardou " + tam);
+});
+
+test("[ataque 10] restaurar recusa cópia de outra guild e de versão futura", async () => {
+  const ta = (await chamar({ acao: "criar", codigo: "rest-a", senha: "senha1234" }, { ip: "10.12.0.1" })).j.token;
+  const tb = (await chamar({ acao: "criar", codigo: "rest-b", senha: "senha1234" }, { ip: "10.12.0.1" })).j.token;
+  const bk = (await chamar({ acao: "backup", token: ta })).j;
+  assert.equal((await chamar({ acao: "restaurar", token: tb, backup: bk })).st, 400);
+  assert.equal((await chamar({ acao: "restaurar", token: ta, backup: { ...bk, versao: 99 } })).st, 400);
+  assert.equal((await chamar({ acao: "restaurar", token: ta, backup: { ...bk, dados: {} } })).st, 400);
+  assert.equal((await chamar({ acao: "restaurar", token: ta, backup: bk })).st, 200);
+});
+
+test("[ataque 10] apagar tudo pode ser desfeito", async () => {
+  const t = (await chamar({ acao: "criar", codigo: "desfaz", senha: "senha1234" }, { ip: "10.13.0.1" })).j.token;
+  await chamar({ acao: "importar", token: t, imports: [{ guild: "D", exportedAt: "2026-11-16 10:00:00", members: [{ name: "A" }] }] });
+  let r = await chamar({ acao: "apagarTudo", token: t, guild: "D" });
+  assert.equal(r.j.dados.imports.length, 0); assert.ok(r.j.desfazer);
+  r = await chamar({ acao: "desfazer", token: t });
+  assert.equal(r.j.dados.imports.length, 1);
+  r = await chamar({ acao: "desfazer", token: t });
+  assert.equal(r.j.dados.imports.length, 0);
 });
