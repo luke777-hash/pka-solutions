@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Gestão da Guild</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<script>try{var t=localStorage.getItem("pkahub-tema");if(t==="escuro")document.documentElement.dataset.theme="dark";if(t==="claro")document.documentElement.dataset.theme="light";}catch(e){}</script>
+<style>
+/* Layout: título com o botão de importar, faixa da semana e quatro abas (Painel, Cobrança, Caixa, Ajustes), uma de cada vez.
+   Cores iguais às outras ferramentas do hub; o roxo da guild fica só nos destaques. */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --surface-2:#f3f5f8; --surface-3:#e6eaf0; --line:#dce2e9; --line-strong:#c8d0da;
+  --fg:#141a24; --muted:#566274; --faint:#6e7a8b;
+  --gd:#6741d9; --gd-ink:#ffffff; --gd-soft:#ebe5fc;
+  --ok:#1d7a3e; --ok-soft:#dcf2e3; --vai:#946200; --vai-soft:#fbefd5; --mal:#c02d36; --mal-soft:#fbe1e3;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --r:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#171e28; --surface-2:#1d2531; --surface-3:#26303d; --line:#27313e; --line-strong:#374354;
+  --fg:#e6ebf3; --muted:#a4aebe; --faint:#8590a3;
+  --gd:#a08cf6; --gd-ink:#160d3a; --gd-soft:rgba(160,140,246,.16);
+  --ok:#4fd07f; --ok-soft:rgba(79,208,127,.14); --vai:#f0c24a; --vai-soft:rgba(240,194,74,.14); --mal:#f2777d; --mal-soft:rgba(242,119,125,.15);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#171e28; --surface-2:#1d2531; --surface-3:#26303d; --line:#27313e; --line-strong:#374354;
+  --fg:#e6ebf3; --muted:#a4aebe; --faint:#8590a3;
+  --gd:#a08cf6; --gd-ink:#160d3a; --gd-soft:rgba(160,140,246,.16);
+  --ok:#4fd07f; --ok-soft:rgba(79,208,127,.14); --vai:#f0c24a; --vai-soft:rgba(240,194,74,.14); --mal:#f2777d; --mal-soft:rgba(242,119,125,.15);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px}
+button,input,select,textarea{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,label.btn:focus-within{outline:2px solid var(--gd);outline-offset:2px}
+[hidden]{display:none!important}
+.num{font-variant-numeric:tabular-nums}
+
+/* topo */
+.topo{padding-block:22px 0;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.topo h1{margin:0;font:800 clamp(28px,4.4vw,44px)/1.05 var(--f-display);letter-spacing:-.025em}
+.topo .sub{margin:6px 0 0;color:var(--muted);max-width:68ch;text-wrap:pretty}
+.importar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status{font-size:13.5px;color:var(--muted)}
+.status.erro{color:var(--mal)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:14.5px;cursor:pointer;transition:border-color .2s ease,background-color .2s ease,transform .15s ease;text-decoration:none}
+.btn:hover{border-color:var(--gd)}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:var(--gd);border-color:var(--gd);color:var(--gd-ink)}
+.btn.pri:hover{filter:brightness(1.06)}
+.btn.perigo{color:var(--mal)}
+.btn.perigo:hover{border-color:var(--mal)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn.peq{min-height:32px;padding:4px 12px;font-size:13.5px}
+
+main.wrap{padding-block:18px 64px;display:grid;gap:18px}
+
+/* faixa da semana */
+.faixa{display:grid;grid-template-columns:auto 1fr;gap:10px 22px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 18px}
+.faixa .sel{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--muted)}
+select{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:14.5px;font-weight:600;color-scheme:inherit}
+select option{background:var(--surface);color:var(--fg)}
+.faixa .info{display:flex;flex-wrap:wrap;gap:4px 20px;font-size:14px;color:var(--muted)}
+.faixa .info b{color:var(--fg)}
+.barra{grid-column:1/-1;height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;position:relative}
+.barra i{position:absolute;inset:0 auto 0 0;width:0;background:var(--gd);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+
+/* abas */
+.abas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--surface-3);border-radius:12px;padding:4px}
+.abas button{min-height:42px;border:0;background:none;border-radius:9px;padding:8px 16px;font-weight:700;font-size:15px;color:var(--muted);cursor:pointer;transition:background-color .2s ease,color .2s ease;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.abas button:hover{color:var(--fg)}
+.abas button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.abas .cont{font-size:12px;font-weight:700;min-width:22px;padding:1px 7px;border-radius:99px;background:var(--mal-soft);color:var(--mal)}
+.painel{display:grid;gap:16px;animation:entra .25s ease}
+@keyframes entra{from{opacity:0;transform:translateY(4px)}}
+
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.cartao h2{margin:0 0 4px;font:800 20px/1.2 var(--f-display);letter-spacing:-.01em}
+.cartao h3{margin:0 0 8px;font:700 13px/1.3 var(--f-body);letter-spacing:.05em;text-transform:uppercase;color:var(--gd)}
+.cartao .nota{margin:0;font-size:13.5px;color:var(--muted);text-wrap:pretty}
+.aviso{display:flex;gap:12px;align-items:flex-start;background:var(--gd-soft);border:1px solid transparent;border-radius:12px;padding:12px 14px;font-size:14px}
+.aviso.amarelo{background:var(--vai-soft)}
+.aviso p{margin:0;flex:1}
+.aviso b{font-weight:700}
+
+/* números da semana */
+.tiles{display:grid;grid-template-columns:repeat(var(--cols,6),minmax(0,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:2px;text-align:left;cursor:default}
+button.tile{cursor:pointer;transition:border-color .2s ease}
+button.tile:hover{border-color:var(--line-strong)}
+button.tile[aria-pressed="true"]{border-color:var(--gd);box-shadow:inset 0 0 0 1px var(--gd)}
+.tile .r{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font:800 26px/1.1 var(--f-display);letter-spacing:-.01em}
+.tile.ok .v{color:var(--ok)} .tile.vai .v{color:var(--vai)} .tile.mal .v{color:var(--mal)}
+
+/* filtros */
+.filtros{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.busca{flex:1 1 220px;max-width:320px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+.busca svg{width:16px;height:16px;flex:none;fill:none;stroke:var(--faint);stroke-width:2;stroke-linecap:round}
+.busca input{flex:1;min-width:0;border:0;background:none;font-size:15px;padding:8px 0;outline:none}
+.filtros label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--muted)}
+
+/* lista de membros */
+.lista{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.linha{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,1.7fr);gap:6px 16px;align-items:center;padding:11px 18px;border-top:1px solid var(--line)}
+.linha:first-child{border-top:0}
+.linha.cab{background:var(--surface-2);font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding-block:9px}
+.linha.isento{opacity:.62}
+.membro b{display:block;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.membro span{font-size:12.5px;color:var(--muted)}
+.val{font-weight:700}
+.val small{font-weight:500;color:var(--muted);font-size:12.5px}
+.delta{display:block;font-size:12px;color:var(--ok);font-weight:600}
+.mini{height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden;position:relative;margin-top:4px;max-width:150px}
+.mini i{position:absolute;inset:0 auto 0 0;background:var(--gd);border-radius:99px}
+.acesso{font-size:14px}
+.acesso.online{color:var(--ok);font-weight:700}
+.acesso.velho{color:var(--mal);font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;border-radius:99px;padding:2px 10px;white-space:nowrap}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.vai{background:var(--vai-soft);color:var(--vai)} .chip.mal{background:var(--mal-soft);color:var(--mal)}
+.chip.neutro{background:var(--surface-3);color:var(--muted)}
+.falta{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+.rot{display:none}
+.vazio{padding:28px 18px;text-align:center;color:var(--muted)}
+@media (max-width:600px){
+  .faixa{grid-template-columns:1fr}
+  .abas{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:860px){
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .linha.cab{display:none}
+  .linha{grid-template-columns:1fr 1fr;padding:12px 14px}
+  .linha .membro,.linha .sit{grid-column:1/-1}
+  .rot{display:block;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+}
+
+/* cobrança */
+.cob{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:7px 12px;border-radius:7px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;transition:background-color .2s ease,color .2s ease}
+.seg button span{font-weight:500;margin-left:4px;opacity:.85}
+.seg button[aria-pressed="true"]{background:var(--gd);color:var(--gd-ink)}
+.marcar{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:2px;max-height:460px;overflow:auto}
+.marcar label{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 10px;border-radius:9px;cursor:pointer;align-items:start}
+.marcar label:hover{background:var(--surface-2)}
+.marcar input{margin-top:4px;width:16px;height:16px;accent-color:var(--gd)}
+.marcar b{font-weight:700}
+.marcar small{grid-column:2;font-size:12.5px;color:var(--muted)}
+.marcar .tag-id{font-size:11.5px;font-weight:700;color:var(--gd);margin-left:6px}
+textarea{width:100%;min-height:300px;resize:vertical;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px;font:13.5px/1.5 ui-monospace,"Cascadia Mono",Consolas,monospace}
+.acoes{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.cab-cartao{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+@media (max-width:860px){.cob{grid-template-columns:1fr}}
+
+/* caixa */
+.caixa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.campo{display:grid;gap:4px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.campo input,.campo select{width:100%;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:15px;font-weight:600;color:var(--fg)}
+.campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 12px}
+.boss{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.boss:first-of-type{border-top:0}
+.boss b{font-weight:700}
+.boss small{font-size:12.5px;color:var(--muted)}
+.boss .preco{font-weight:800;text-align:right}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:12px}
+.res div{background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.res span{display:block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.res b{font:800 20px/1.2 var(--f-display)}
+table.ref{width:100%;border-collapse:collapse;font-size:14px}
+table.ref th,table.ref td{padding:7px 6px;text-align:right;border-top:1px solid var(--line)}
+table.ref th:first-child,table.ref td:first-child{text-align:left}
+table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:860px){.caixa{grid-template-columns:1fr}}
+@media (max-width:520px){table.ref .opc{display:none}}
+
+/* ajustes */
+.ajustes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.ajustes .larga{grid-column:1/-1}
+.radio{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px}
+.radio label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.radio input{accent-color:var(--gd)}
+.confirmar{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--vai-soft);color:var(--vai);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+.grupo-campo{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.grupo-campo:first-of-type{border-top:0;padding-top:4px}
+.grupo-campo>b{font-size:14.5px}
+.hook{display:flex;gap:8px}
+.hook input{flex:1;min-width:0}
+.membros-cfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px 18px}
+.membros-cfg .m{display:grid;grid-template-columns:minmax(0,1fr) auto 150px;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.membros-cfg .m b{font-weight:600;overflow-wrap:anywhere}
+.membros-cfg .m label{display:flex;gap:5px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+.membros-cfg .m input[type=checkbox]{accent-color:var(--gd)}
+.membros-cfg .m input[type=text]{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px}
+.membros-cfg .m input.ruim{border-color:var(--mal)}
+.imports{list-style:none;margin:0;padding:0}
+.imports li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.imports li:first-child{border-top:0}
+@media (max-width:860px){.ajustes{grid-template-columns:1fr}}
+
+/* sem dados */
+.inicio{display:grid;gap:12px;justify-items:start}
+.drop{width:100%;border:2px dashed var(--line-strong);border-radius:var(--r);display:grid;place-items:center;text-align:center;padding:36px 16px;color:var(--muted);cursor:pointer;background:var(--surface);transition:border-color .2s ease,background-color .2s ease}
+.drop strong{display:block;color:var(--fg);font-size:17px;margin-bottom:4px}
+.drop.over,body.arrastando .drop{border-color:var(--gd);background:var(--gd-soft)}
+.passos{margin:0;padding-left:20px;color:var(--muted);font-size:14.5px}
+.passos b{color:var(--fg)}
+</style>
+</head>
+<body>
+<link rel="stylesheet" href="/nav/nav.css">
+<script src="/nav/nav.js"></script>
+<link rel="stylesheet" href="/apoio/apoio.css">
+<script src="/apoio/apoio.js" defer></script>
+
+<header class="wrap topo">
+  <div>
+    <h1>Gestão da Guild</h1>
+    <p class="sub">Importe a lista de membros que o jogo exporta e acompanhe a meta da semana, quem precisa ser cobrado e o caixa da guild.</p>
+  </div>
+  <div class="importar">
+    <span class="status" id="impStatus" role="status"></span>
+    <label class="btn pri" id="btnImport" tabindex="0">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
+      Importar JSON ou CSV
+      <input type="file" id="arquivo" accept=".json,.csv,application/json,text/csv" multiple hidden>
+    </label>
+  </div>
+</header>
+
+<main class="wrap" id="principal">
+  <!-- sem nenhuma importação -->
+  <section class="inicio" id="semDados" hidden>
+    <label class="drop" id="drop" tabindex="0">
+      <span><strong>Arraste aqui o JSON ou o CSV dos membros</strong>ou clique para escolher. Pode mandar vários de uma vez.</span>
+    </label>
+    <div class="cartao">
+      <h3>Como exportar no jogo</h3>
+      <ol class="passos">
+        <li>Abra a janela <b>Guilda</b> e vá na aba <b>Membros</b>.</li>
+        <li>Use o botão de exportar, no canto de cima da lista, e salve o JSON ou o CSV.</li>
+        <li>Importe aqui. Repita durante a semana para ver quem evoluiu entre uma importação e outra.</li>
+      </ol>
+      <p class="nota" style="margin-top:8px">Tudo fica salvo só neste navegador. Nada é enviado para o site.</p>
+    </div>
+  </section>
+
+  <div id="comDados" hidden>
+    <div style="display:grid;gap:18px">
+      <section class="faixa" aria-label="Semana">
+        <label class="sel">Semana <select id="selSemana"></select></label>
+        <div class="info" id="faixaInfo"></div>
+        <div class="barra" title="Quanto da semana já passou na última importação"><i id="faixaBarra"></i></div>
+      </section>
+
+      <div class="abas" role="tablist" aria-label="Partes da ferramenta">
+        <button role="tab" id="t-painel" aria-controls="p-painel" aria-selected="true">Painel</button>
+        <button role="tab" id="t-cobranca" aria-controls="p-cobranca" aria-selected="false">Cobrança <span class="cont" id="contCob" hidden></span></button>
+        <button role="tab" id="t-caixa" aria-controls="p-caixa" aria-selected="false">Caixa</button>
+        <button role="tab" id="t-ajustes" aria-controls="p-ajustes" aria-selected="false">Ajustes</button>
+      </div>
+
+      <!-- PAINEL -->
+      <section class="painel" role="tabpanel" id="p-painel" aria-labelledby="t-painel">
+        <div class="aviso" id="avisoMeta" hidden><p><b>Defina a meta da semana</b> para ver quem bateu, quem está no caminho e quem está abaixo.</p><button class="btn peq" data-ir="ajustes">Definir meta</button></div>
+        <div class="aviso amarelo" id="avisoBase" hidden><p id="avisoBaseTxt"></p></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="filtros">
+          <div class="busca"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="busca" placeholder="Buscar membro" aria-label="Buscar membro"></div>
+          <label>Ordenar <select id="ordem">
+            <option value="situacao">Situação</option>
+            <option value="pontos">Pontos</option>
+            <option value="contrib">Contribuição</option>
+            <option value="acesso">Último acesso</option>
+            <option value="nome">Nome</option>
+          </select></label>
+        </div>
+        <div class="lista" id="lista"></div>
+      </section>
+
+      <!-- COBRANÇA -->
+      <section class="painel" role="tabpanel" id="p-cobranca" aria-labelledby="t-cobranca" hidden>
+        <div class="seg" id="segCob" role="group" aria-label="Quem cobrar">
+          <button data-tipo="abaixo" aria-pressed="true">Abaixo do ritmo<span id="nAbaixo"></span></button>
+          <button data-tipo="naobateu" aria-pressed="false">Ainda não bateram<span id="nNaoBateu"></span></button>
+          <button data-tipo="inativos" aria-pressed="false">Inativos<span id="nInativos"></span></button>
+        </div>
+        <div class="cob">
+          <div class="cartao">
+            <div class="cab-cartao"><h2 id="cobTitulo"></h2><button class="btn peq" id="cobTodos">Desmarcar todos</button></div>
+            <p class="nota" id="cobNota"></p>
+            <ul class="marcar" id="cobLista"></ul>
+          </div>
+          <div class="cartao">
+            <div class="cab-cartao"><h2>Mensagem</h2><button class="btn peq" id="cobRefazer" title="Volta ao texto gerado">Refazer texto</button></div>
+            <textarea id="cobTexto" aria-label="Texto da mensagem" spellcheck="false"></textarea>
+            <div class="acoes">
+              <button class="btn" id="cobCopiar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Copiar</button>
+              <button class="btn pri" id="cobDiscord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-4 16-4-7-8-1Z"/></svg>Enviar no Discord</button>
+              <span class="status" id="cobStatus" role="status"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CAIXA -->
+      <section class="painel" role="tabpanel" id="p-caixa" aria-labelledby="t-caixa" hidden>
+        <div class="caixa">
+          <div class="cartao">
+            <h2>Bosses</h2>
+            <p class="nota">O saldo não vem no arquivo exportado. Copie o <b>Saldo</b> da janela da guild.</p>
+            <div class="campos" style="margin:10px 0 6px"><label class="campo">Saldo atual da guild<input type="text" inputmode="numeric" id="saldo" placeholder="ex.: 9.650"></label></div>
+            <div id="bosses"></div>
+            <p class="nota" style="margin-top:6px">"Com nível" conta quem tem o nível mínimo na última importação. O jogo também pede Premium, 3 dias na guild e não usar multicliente, e isso o arquivo não mostra.</p>
+          </div>
+          <div class="cartao">
+            <h2>Quanto rende</h2>
+            <p class="nota">Some dailies e doações para ver quanto entra no saldo e quantos pontos dá.</p>
+            <div class="campos" style="margin-top:10px">
+              <label class="campo">Daily Normal<input type="text" inputmode="numeric" id="qNormal" value="0"></label>
+              <label class="campo">Daily Wildscape<input type="text" inputmode="numeric" id="qWildscape" value="0"></label>
+              <label class="campo">Daily Primal<input type="text" inputmode="numeric" id="qPrimal" value="0"></label>
+              <label class="campo">Doações de $100k<input type="text" inputmode="numeric" id="qDolar" value="0"></label>
+              <label class="campo">Doações em diamond<input type="text" inputmode="numeric" id="qDiamond" value="0"></label>
+            </div>
+            <div class="res" id="rend"></div>
+            <p class="nota" id="rendNota" style="margin-top:8px"></p>
+          </div>
+          <div class="cartao">
+            <h2>Doação em diamond</h2>
+            <p class="nota">Cada doação põe $1.000 no saldo e não dá pontos. O preço dobra a cada vez e volta a 1 diamond no server save.</p>
+            <table class="ref num" style="margin-top:8px"><thead><tr><th>Doação</th><th>Custa</th><th>Total no dia</th><th>Saldo</th></tr></thead><tbody id="tDiamond"></tbody></table>
+          </div>
+          <div class="cartao">
+            <h2>Dailies e doação em $</h2>
+            <table class="ref num" style="margin-top:4px"><thead><tr><th>Daily</th><th>Pontos</th><th>Kills</th><th>Saldo</th><th class="opc">Guild XP</th><th class="opc">XP</th><th class="opc">Tokens</th></tr></thead><tbody id="tDailies"></tbody></table>
+            <p class="nota" style="margin-top:10px">Doação em $: até 3 vezes de $100.000 por dia, cada uma põe $300 no saldo (até $900). Não dá pontos e zera no server save.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- AJUSTES -->
+      <section class="painel" role="tabpanel" id="p-ajustes" aria-labelledby="t-ajustes" hidden>
+        <div class="ajustes">
+          <div class="cartao">
+            <h2>Meta da semana</h2>
+            <div class="grupo-campo">
+              <div class="campos">
+                <label class="campo">Pontos de daily<input type="text" inputmode="numeric" id="metaPontos" placeholder="sem meta"></label>
+                <label class="campo">Contribuição ($)<input type="text" inputmode="numeric" id="metaContrib" placeholder="sem meta"></label>
+              </div>
+            </div>
+            <div class="grupo-campo" id="grpRegra">
+              <b>Com as duas metas, o membro precisa bater</b>
+              <div class="radio"><label><input type="radio" name="regra" value="todas" checked> as duas</label><label><input type="radio" name="regra" value="qualquer"> qualquer uma</label></div>
+            </div>
+            <div class="grupo-campo">
+              <label class="campo">Inativo depois de quantos dias sem logar<input type="text" inputmode="numeric" id="diasInativo" value="3"></label>
+            </div>
+          </div>
+
+          <div class="cartao">
+            <h2>Como o jogo conta</h2>
+            <p class="nota">Ainda não está confirmado se o jogo zera estes números no server save de segunda. Escolha como o painel deve ler.</p>
+            <div class="grupo-campo">
+              <b>Pontos <span class="confirmar">a confirmar</span></b>
+              <div class="radio"><label><input type="radio" name="modoP" value="zera" checked> zeram toda segunda</label><label><input type="radio" name="modoP" value="acumula"> acumulam sempre</label></div>
+            </div>
+            <div class="grupo-campo">
+              <b>Contribuição <span class="confirmar">a confirmar</span></b>
+              <div class="radio"><label><input type="radio" name="modoC" value="zera" checked> zera toda segunda</label><label><input type="radio" name="modoC" value="acumula"> acumula sempre</label></div>
+            </div>
+            <p class="nota">Se acumulam, a semana conta a diferença entre a última importação e a última da semana anterior.</p>
+          </div>
+
+          <div class="cartao larga">
+            <h2>Discord</h2>
+            <p class="nota">Crie um webhook no canal onde os alertas devem aparecer (Configurações do canal, Integrações, Webhooks) e cole o endereço aqui. Ele fica salvo <b>só neste navegador</b>: não vai para o site nem para outros admins.</p>
+            <div class="grupo-campo">
+              <label class="campo">Endereço do webhook
+                <span class="hook"><input type="password" id="webhook" autocomplete="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/..."><button class="btn peq" id="hookVer" type="button">Mostrar</button></span>
+              </label>
+              <div class="campos"><label class="campo">Nome que aparece no Discord<input type="text" id="hookNome" placeholder="Guild"></label></div>
+              <div class="acoes" style="margin-top:0">
+                <button class="btn peq" id="hookTeste" type="button">Enviar teste</button>
+                <button class="btn peq perigo" id="hookApagar" type="button">Apagar endereço</button>
+                <span class="status" id="hookStatus" role="status"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cartao larga">
+            <h2>Membros</h2>
+            <p class="nota">Isento fica fora da meta e das cobranças. O ID do Discord serve para marcar o membro na mensagem (no Discord, ative o Modo desenvolvedor e use "Copiar ID do usuário").</p>
+            <div class="membros-cfg" id="membrosCfg" style="margin-top:8px"></div>
+          </div>
+
+          <div class="cartao larga">
+            <div class="cab-cartao"><h2>Importações</h2><button class="btn peq perigo" id="apagarTudo">Apagar todas</button></div>
+            <ul class="imports" id="imports"></ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="/guild/guild-calc.js"></script>
+<script>
+(function(){
+  "use strict";
+  var G = window.PKA_GUILD;
+  var CHAVE = "pka-guild-v1", CHAVE_HOOK = "pka-guild-webhook";
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---------- guardar ----------
+  var dados = { imports: [], cfg: {} };
+  try{ var s = JSON.parse(localStorage.getItem(CHAVE) || "null"); if(s && Array.isArray(s.imports)) dados = s; }catch(e){}
+  dados.cfg = Object.assign({ metaPontos: null, metaContrib: null, regra: "todas", modoP: "zera", modoC: "zera", diasInativo: 3, saldo: null, isentos: {}, discord: {}, hookNome: "", guild: "" }, dados.cfg || {});
+  function salvar(){ try{ localStorage.setItem(CHAVE, JSON.stringify(dados)); }catch(e){} }
+  function lerHook(){ try{ return localStorage.getItem(CHAVE_HOOK) || ""; }catch(e){ return ""; } }
+  function gravarHook(v){ try{ if(v) localStorage.setItem(CHAVE_HOOK, v); else localStorage.removeItem(CHAVE_HOOK); }catch(e){} }
+
+  // ---------- formatos ----------
+  var nf = new Intl.NumberFormat("pt-BR");
+  function n(v){ return nf.format(v); }
+  function din(v){ return (v < 0 ? "-$" : "$") + nf.format(Math.abs(v)); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function dm(d){ return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function dmh(d){ return dm(d) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+  function cargo(r){ return String(r || "").replace(/^(the|a|an)\s+/i, ""); }
+  function inteiro(v){ var s = String(v == null ? "" : v).trim(); if(!s) return null; var x = G.lerInteiro(s); return x > 0 ? x : null; }
+  function plural(q, um, varios){ return n(q) + " " + (q === 1 ? um : varios); }
+  function textoDailies(falta){
+    var c = G.comoCompletar(falta);
+    var op = [plural(c.primal, "Primal", "Primal"), plural(c.wildscape, "Wildscape", "Wildscape"), plural(c.normal, "Normal", "Normal")];
+    return op.join(" ou ");
+  }
+
+  // ---------- guild e semanas ----------
+  function guilds(){
+    var l = [];
+    dados.imports.forEach(function(im){ if(l.indexOf(im.guild) < 0) l.push(im.guild); });
+    return l;
+  }
+  function guildAtual(){
+    var l = guilds();
+    if(l.indexOf(dados.cfg.guild) >= 0) return dados.cfg.guild;
+    return l.length ? l[l.length - 1] : "";
+  }
+  function importsDaGuild(){ var g = guildAtual(); return dados.imports.filter(function(im){ return im.guild === g; }); }
+  function semanas(){
+    var l = [];
+    importsDaGuild().forEach(function(im){ var d = G.lerDataExport(im.exportedAt); if(d){ var k = G.chaveSemana(d); if(l.indexOf(k) < 0) l.push(k); } });
+    return l.sort().reverse();
+  }
+  var semanaSel = null;
+
+  // ---------- importar ----------
+  function dataLocal(ms){
+    var d = new Date(ms), p = function(x){ return String(x).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  }
+  function importar(arquivos){
+    var st = $("impStatus"); st.className = "status"; st.textContent = "Lendo…";
+    var ok = 0, erros = [], novas = [];
+    Promise.all(arquivos.map(function(f){
+      return f.text().then(function(t){
+        try{
+          var im = G.lerArquivo(f.name, t);
+          if(!im.exportedAt) im.exportedAt = dataLocal(f.lastModified || Date.now());
+          if(!im.guild) im.guild = guildAtual() || "Minha guild";
+          if(!im.members.length) throw new Error("nenhum membro");
+          novas.push(im); ok++;
+        }catch(e){ erros.push(f.name + " (" + e.message + ")"); }
+      });
+    })).then(function(){
+      novas.forEach(function(im){
+        dados.imports = dados.imports.filter(function(x){ return !(x.guild === im.guild && x.exportedAt === im.exportedAt); });
+        dados.imports.push(im);
+      });
+      dados.imports.sort(function(a, b){ return a.exportedAt < b.exportedAt ? -1 : 1; });
+      if(novas.length){
+        dados.cfg.guild = novas[novas.length - 1].guild;
+        var d = G.lerDataExport(novas[novas.length - 1].exportedAt);
+        semanaSel = d ? G.chaveSemana(d) : null;
+      }
+      salvar();
+      st.className = "status" + (erros.length ? " erro" : "");
+      st.textContent = (ok ? plural(ok, "arquivo importado", "arquivos importados") : "") + (erros.length ? (ok ? ". " : "") + "Não deu para ler: " + erros.join(", ") : "");
+      tudo();
+    });
+  }
+  $("arquivo").addEventListener("change", function(e){ var fs = [].slice.call(e.target.files || []); if(fs.length) importar(fs); e.target.value = ""; });
+  $("btnImport").addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); $("arquivo").click(); } });
+  $("drop").addEventListener("click", function(){ $("arquivo").click(); });
+  $("drop").addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); $("arquivo").click(); } });
+  var arrastos = 0;
+  document.addEventListener("dragenter", function(e){ e.preventDefault(); arrastos++; document.body.classList.add("arrastando"); });
+  document.addEventListener("dragleave", function(){ arrastos = Math.max(0, arrastos - 1); if(!arrastos) document.body.classList.remove("arrastando"); });
+  document.addEventListener("dragover", function(e){ e.preventDefault(); });
+  document.addEventListener("drop", function(e){
+    e.preventDefault(); arrastos = 0; document.body.classList.remove("arrastando");
+    var fs = [].slice.call((e.dataTransfer && e.dataTransfer.files) || []); if(fs.length) importar(fs);
+  });
+
+  // ---------- conta da semana ----------
+  var semana = null; // resultado da semana escolhida
+  function metas(){ return { pontos: dados.cfg.metaPontos, contrib: dados.cfg.metaContrib, regra: dados.cfg.regra }; }
+  function temMeta(){ return dados.cfg.metaPontos > 0 || dados.cfg.metaContrib > 0; }
+  function calcular(){
+    var r = G.valoresDaSemana(importsDaGuild(), semanaSel, { pontos: dados.cfg.modoP, contrib: dados.cfg.modoC });
+    if(!r) return null;
+    var fr = G.fracaoSemana(r.ultima), mt = metas();
+    r.fracao = fr;
+    // ritmo: espera a parte da meta dos dias que já fecharam (no 1º dia ninguém está atrasado)
+    r.diasFechados = Math.floor(fr * 7);
+    r.membros.forEach(function(m){
+      m.isento = !!dados.cfg.isentos[m.name];
+      var a = G.avaliar(m, mt, r.diasFechados / 7);
+      m.situacao = m.isento ? "isento" : a.situacao;
+      m.faltaPontos = a.faltaPontos; m.faltaContrib = a.faltaContrib;
+      m.online = m.status === "online";
+      m.dias = m.online ? 0 : G.diasDesde(m.lastLogin, r.ultima);
+    });
+    return r;
+  }
+
+  // ---------- faixa ----------
+  function pintarFaixa(){
+    var sel = $("selSemana"), ws = semanas();
+    sel.innerHTML = ws.map(function(k){
+      var p = k.split("-"), ini = new Date(+p[0], +p[1] - 1, +p[2]), fim = new Date(ini); fim.setDate(fim.getDate() + 6);
+      return '<option value="' + k + '"' + (k === semanaSel ? " selected" : "") + ">" + dm(ini) + " a " + dm(fim) + "</option>";
+    }).join("");
+    var info = [];
+    var gs = guilds();
+    info.push("Guild <b>" + esc(guildAtual()) + "</b>" + (gs.length > 1 ? ' <button class="btn peq" id="trocaGuild">trocar</button>' : ""));
+    info.push("Última importação <b>" + dmh(semana.ultima) + "</b>");
+    info.push("<b>" + semana.membros.length + "</b> membros");
+    info.push("<b>" + semana.importacoes + "</b> " + (semana.importacoes === 1 ? "importação" : "importações") + " na semana");
+    var dia = Math.min(7, Math.floor(semana.fracao * 7) + 1);
+    info.push("Dia <b>" + dia + "</b> de 7");
+    $("faixaInfo").innerHTML = info.map(function(t){ return "<span>" + t + "</span>"; }).join("");
+    $("faixaBarra").style.width = (semana.fracao * 100).toFixed(1) + "%";
+    var tg = $("trocaGuild");
+    if(tg) tg.addEventListener("click", function(){
+      var l = guilds(), i = l.indexOf(guildAtual());
+      dados.cfg.guild = l[(i + 1) % l.length]; semanaSel = null; salvar(); tudo();
+    });
+  }
+  $("selSemana").addEventListener("change", function(e){ semanaSel = e.target.value; tudo(); });
+
+  // ---------- painel ----------
+  var filtroSit = "todos";
+  var SIT = { bateu: ["ok", "Bateu"], caminho: ["vai", "No caminho"], abaixo: ["mal", "Abaixo"], isento: ["neutro", "Isento"] };
+  var ORD_SIT = { abaixo: 0, caminho: 1, bateu: 2, isento: 3 };
+  function textoAcesso(m){
+    if(m.online) return '<span class="acesso online">Online</span>';
+    if(m.dias == null) return '<span class="acesso">—</span>';
+    var velho = m.dias >= (dados.cfg.diasInativo || 3);
+    var t = m.dias < 1 ? "há " + Math.max(1, Math.round(m.dias * 24)) + "h" : "há " + Math.floor(m.dias) + (Math.floor(m.dias) === 1 ? " dia" : " dias");
+    return '<span class="acesso' + (velho ? " velho" : "") + '" title="' + esc(m.lastLogin) + '">' + t + "</span>";
+  }
+  function textoFalta(m){
+    var p = [];
+    if(m.faltaPontos > 0) p.push("Faltam " + plural(m.faltaPontos, "ponto", "pontos") + ": " + textoDailies(m.faltaPontos));
+    if(m.faltaContrib > 0) p.push("Faltam " + din(m.faltaContrib) + " de contribuição");
+    return p.join(". ");
+  }
+  function pintarPainel(){
+    var mt = metas(), ms = semana.membros;
+    $("avisoMeta").hidden = temMeta();
+    var semBase = ms.filter(function(m){ return m.semBase; }).length;
+    $("avisoBase").hidden = !semBase;
+    if(semBase) $("avisoBaseTxt").innerHTML = "Os números acumulam e não há importação da semana anterior para " + plural(semBase, "membro", "membros") + ". Para " + (semBase === 1 ? "ele" : "eles") + " a semana conta a partir da primeira importação desta semana.";
+    var c = { bateu: 0, caminho: 0, abaixo: 0, isento: 0 }, tp = 0, tc = 0;
+    ms.forEach(function(m){ if(m.situacao) c[m.situacao]++; tp += m.pontos; tc += m.contrib; });
+    var tiles = [];
+    if(temMeta()){
+      tiles.push(["abaixo", "mal", "Abaixo", c.abaixo], ["caminho", "vai", "No caminho", c.caminho], ["bateu", "ok", "Bateram", c.bateu], ["isento", "", "Isentos", c.isento]);
+    } else {
+      tiles.push(["todos", "", "Membros", ms.length], ["isento", "", "Isentos", c.isento]);
+    }
+    var html = tiles.map(function(t){
+      return '<button class="tile ' + t[1] + '" data-f="' + t[0] + '" aria-pressed="' + (filtroSit === t[0]) + '"><span class="r">' + t[2] + '</span><span class="v num">' + t[3] + "</span></button>";
+    }).join("");
+    html += '<div class="tile"><span class="r">Pontos da guild</span><span class="v num">' + n(tp) + "</span></div>";
+    html += '<div class="tile"><span class="r">Contribuição</span><span class="v num">' + din(tc) + "</span></div>";
+    var tl = $("tiles"); tl.innerHTML = html;
+    tl.style.setProperty("--cols", tiles.length + 2);
+    [].forEach.call(tl.querySelectorAll("button.tile"), function(b){
+      b.addEventListener("click", function(){ filtroSit = filtroSit === b.dataset.f ? "todos" : b.dataset.f; pintarPainel(); });
+    });
+
+    var busca = semAcento($("busca").value.trim()), ord = $("ordem").value;
+    var lista = ms.filter(function(m){
+      if(filtroSit !== "todos" && m.situacao !== filtroSit) return false;
+      return !busca || semAcento(m.name).indexOf(busca) >= 0;
+    });
+    lista.sort(function(a, b){
+      if(ord === "pontos") return b.pontos - a.pontos || b.contrib - a.contrib;
+      if(ord === "contrib") return b.contrib - a.contrib || b.pontos - a.pontos;
+      if(ord === "nome") return a.name.localeCompare(b.name, "pt-BR");
+      if(ord === "acesso") return (b.dias == null ? -1 : b.dias) - (a.dias == null ? -1 : a.dias);
+      var sa = a.situacao ? ORD_SIT[a.situacao] : 9, sb = b.situacao ? ORD_SIT[b.situacao] : 9;
+      return sa - sb || (a.pontos - b.pontos) || (a.contrib - b.contrib) || a.name.localeCompare(b.name, "pt-BR");
+    });
+    var h = '<div class="linha cab"><span>Membro</span><span>Pontos</span><span>Contribuição</span><span>Último acesso</span><span>Situação</span></div>';
+    if(!lista.length) h += '<div class="vazio">Ninguém aqui.</div>';
+    lista.forEach(function(m){
+      var pP = mt.pontos > 0 ? Math.min(100, m.pontos / mt.pontos * 100) : null;
+      var pC = mt.contrib > 0 ? Math.min(100, m.contrib / mt.contrib * 100) : null;
+      var sit = m.situacao ? SIT[m.situacao] : null;
+      h += '<div class="linha' + (m.isento ? " isento" : "") + '">' +
+        '<div class="membro"><b>' + esc(m.name) + "</b><span>" + esc(cargo(m.rank)) + " · nv. " + n(m.level) + "</span></div>" +
+        '<div><span class="rot">Pontos</span><span class="val num">' + n(m.pontos) + (mt.pontos > 0 ? " <small>de " + n(mt.pontos) + "</small>" : "") + "</span>" +
+          (pP !== null ? '<div class="mini"><i style="width:' + pP + '%"></i></div>' : "") +
+          (m.dPontos ? '<span class="delta">+' + n(m.dPontos) + " desde " + dmh(semana.anterior) + "</span>" : "") + "</div>" +
+        '<div><span class="rot">Contribuição</span><span class="val num">' + din(m.contrib) + (mt.contrib > 0 ? " <small>de " + din(mt.contrib) + "</small>" : "") + "</span>" +
+          (pC !== null ? '<div class="mini"><i style="width:' + pC + '%"></i></div>' : "") +
+          (m.dContrib ? '<span class="delta">+' + din(m.dContrib) + " desde " + dmh(semana.anterior) + "</span>" : "") + "</div>" +
+        '<div><span class="rot">Último acesso</span>' + textoAcesso(m) + "</div>" +
+        '<div class="sit">' + (sit ? '<span class="chip ' + sit[0] + '">' + sit[1] + "</span>" : '<span class="chip neutro">Sem meta</span>') +
+          (m.situacao === "abaixo" || m.situacao === "caminho" ? '<span class="falta">' + esc(textoFalta(m)) + "</span>" : "") + "</div>" +
+      "</div>";
+    });
+    $("lista").innerHTML = h;
+  }
+  function semAcento(s){ return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+  $("busca").addEventListener("input", function(){ pintarPainel(); });
+  $("ordem").addEventListener("change", function(){ pintarPainel(); });
+
+  // ---------- cobrança ----------
+  var tipoCob = "abaixo", desmarcados = {}, textoEditado = false;
+  function listaCob(tipo){
+    var ms = semana.membros.filter(function(m){ return !m.isento; });
+    if(tipo === "abaixo") return ms.filter(function(m){ return m.situacao === "abaixo"; });
+    if(tipo === "naobateu") return ms.filter(function(m){ return m.situacao === "abaixo" || m.situacao === "caminho"; });
+    var lim = dados.cfg.diasInativo || 3;
+    return ms.filter(function(m){ return !m.online && m.dias != null && m.dias >= lim; }).sort(function(a, b){ return b.dias - a.dias; });
+  }
+  function textoMeta(){
+    var p = [];
+    if(dados.cfg.metaPontos > 0) p.push(plural(dados.cfg.metaPontos, "ponto", "pontos"));
+    if(dados.cfg.metaContrib > 0) p.push(din(dados.cfg.metaContrib) + " de contribuição");
+    return p.join(dados.cfg.regra === "qualquer" ? " ou " : " e ");
+  }
+  function intervaloSemana(){
+    var ini = G.inicioSemana(semana.ultima), fim = new Date(ini); fim.setDate(fim.getDate() + 6);
+    return dm(ini) + " a " + dm(fim);
+  }
+  function marcacao(m){ var id = (dados.cfg.discord[m.name] || "").trim(); return G.idDiscordValido(id) ? " <@" + id + ">" : ""; }
+  function linhaMembro(m, tipo){
+    if(tipo === "inativos") return "• **" + m.name + "**" + marcacao(m) + " · último acesso " + m.lastLogin.slice(0, 16) + " (" + plural(Math.floor(m.dias), "dia", "dias") + ")";
+    var p = [];
+    if(dados.cfg.metaPontos > 0) p.push(n(m.pontos) + "/" + n(dados.cfg.metaPontos) + " pontos" + (m.faltaPontos > 0 ? " (faltam " + n(m.faltaPontos) + ": " + textoDailies(m.faltaPontos) + ")" : ""));
+    if(dados.cfg.metaContrib > 0) p.push(din(m.contrib) + " de " + din(dados.cfg.metaContrib) + (m.faltaContrib > 0 ? " (faltam " + din(m.faltaContrib) + ")" : ""));
+    return "• **" + m.name + "**" + marcacao(m) + " · " + p.join(" · ");
+  }
+  function gerarTexto(){
+    var sel = listaCob(tipoCob).filter(function(m){ return !desmarcados[tipoCob + "|" + m.name]; });
+    var g = guildAtual(), linhas = [];
+    if(tipoCob === "inativos"){
+      linhas.push("**" + g + " · membros sem logar há " + plural(dados.cfg.diasInativo || 3, "dia", "dias") + " ou mais**");
+      linhas.push("Conferido em " + dmh(semana.ultima) + ".");
+    } else if(tipoCob === "abaixo"){
+      linhas.push("**" + g + " · cobrança da meta semanal**");
+      linhas.push("Semana " + intervaloSemana() + " · meta: " + textoMeta());
+      linhas.push("Até " + dmh(semana.ultima) + ", estes membros estão abaixo do ritmo para bater a meta:");
+    } else {
+      linhas.push("**" + g + " · ainda não bateram a meta da semana**");
+      linhas.push("Semana " + intervaloSemana() + " · meta: " + textoMeta());
+      linhas.push("Até " + dmh(semana.ultima) + ", estes membros ainda não bateram. Quem não bater até domingo 23:59 pode ser kickado:");
+    }
+    linhas.push("");
+    sel.forEach(function(m){ linhas.push(linhaMembro(m, tipoCob)); });
+    if(tipoCob !== "inativos"){ linhas.push(""); linhas.push("A semana fecha domingo às 23:59."); }
+    return { texto: linhas.join("\n"), membros: sel };
+  }
+  function pintarCobranca(){
+    var nA = listaCob("abaixo").length, nN = listaCob("naobateu").length, nI = listaCob("inativos").length;
+    $("nAbaixo").textContent = temMeta() ? nA : ""; $("nNaoBateu").textContent = temMeta() ? nN : ""; $("nInativos").textContent = nI;
+    var cc = $("contCob"); cc.hidden = !(temMeta() && nA); cc.textContent = nA;
+    [].forEach.call($("segCob").querySelectorAll("button"), function(b){ b.setAttribute("aria-pressed", String(b.dataset.tipo === tipoCob)); });
+    var titulos = { abaixo: "Abaixo do ritmo", naobateu: "Ainda não bateram", inativos: "Inativos" };
+    var notas = {
+      abaixo: "Quem está abaixo do esperado para os dias que já fecharam. Exemplo: no dia 4 (quinta), espera 3/7 da meta da semana.",
+      naobateu: "Todos que ainda não bateram a meta, incluindo quem está no caminho. No domingo, é a lista de quem seria kickado.",
+      inativos: "Quem não loga há " + plural(dados.cfg.diasInativo || 3, "dia", "dias") + " ou mais, contando até a última importação. Isentos ficam de fora."
+    };
+    $("cobTitulo").textContent = titulos[tipoCob];
+    var lista = listaCob(tipoCob), ul = $("cobLista");
+    if(tipoCob !== "inativos" && !temMeta()){
+      $("cobNota").innerHTML = 'Defina a meta na aba <a href="#" data-ir="ajustes">Ajustes</a> para montar esta lista.';
+      ul.innerHTML = ""; $("cobTexto").value = ""; $("cobTodos").hidden = true; ligarIr(); return;
+    }
+    $("cobNota").textContent = notas[tipoCob];
+    $("cobTodos").hidden = !lista.length;
+    ul.innerHTML = lista.length ? lista.map(function(m){
+      var k = tipoCob + "|" + m.name, temId = G.idDiscordValido(dados.cfg.discord[m.name]);
+      var det = tipoCob === "inativos" ? "Último acesso " + esc(m.lastLogin) : esc(textoFalta(m));
+      return '<li><label><input type="checkbox" data-k="' + esc(k) + '"' + (desmarcados[k] ? "" : " checked") + '><span><b>' + esc(m.name) + "</b>" + (temId ? '<span class="tag-id">Discord</span>' : "") + "</span><small>" + det + "</small></label></li>";
+    }).join("") : '<li class="vazio">Ninguém nesta lista.</li>';
+    [].forEach.call(ul.querySelectorAll("input"), function(i){
+      i.addEventListener("change", function(){ if(i.checked) delete desmarcados[i.dataset.k]; else desmarcados[i.dataset.k] = 1; textoEditado = false; atualizarTexto(); });
+    });
+    var algum = lista.some(function(m){ return !desmarcados[tipoCob + "|" + m.name]; });
+    $("cobTodos").textContent = algum ? "Desmarcar todos" : "Marcar todos";
+    if(!textoEditado) atualizarTexto();
+  }
+  function atualizarTexto(){ $("cobTexto").value = gerarTexto().texto; }
+  $("cobTexto").addEventListener("input", function(){ textoEditado = true; });
+  $("cobRefazer").addEventListener("click", function(){ textoEditado = false; atualizarTexto(); });
+  $("cobTodos").addEventListener("click", function(){
+    var lista = listaCob(tipoCob), algum = lista.some(function(m){ return !desmarcados[tipoCob + "|" + m.name]; });
+    lista.forEach(function(m){ var k = tipoCob + "|" + m.name; if(algum) desmarcados[k] = 1; else delete desmarcados[k]; });
+    textoEditado = false; pintarCobranca();
+  });
+  [].forEach.call($("segCob").querySelectorAll("button"), function(b){
+    b.addEventListener("click", function(){ tipoCob = b.dataset.tipo; textoEditado = false; $("cobStatus").textContent = ""; pintarCobranca(); });
+  });
+  $("cobCopiar").addEventListener("click", function(){
+    var t = $("cobTexto").value, st = $("cobStatus");
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ st.className = "status"; st.textContent = "Copiado."; })
+      .catch(function(){ $("cobTexto").select(); st.className = "status"; st.textContent = "Selecionei o texto: use Ctrl+C."; });
+  });
+
+  // ---------- Discord ----------
+  function enviarDiscord(texto, ids, st){
+    var url = lerHook().trim();
+    if(!G.webhookValido(url)){ st.className = "status erro"; st.innerHTML = 'Cole o endereço do webhook na aba <a href="#" data-ir="ajustes">Ajustes</a>.'; ligarIr(); return Promise.resolve(false); }
+    var partes = G.dividirMensagem(texto, 2000);
+    if(!partes.length){ st.className = "status erro"; st.textContent = "A mensagem está vazia."; return Promise.resolve(false); }
+    var nome = (dados.cfg.hookNome || "").trim();
+    st.className = "status"; st.textContent = "Enviando…";
+    var i = 0;
+    function uma(tent){
+      var corpo = { content: partes[i], allowed_mentions: { parse: [], users: ids.slice(0, 100) } };
+      if(nome) corpo.username = nome.slice(0, 80);
+      return fetch(url + (url.indexOf("?") < 0 ? "?" : "&") + "wait=true", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) })
+        .then(function(r){
+          if(r.status === 429 && tent < 2) return r.json().catch(function(){ return {}; }).then(function(j){
+            return new Promise(function(ok){ setTimeout(ok, Math.min(10, (j.retry_after || 1)) * 1000); }).then(function(){ return uma(tent + 1); });
+          });
+          if(!r.ok) throw new Error(r.status === 401 || r.status === 404 ? "o Discord não achou esse webhook (foi apagado?)" : "o Discord respondeu " + r.status);
+          i++;
+          if(i < partes.length) return uma(0);
+        });
+    }
+    return uma(0).then(function(){
+      st.className = "status"; st.textContent = partes.length > 1 ? "Enviado em " + partes.length + " mensagens." : "Enviado.";
+      return true;
+    }).catch(function(e){
+      st.className = "status erro"; st.textContent = "Não foi: " + (e && e.message && e.message.indexOf("Discord") >= 0 ? e.message : "sem conexão com o Discord.");
+      return false;
+    });
+  }
+  $("cobDiscord").addEventListener("click", function(){
+    var b = this, g = gerarTexto();
+    var ids = g.membros.map(function(m){ return (dados.cfg.discord[m.name] || "").trim(); }).filter(G.idDiscordValido);
+    b.disabled = true;
+    enviarDiscord($("cobTexto").value, ids, $("cobStatus")).then(function(){ b.disabled = false; });
+  });
+  $("webhook").value = lerHook();
+  $("webhook").addEventListener("change", function(){
+    var v = this.value.trim(), st = $("hookStatus");
+    if(v && !G.webhookValido(v)){ st.className = "status erro"; st.textContent = "Esse endereço não parece um webhook do Discord."; return; }
+    gravarHook(v); st.className = "status"; st.textContent = v ? "Salvo neste navegador." : "";
+  });
+  $("hookVer").addEventListener("click", function(){ var i = $("webhook"), ver = i.type === "password"; i.type = ver ? "text" : "password"; this.textContent = ver ? "Esconder" : "Mostrar"; });
+  $("hookApagar").addEventListener("click", function(){ gravarHook(""); $("webhook").value = ""; $("hookStatus").className = "status"; $("hookStatus").textContent = "Endereço apagado deste navegador."; });
+  $("hookNome").value = dados.cfg.hookNome || "";
+  $("hookNome").addEventListener("change", function(){ dados.cfg.hookNome = this.value.trim(); salvar(); });
+  $("hookTeste").addEventListener("click", function(){
+    var v = $("webhook").value.trim(), st = $("hookStatus"), b = this;
+    if(v && G.webhookValido(v)) gravarHook(v);
+    b.disabled = true;
+    enviarDiscord("Teste do PKA-HUB: os alertas da guild **" + guildAtual() + "** vão chegar neste canal.", [], st).then(function(){ b.disabled = false; });
+  });
+
+  // ---------- caixa ----------
+  function pintarCaixa(){
+    var saldo = dados.cfg.saldo;
+    $("saldo").value = saldo != null ? n(saldo) : "";
+    var membros = semana.membros;
+    $("bosses").innerHTML = G.BOSSES.map(function(b){
+      var comNivel = membros.filter(function(m){ return m.level >= b.nivel; }).length;
+      var chip = saldo == null ? "" : (saldo >= b.custo ? '<span class="chip ok">Dá para fazer</span>' : '<span class="chip mal">Faltam ' + din(b.custo - saldo) + "</span>");
+      return '<div class="boss"><div><b>' + b.nome + "</b><br><small>Nível mínimo " + b.nivel + " · " + comNivel + " com nível</small></div>" +
+        '<div style="text-align:right"><div class="preco num">' + din(b.custo) + "</div>" + chip + "</div></div>";
+    }).join("");
+    pintarRend();
+  }
+  $("saldo").addEventListener("change", function(){ dados.cfg.saldo = this.value.trim() === "" ? null : G.lerInteiro(this.value); salvar(); pintarCaixa(); });
+  function q(id){ return Math.max(0, G.lerInteiro($(id).value)); }
+  function pintarRend(){
+    var dol = q("qDolar"), dia = q("qDiamond");
+    var r = G.rendimento({ normal: q("qNormal"), wildscape: q("qWildscape"), primal: q("qPrimal"), dolar: dol, diamond: dia });
+    var cel = [["Saldo da guild", din(r.saldo)], ["Pontos", n(r.pontos)], ["Guild XP", n(r.guildXp)], ["XP do player", n(r.xp)], ["Medal Tokens", n(r.tokens)], ["Kills", n(r.kills)]];
+    if(dol) cel.push(["Custa em $", din(r.dinheiro)]);
+    if(dia) cel.push(["Custa em diamond", n(r.diamonds)]);
+    $("rend").innerHTML = cel.map(function(c){ return "<div><span>" + c[0] + '</span><b class="num">' + c[1] + "</b></div>"; }).join("");
+    var notas = [];
+    if(dol > 3) notas.push("A doação em $ vai até 3 vezes por dia: " + n(dol) + " vezes leva " + Math.ceil(dol / 3) + " dias.");
+    if(dia) notas.push("Diamond conta como " + n(dia) + " doações no mesmo dia (1 + 2 + 4…).");
+    $("rendNota").textContent = notas.join(" ");
+  }
+  ["qNormal", "qWildscape", "qPrimal", "qDolar", "qDiamond"].forEach(function(id){ $(id).addEventListener("input", pintarRend); });
+  (function tabelas(){
+    var h = "";
+    for(var k = 1; k <= 8; k++) h += "<tr><td>" + k + "ª</td><td>" + n(G.diamondDaVez(k)) + "</td><td>" + n(G.diamondsTotal(k)) + "</td><td>+" + din(k * G.DIAMOND_SALDO) + "</td></tr>";
+    $("tDiamond").innerHTML = h;
+    $("tDailies").innerHTML = G.DAILIES.map(function(d){
+      return "<tr><td>" + d.nome + "</td><td>" + d.pontos + "</td><td>" + n(d.kills) + "</td><td>" + din(d.saldo) + '</td><td class="opc">' + n(d.guildXp) + '</td><td class="opc">' + n(d.xp) + '</td><td class="opc">' + d.tokens + "</td></tr>";
+    }).join("");
+  })();
+
+  // ---------- ajustes ----------
+  function pintarAjustes(){
+    $("metaPontos").value = dados.cfg.metaPontos || "";
+    $("metaContrib").value = dados.cfg.metaContrib ? n(dados.cfg.metaContrib) : "";
+    $("diasInativo").value = dados.cfg.diasInativo || 3;
+    document.querySelector('input[name=regra][value="' + dados.cfg.regra + '"]').checked = true;
+    document.querySelector('input[name=modoP][value="' + dados.cfg.modoP + '"]').checked = true;
+    document.querySelector('input[name=modoC][value="' + dados.cfg.modoC + '"]').checked = true;
+    $("grpRegra").hidden = !(dados.cfg.metaPontos > 0 && dados.cfg.metaContrib > 0);
+    var ms = semana.membros.slice().sort(function(a, b){ return a.name.localeCompare(b.name, "pt-BR"); });
+    $("membrosCfg").innerHTML = ms.map(function(m, i){
+      var id = dados.cfg.discord[m.name] || "";
+      return '<div class="m"><b>' + esc(m.name) + '</b><label><input type="checkbox" data-i="' + i + '"' + (dados.cfg.isentos[m.name] ? " checked" : "") + "> Isento</label>" +
+        '<input type="text" inputmode="numeric" data-i="' + i + '" value="' + esc(id) + '" placeholder="ID do Discord" aria-label="ID do Discord de ' + esc(m.name) + '"' + (id && !G.idDiscordValido(id) ? ' class="ruim"' : "") + "></div>";
+    }).join("");
+    [].forEach.call($("membrosCfg").querySelectorAll("input"), function(inp){
+      var m = ms[+inp.dataset.i];
+      inp.addEventListener("change", function(){
+        if(inp.type === "checkbox"){ if(inp.checked) dados.cfg.isentos[m.name] = true; else delete dados.cfg.isentos[m.name]; }
+        else { var v = inp.value.trim(); if(v) dados.cfg.discord[m.name] = v; else delete dados.cfg.discord[m.name]; inp.classList.toggle("ruim", !!v && !G.idDiscordValido(v)); }
+        salvar(); recalcular(false);
+      });
+    });
+    var ims = importsDaGuild().slice().reverse();
+    $("imports").innerHTML = ims.map(function(im){
+      var d = G.lerDataExport(im.exportedAt);
+      return "<li><span>" + (d ? dmh(d) : esc(im.exportedAt)) + " · " + esc(im.guild) + " · " + im.members.length + ' membros</span><button class="btn peq perigo" data-k="' + esc(im.guild + "|" + im.exportedAt) + '">Apagar</button></li>';
+    }).join("");
+    [].forEach.call($("imports").querySelectorAll("button"), function(b){
+      b.addEventListener("click", function(){
+        dados.imports = dados.imports.filter(function(x){ return x.guild + "|" + x.exportedAt !== b.dataset.k; });
+        salvar(); tudo();
+      });
+    });
+  }
+  function cfgNum(id, campo){ $(id).addEventListener("change", function(){ dados.cfg[campo] = inteiro(this.value); salvar(); recalcular(true); }); }
+  cfgNum("metaPontos", "metaPontos"); cfgNum("metaContrib", "metaContrib");
+  $("diasInativo").addEventListener("change", function(){ dados.cfg.diasInativo = inteiro(this.value) || 3; salvar(); recalcular(true); });
+  [["regra", "regra"], ["modoP", "modoP"], ["modoC", "modoC"]].forEach(function(p){
+    [].forEach.call(document.querySelectorAll("input[name=" + p[0] + "]"), function(r){
+      r.addEventListener("change", function(){ if(r.checked){ dados.cfg[p[1]] = r.value; salvar(); recalcular(true); } });
+    });
+  });
+  $("apagarTudo").addEventListener("click", function(){
+    var b = this;
+    if(b.dataset.certeza !== "1"){ b.dataset.certeza = "1"; b.textContent = "Clique de novo para apagar"; setTimeout(function(){ b.dataset.certeza = ""; b.textContent = "Apagar todas"; }, 4000); return; }
+    var g = guildAtual();
+    dados.imports = dados.imports.filter(function(x){ return x.guild !== g; });
+    b.dataset.certeza = ""; b.textContent = "Apagar todas";
+    salvar(); tudo();
+  });
+
+  // ---------- abas ----------
+  var aba = "painel";
+  try{ var ab = sessionStorage.getItem("pka-guild-aba"); if(ab) aba = ab; }catch(e){}
+  function irPara(nome){
+    aba = nome;
+    try{ sessionStorage.setItem("pka-guild-aba", nome); }catch(e){}
+    ["painel", "cobranca", "caixa", "ajustes"].forEach(function(a){
+      $("t-" + a).setAttribute("aria-selected", String(a === nome));
+      $("p-" + a).hidden = a !== nome;
+    });
+  }
+  ["painel", "cobranca", "caixa", "ajustes"].forEach(function(a){ $("t-" + a).addEventListener("click", function(){ irPara(a); }); });
+  function ligarIr(){
+    [].forEach.call(document.querySelectorAll("[data-ir]"), function(el){
+      if(el.dataset.ligado) return; el.dataset.ligado = "1";
+      el.addEventListener("click", function(e){ e.preventDefault(); irPara(el.dataset.ir); window.scrollTo({ top: 0, behavior: "smooth" }); });
+    });
+  }
+
+  // ---------- tudo ----------
+  function recalcular(todasAbas){
+    semana = calcular();
+    if(!semana){ tudo(); return; }
+    pintarPainel(); pintarCobranca();
+    if(todasAbas){ pintarAjustes(); pintarCaixa(); }
+  }
+  function tudo(){
+    var ws = semanas();
+    var tem = ws.length > 0;
+    $("semDados").hidden = tem; $("comDados").hidden = !tem;
+    if(!tem) return;
+    if(ws.indexOf(semanaSel) < 0) semanaSel = ws[0];
+    semana = calcular();
+    pintarFaixa(); pintarPainel(); pintarCobranca(); pintarCaixa(); pintarAjustes();
+    irPara(aba); ligarIr();
+  }
+  tudo();
+})();
+</script>
+</body>
+</html>

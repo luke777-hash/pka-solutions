@@ -30,4 +30,11 @@ export const ferramentas = [
     frase: 'Marque os pokelogs feitos e veja quanto falta para o ATK 5.',
     etiquetas: ['Pokelog', 'ATK 5', 'Shinys'],
   },
+  {
+    nome: 'Gestão da Guild',
+    endereco: '/guild/',
+    tema: 'guild',
+    frase: 'Importe os membros da guild e acompanhe a meta, a cobrança e o caixa.',
+    etiquetas: ['Meta semanal', 'Cobrança', 'Discord'],
+  },
 ]

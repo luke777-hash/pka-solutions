@@ -6,7 +6,7 @@
 
 .pkn{
   --pkn-bg:#ffffff; --pkn-fg:#141a24; --pkn-muted:#566274; --pkn-line:#d5dbe3; --pkn-hover:#eef1f5;
-  --pkn-planejador:#2f49b8; --pkn-mesa:#b07f1c; --pkn-hunt:#c8323a; --pkn-pokelog:#127a62;
+  --pkn-planejador:#2f49b8; --pkn-mesa:#b07f1c; --pkn-hunt:#c8323a; --pkn-pokelog:#127a62; --pkn-guild:#6741d9;
   --pkn-rosa:#d6336c;
   display:block; position:relative; z-index:40; margin:0; padding:0;
   background:var(--pkn-bg); color:var(--pkn-fg); border-bottom:1px solid var(--pkn-line);
@@ -16,12 +16,12 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .pkn{
     --pkn-bg:#121821; --pkn-fg:#e4e9ef; --pkn-muted:#9aa6b6; --pkn-line:#2a3441; --pkn-hover:#1d2531;
-    --pkn-planejador:#7b93f0; --pkn-mesa:#e8b44c; --pkn-hunt:#ef6b6f; --pkn-pokelog:#3cc9a2; --pkn-rosa:#f06595;
+    --pkn-planejador:#7b93f0; --pkn-mesa:#e8b44c; --pkn-hunt:#ef6b6f; --pkn-pokelog:#3cc9a2; --pkn-guild:#a08cf6; --pkn-rosa:#f06595;
   }
 }
 :root[data-theme="dark"] .pkn{
   --pkn-bg:#121821; --pkn-fg:#e4e9ef; --pkn-muted:#9aa6b6; --pkn-line:#2a3441; --pkn-hover:#1d2531;
-  --pkn-planejador:#7b93f0; --pkn-mesa:#e8b44c; --pkn-hunt:#ef6b6f; --pkn-pokelog:#3cc9a2; --pkn-rosa:#f06595;
+  --pkn-planejador:#7b93f0; --pkn-mesa:#e8b44c; --pkn-hunt:#ef6b6f; --pkn-pokelog:#3cc9a2; --pkn-guild:#a08cf6; --pkn-rosa:#f06595;
 }
 
 .pkn-dentro{
@@ -58,6 +58,7 @@
 .pkn-t-mesa{--pkn-cor:var(--pkn-mesa);}
 .pkn-t-hunt{--pkn-cor:var(--pkn-hunt);}
 .pkn-t-pokelog{--pkn-cor:var(--pkn-pokelog);}
+.pkn-t-guild{--pkn-cor:var(--pkn-guild);}
 .pkn-ponto{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--pkn-cor); flex:none;}
 .pkn-link::after{
   content:""; position:absolute; left:12px; right:12px; bottom:-1px; height:3px; border-radius:3px 3px 0 0;
@@ -83,8 +84,8 @@
 .pkn-menu{display:none;}
 .pkn a:focus-visible, .pkn button:focus-visible{outline:3px solid var(--pkn-fg); outline-offset:2px;}
 
-/* telas estreitas: as ferramentas vão para o menu */
-@media (max-width:1000px){
+/* telas estreitas: as ferramentas vão para o menu (com 5 ferramentas a barra cheia precisa de uns 1180px) */
+@media (max-width:1180px){
   .pkn-dentro{flex-wrap:wrap; gap:8px 12px; min-height:56px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));}
   .pkn-menu{display:inline-flex;}
   .pkn-nav{order:3; flex-basis:100%; display:none; align-self:auto;}

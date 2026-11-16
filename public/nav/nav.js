@@ -7,7 +7,8 @@
     { nome: "Planejador 2x2x2", endereco: "/planejador-2x2x2/", tema: "planejador" },
     { nome: "Mesa de câmbio", endereco: "/mesa-de-cambio/", tema: "mesa" },
     { nome: "PKA Hunt Analyzer", endereco: "/hunt-analyzer/", tema: "hunt" },
-    { nome: "Pokelog para ATK 5", endereco: "/pokelog/", tema: "pokelog" }
+    { nome: "Pokelog para ATK 5", endereco: "/pokelog/", tema: "pokelog" },
+    { nome: "Gestão da Guild", endereco: "/guild/", tema: "guild" }
   ];
   var CHAVE_TEMA = "pkahub-tema"; // a mesma do hub e das ferramentas
   var raiz = document.documentElement;

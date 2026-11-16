@@ -21,6 +21,16 @@ function Icone({ tema }) {
       </svg>
     )
   }
+  if (tema === 'guild') {
+    return (
+      <svg className="icone" viewBox="0 0 74 44" aria-hidden="true">
+        <path d="M17 1 32 6v13c0 11-7 19-15 24C9 38 2 30 2 19V6Z" className="i-escudo" />
+        {[0, 1, 2].map((i) => (
+          <rect key={i} x="42" y={6 + i * 13} width={[30, 22, 12][i]} height="7" rx="3.5" className={i === 0 ? 'i-barra-cheia' : 'i-barra'} />
+        ))}
+      </svg>
+    )
+  }
   if (tema === 'pokelog') {
     return (
       <svg className="icone" viewBox="0 0 70 44" aria-hidden="true">
