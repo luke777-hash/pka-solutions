@@ -75,6 +75,17 @@ select option{background:var(--surface);color:var(--fg)}
 .barra{grid-column:1/-1;height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;position:relative}
 .barra i{position:absolute;inset:0 auto 0 0;width:0;background:var(--gd);border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
 
+/* última importação */
+.ultima{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px 22px;align-items:center;background:var(--gd-soft);border:1.5px solid var(--gd);border-radius:var(--r);padding:16px 20px}
+.ultima.velha{background:var(--vai-soft);border-color:var(--vai)}
+.ult-quando{display:grid;gap:0}
+.ult-quando .r{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.ult-quando b{font:800 28px/1.1 var(--f-display);letter-spacing:-.01em;white-space:nowrap}
+.idade{font-size:14px;font-weight:700;color:var(--gd)}
+.ultima.velha .idade{color:var(--vai)}
+.ultima p{margin:0;font-size:14px;color:var(--fg);text-wrap:pretty}
+@media (max-width:860px){.ultima{grid-template-columns:1fr}.ultima .btn{justify-self:start}}
+
 /* abas */
 .abas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--surface-3);border-radius:12px;padding:4px}
 .abas button{min-height:42px;border:0;background:none;border-radius:9px;padding:8px 16px;font-weight:700;font-size:15px;color:var(--muted);cursor:pointer;transition:background-color .2s ease,color .2s ease;display:inline-flex;align-items:center;justify-content:center;gap:8px}
@@ -112,7 +123,7 @@ button.tile[aria-pressed="true"]{border-color:var(--gd);box-shadow:inset 0 0 0 1
 
 /* lista de membros */
 .lista{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.linha{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,1.7fr);gap:6px 16px;align-items:center;padding:11px 18px;border-top:1px solid var(--line)}
+.linha{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.9fr);gap:6px 16px;align-items:center;padding:11px 18px;border-top:1px solid var(--line)}
 .linha:first-child{border-top:0}
 .linha.cab{background:var(--surface-2);font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding-block:9px}
 .linha.isento{opacity:.62}
@@ -123,9 +134,6 @@ button.tile[aria-pressed="true"]{border-color:var(--gd);box-shadow:inset 0 0 0 1
 .delta{display:block;font-size:12px;color:var(--ok);font-weight:600}
 .mini{height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden;position:relative;margin-top:4px;max-width:150px}
 .mini i{position:absolute;inset:0 auto 0 0;background:var(--gd);border-radius:99px}
-.acesso{font-size:14px}
-.acesso.online{color:var(--ok);font-weight:700}
-.acesso.velho{color:var(--mal);font-weight:600}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;border-radius:99px;padding:2px 10px;white-space:nowrap}
 .chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.vai{background:var(--vai-soft);color:var(--vai)} .chip.mal{background:var(--mal-soft);color:var(--mal)}
@@ -208,9 +216,12 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
 .imports li:first-child{border-top:0}
 @media (max-width:860px){.ajustes{grid-template-columns:1fr}}
 
+.check{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:14px;cursor:pointer}
+.check input{margin-top:3px;width:16px;height:16px;accent-color:var(--gd)}
+
 /* entrar */
 .entrar{display:grid;gap:12px;max-width:620px}
-.conta{font-size:13.5px;color:var(--muted)}
+.conta{display:inline-flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .conta b{color:var(--fg)}
 .link{border:0;background:none;padding:0;color:var(--gd);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .nota-baixo{margin:0;font-size:14px;color:var(--muted)}
@@ -237,7 +248,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     <p class="sub">Importe a lista de membros que o jogo exporta e acompanhe a meta da semana, quem precisa ser cobrado e o caixa da guild.</p>
   </div>
   <div class="importar">
-    <span class="conta" id="conta"></span>
+    <span class="conta" id="conta" hidden><span>Guild <b id="contaCodigo"></b></span><button class="btn peq" type="button" id="btnSair">Sair</button></span>
     <span class="status" id="impStatus" role="status"></span>
     <label class="btn pri" id="btnImport" tabindex="0">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
@@ -250,20 +261,35 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
 <main class="wrap" id="principal">
   <!-- entrar na guild (dados compartilhados entre os admins) -->
   <section class="entrar" id="telaEntrar" hidden>
+    <div class="seg" role="tablist" aria-label="Entrar ou primeiro acesso">
+      <button type="button" role="tab" id="tabEntrar" aria-pressed="true">Entrar</button>
+      <button type="button" role="tab" id="tabPrimeiro" aria-pressed="false">Primeiro acesso</button>
+    </div>
     <form class="cartao" id="formEntrar" autocomplete="on">
       <h2>Entrar na guild</h2>
-      <p class="nota">Os admins da guild entram com o mesmo código e a mesma senha e veem as mesmas importações, metas e alertas. Quem cria a guild escolhe o código e a senha e passa para os outros admins.</p>
+      <p class="nota">Use o código e a senha que o líder da guild criou no primeiro acesso. Todos os admins entram com os mesmos e veem as mesmas importações, metas e alertas.</p>
       <div class="campos" style="margin-top:12px">
         <label class="campo">Código da guild<input type="text" id="eCodigo" autocomplete="username" placeholder="ex.: intocaveis-sun" required></label>
         <label class="campo">Senha<input type="password" id="eSenha" autocomplete="current-password" required minlength="6"></label>
       </div>
       <div class="acoes">
         <button class="btn pri" type="submit" id="eEntrar">Entrar</button>
-        <button class="btn" type="button" id="eCriar">Criar guild nova</button>
         <span class="status" id="eStatus" role="status"></span>
       </div>
     </form>
-    <p class="nota-baixo">Prefere não criar? <button class="link" type="button" id="eLocal">Usar só neste navegador</button>, sem compartilhar com outros admins.</p>
+    <form class="cartao" id="formPrimeiro" autocomplete="on" hidden>
+      <h2>Primeiro acesso da guild</h2>
+      <p class="nota">Faça isso uma vez só, normalmente o líder. Escolha um código para a guild (o nome e o servidor, por exemplo) e uma senha. Depois passe os dois para os outros admins, que entram pela aba Entrar.</p>
+      <div class="campos" style="margin-top:12px">
+        <label class="campo">Código da guild<input type="text" id="pCodigo" autocomplete="username" placeholder="ex.: intocaveis-sun" required minlength="3"></label>
+        <label class="campo">Senha (mínimo 6)<input type="password" id="pSenha" autocomplete="new-password" required minlength="6"></label>
+        <label class="campo">Repita a senha<input type="password" id="pSenha2" autocomplete="new-password" required minlength="6"></label>
+      </div>
+      <div class="acoes">
+        <button class="btn pri" type="submit" id="pCriar">Criar acesso da guild</button>
+        <span class="status" id="pStatus" role="status"></span>
+      </div>
+    </form>
   </section>
   <section class="entrar" id="telaCarregando" hidden><p class="nota-baixo">Carregando a guild…</p></section>
 
@@ -285,6 +311,16 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
 
   <div id="comDados" hidden>
     <div style="display:grid;gap:18px">
+      <section class="ultima" id="ultima" aria-label="Última importação">
+        <div class="ult-quando">
+          <span class="r">Dados da importação de</span>
+          <b id="ultData"></b>
+          <span class="idade" id="ultIdade"></span>
+        </div>
+        <p>O painel, a cobrança e o alerta do Discord (que sai sozinho na primeira importação do dia) usam só o que foi importado. Pontos, contribuição e quem está online podem já estar diferentes no jogo: para atualizar, exporte de novo na janela da guild e importe aqui.</p>
+        <button class="btn pri" type="button" id="ultImportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>Importar arquivo novo</button>
+      </section>
+
       <section class="faixa" aria-label="Semana">
         <label class="sel">Semana <select id="selSemana"></select></label>
         <div class="info" id="faixaInfo"></div>
@@ -309,7 +345,6 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
             <option value="situacao">Situação</option>
             <option value="pontos">Pontos</option>
             <option value="contrib">Contribuição</option>
-            <option value="acesso">Último acesso</option>
             <option value="nome">Nome</option>
           </select></label>
         </div>
@@ -399,12 +434,14 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
 
           <div class="cartao">
             <h2>Discord</h2>
-            <p class="nota">Crie um webhook no canal onde os alertas devem aparecer (Configurações do canal, Integrações, Webhooks) e cole o endereço aqui. <span id="hookOnde">Ele fica salvo <b>só neste navegador</b>: não vai para o site nem para outros admins.</span></p>
+            <p class="nota">Crie um webhook no canal onde os alertas devem aparecer (Configurações do canal, Integrações, Webhooks) e cole o endereço aqui. <span id="hookOnde"></span></p>
             <div class="grupo-campo">
               <label class="campo">Endereço do webhook
-                <span class="hook"><input type="password" id="webhook" autocomplete="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/..."><button class="btn peq" id="hookVer" type="button">Mostrar</button></span>
+                <input type="text" id="webhook" autocomplete="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/...">
               </label>
               <div class="campos"><label class="campo">Nome que aparece no Discord<input type="text" id="hookNome" placeholder="Guild"></label></div>
+              <label class="check"><input type="checkbox" id="alertaAuto" checked> <span><b>Alerta automático:</b> na primeira importação de cada dia, manda sozinho quem está abaixo do ritmo da meta. As outras importações do dia não repetem o alerta. O botão Enviar no Discord, na aba Cobrança, continua funcionando a qualquer hora.</span></label>
+              <p class="nota" id="alertaUlt"></p>
               <div class="acoes" style="margin-top:0">
                 <button class="btn peq" id="hookTeste" type="button">Enviar teste</button>
                 <button class="btn peq perigo" id="hookApagar" type="button">Apagar endereço</button>
@@ -425,12 +462,8 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
               <p class="nota">Você está na guild <b id="aCodigo"></b>. Os dados ficam no servidor do PKA-HUB e todo admin com a senha vê o mesmo.</p>
               <div class="grupo-campo">
                 <div class="campos"><label class="campo">Nova senha<input type="password" id="aSenha" autocomplete="new-password" minlength="6"></label></div>
-                <div class="acoes" style="margin-top:0"><button class="btn peq" type="button" id="aTrocar">Trocar senha</button><button class="btn peq" type="button" id="aSair">Sair</button><span class="status" id="aStatus" role="status"></span></div>
+                <div class="acoes" style="margin-top:0"><button class="btn peq" type="button" id="aTrocar">Trocar senha</button><span class="status" id="aStatus" role="status"></span></div>
               </div>
-            </div>
-            <div id="acessoLocal">
-              <p class="nota">Você está usando só neste navegador. Para os outros admins verem os mesmos dados, entre com o código e a senha da guild.</p>
-              <div class="acoes"><button class="btn peq" type="button" id="aEntrar">Entrar com guild</button></div>
             </div>
           </div>
 
@@ -449,25 +482,23 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
 (function(){
   "use strict";
   var G = window.PKA_GUILD;
-  var CHAVE = "pka-guild-v1", CHAVE_HOOK = "pka-guild-webhook";
   var $ = function(id){ return document.getElementById(id); };
 
   // ---------- guardar ----------
   var dados = { imports: [], cfg: {} };
-  try{ var s = JSON.parse(localStorage.getItem(CHAVE) || "null"); if(s && Array.isArray(s.imports)) dados = s; }catch(e){}
-  dados.cfg = Object.assign({ metaPontos: null, metaContrib: null, regra: "todas", diasInativo: 3, saldo: null, isentos: {}, discord: {}, hookNome: "", guild: "" }, dados.cfg || {});
-  function padraoCfg(){ return { metaPontos: null, metaContrib: null, regra: "todas", diasInativo: 3, saldo: null, isentos: {}, discord: {}, hookNome: "", guild: "" }; }
+  function padraoCfg(){ return { metaPontos: null, metaContrib: null, regra: "todas", diasInativo: 3, saldo: null, isentos: {}, discord: {}, hookNome: "", alertaAuto: true, guild: "" }; }
   function lsLer(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   function lsGravar(k, v){ try{ if(v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
 
-  // modo "nuvem": dados no servidor, compartilhados entre os admins da guild. modo "local": só neste navegador.
-  var CHAVE_SESSAO = "pka-guild-sessao", CHAVE_MODO = "pka-guild-modo";
+  // os dados ficam no servidor, compartilhados entre os admins da guild; modo "nuvem" = logado
+  var CHAVE_SESSAO = "pka-guild-sessao";
   var sessao = null;
   try{ sessao = JSON.parse(lsLer(CHAVE_SESSAO) || "null"); }catch(e){}
-  var modo = sessao && sessao.token ? "nuvem" : (lsLer(CHAVE_MODO) === "local" ? "local" : null);
+  var modo = sessao && sessao.token ? "nuvem" : null;
   var hookInfo = { configurado: false };
-  var dadosLocais = dados;
-  if(modo !== "local") dados = { imports: [], cfg: padraoCfg() };
+  dados.cfg = padraoCfg();
+  // limpa o que o antigo modo "só neste navegador" deixou guardado
+  ["pka-guild-v1", "pka-guild-webhook", "pka-guild-modo"].forEach(function(k){ lsGravar(k, null); });
 
   function api(acao, extra){
     var corpo = Object.assign({ acao: acao, token: sessao ? sessao.token : "" }, extra || {});
@@ -475,7 +506,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
       .then(function(r){
         return r.json().catch(function(){ return { erro: "O servidor não respondeu direito. Tente de novo." }; }).then(function(j){
           if(r.status === 401 && acao !== "entrar" && acao !== "criar"){ sairNuvem(j.erro); throw new Error(j.erro); }
-          if(!r.ok) throw new Error(j.erro || "Erro " + r.status);
+          if(!r.ok){ var er = new Error(j.erro || "Erro " + r.status); er.naoAchou = r.status === 404; throw er; }
           return j;
         });
       }, function(){ throw new Error("Sem conexão com o servidor do PKA-HUB."); });
@@ -486,36 +517,29 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     dados.cfg = Object.assign(padraoCfg(), (j.dados && j.dados.cfg) || {});
     dados.cfg.guild = g || lsLer("pka-guild-sel") || "";
     hookInfo = j.hook || { configurado: false };
+    ultimoAlertaAuto = j.ultimoAlertaAuto || null;
   }
+  var ultimoAlertaAuto = null;
   var tCfg = null;
   function salvar(){
-    if(modo === "nuvem"){
-      lsGravar("pka-guild-sel", dados.cfg.guild || "");
-      clearTimeout(tCfg);
-      tCfg = setTimeout(function(){
-        api("cfg", { cfg: dados.cfg }).catch(function(e){ var st = $("impStatus"); st.className = "status erro"; st.textContent = "Não salvou os ajustes: " + e.message; });
-      }, 400);
-      return;
-    }
-    try{ localStorage.setItem(CHAVE, JSON.stringify(dados)); }catch(e){}
+    lsGravar("pka-guild-sel", dados.cfg.guild || "");
+    clearTimeout(tCfg);
+    tCfg = setTimeout(function(){
+      api("cfg", { cfg: dados.cfg }).catch(function(e){ var st = $("impStatus"); st.className = "status erro"; st.textContent = "Não salvou os ajustes: " + e.message; });
+    }, 400);
   }
-  // muda as importações: no servidor (nuvem) ou aqui (local); depois redesenha
-  function mudarImports(acao, extra, local){
-    if(modo === "nuvem"){
-      return api(acao, extra).then(function(j){ aplicarRemoto(j); tudo(); return true; })
-        .catch(function(e){ var st = $("impStatus"); st.className = "status erro"; st.textContent = e.message; return false; });
-    }
-    local(); salvar(); tudo(); return Promise.resolve(true);
+  // muda as importações no servidor e redesenha
+  function mudarImports(acao, extra){
+    return api(acao, extra).then(function(j){ aplicarRemoto(j); tudo(); return true; })
+      .catch(function(e){ var st = $("impStatus"); st.className = "status erro"; st.textContent = e.message; return false; });
   }
   function sairNuvem(msg){
     if(sessao) api("sair").catch(function(){});
-    sessao = null; lsGravar(CHAVE_SESSAO, null); modo = null; lsGravar(CHAVE_MODO, null);
+    sessao = null; lsGravar(CHAVE_SESSAO, null); modo = null;
     dados = { imports: [], cfg: padraoCfg() }; hookInfo = { configurado: false };
     tudo();
     if(msg){ $("eStatus").className = "status erro"; $("eStatus").textContent = msg; }
   }
-  function lerHook(){ try{ return localStorage.getItem(CHAVE_HOOK) || ""; }catch(e){ return ""; } }
-  function gravarHook(v){ try{ if(v) localStorage.setItem(CHAVE_HOOK, v); else localStorage.removeItem(CHAVE_HOOK); }catch(e){} }
 
   // ---------- formatos ----------
   var nf = new Intl.NumberFormat("pt-BR");
@@ -589,14 +613,13 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
         if(salvou) st.textContent = (ok ? plural(ok, "arquivo importado", "arquivos importados") : "") + (erros.length ? (ok ? ". " : "") + "Não deu para ler: " + erros.join(", ") : "");
       };
       if(!novas.length){ fim(true); return; }
-      if(modo === "nuvem") st.textContent = "Enviando…";
-      mudarImports("importar", { imports: novas }, function(){
-        novas.forEach(function(im){
-          dados.imports = dados.imports.filter(function(x){ return !(x.guild === im.guild && x.exportedAt === im.exportedAt); });
-          dados.imports.push(im);
-        });
-        dados.imports.sort(function(a, b){ return a.exportedAt < b.exportedAt ? -1 : 1; });
-      }).then(fim);
+      st.textContent = "Enviando…";
+      var maisNova = novas.reduce(function(a, b){ return a.exportedAt > b.exportedAt ? a : b; }).exportedAt;
+      var eraAMaisNova = dados.imports.every(function(x){ return x.exportedAt <= maisNova; });
+      mudarImports("importar", { imports: novas }).then(function(salvou){
+        fim(salvou);
+        if(salvou && eraAMaisNova) alertaAutomatico();
+      });
     });
   }
   $("arquivo").addEventListener("change", function(e){ var fs = [].slice.call(e.target.files || []); if(fs.length) importar(fs); e.target.value = ""; });
@@ -645,11 +668,11 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     var info = [];
     var gs = guilds();
     info.push("Guild <b>" + esc(guildAtual()) + "</b>" + (gs.length > 1 ? ' <button class="btn peq" id="trocaGuild">trocar</button>' : ""));
-    info.push("Última importação <b>" + dmh(semana.ultima) + "</b>");
     info.push("<b>" + semana.membros.length + "</b> membros");
     info.push("<b>" + semana.importacoes + "</b> " + (semana.importacoes === 1 ? "importação" : "importações") + " na semana");
     var dia = Math.min(7, Math.floor(semana.fracao * 7) + 1);
     info.push("Dia <b>" + dia + "</b> de 7");
+    pintarUltima();
     $("faixaInfo").innerHTML = info.map(function(t){ return "<span>" + t + "</span>"; }).join("");
     $("faixaBarra").style.width = (semana.fracao * 100).toFixed(1) + "%";
     var tg = $("trocaGuild");
@@ -658,19 +681,25 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
       dados.cfg.guild = l[(i + 1) % l.length]; semanaSel = null; salvar(); tudo();
     });
   }
+  // destaque de quando foi a última importação (de qualquer semana) e há quanto tempo
+  function pintarUltima(){
+    var ims = importsDaGuild(), ult = null;
+    ims.forEach(function(im){ var d = G.lerDataExport(im.exportedAt); if(d && (!ult || d > ult)) ult = d; });
+    if(!ult) return;
+    var horas = (Date.now() - ult) / 3600000;
+    $("ultData").textContent = dm(ult) + " às " + String(ult.getHours()).padStart(2, "0") + ":" + String(ult.getMinutes()).padStart(2, "0");
+    $("ultIdade").textContent = horas < 1 ? "há menos de 1 hora" : horas < 48 ? "há " + Math.floor(horas) + (Math.floor(horas) === 1 ? " hora" : " horas") : "há " + Math.floor(horas / 24) + " dias";
+    $("ultima").classList.toggle("velha", horas >= 12);
+  }
+  $("ultImportar").addEventListener("click", function(){ $("arquivo").click(); });
+  setInterval(function(){ if(!$("comDados").hidden) pintarUltima(); }, 60000);
   $("selSemana").addEventListener("change", function(e){ semanaSel = e.target.value; tudo(); });
 
   // ---------- painel ----------
   var filtroSit = "todos";
   var SIT = { bateu: ["ok", "Bateu"], caminho: ["vai", "No caminho"], abaixo: ["mal", "Abaixo"], isento: ["neutro", "Isento"] };
   var ORD_SIT = { abaixo: 0, caminho: 1, bateu: 2, isento: 3 };
-  function textoAcesso(m){
-    if(m.online) return '<span class="acesso online">Online</span>';
-    if(m.dias == null) return '<span class="acesso">—</span>';
-    var velho = m.dias >= (dados.cfg.diasInativo || 3);
-    var t = m.dias < 1 ? "há " + Math.max(1, Math.round(m.dias * 24)) + "h" : "há " + Math.floor(m.dias) + (Math.floor(m.dias) === 1 ? " dia" : " dias");
-    return '<span class="acesso' + (velho ? " velho" : "") + '" title="' + esc(m.lastLogin) + '">' + t + "</span>";
-  }
+
   function textoFalta(m){
     var p = [];
     if(m.faltaPontos > 0) p.push("Faltam " + plural(m.faltaPontos, "ponto", "pontos") + ": " + textoDailies(m.faltaPontos));
@@ -711,11 +740,10 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
       if(ord === "pontos") return b.pontos - a.pontos || b.contrib - a.contrib;
       if(ord === "contrib") return b.contrib - a.contrib || b.pontos - a.pontos;
       if(ord === "nome") return a.name.localeCompare(b.name, "pt-BR");
-      if(ord === "acesso") return (b.dias == null ? -1 : b.dias) - (a.dias == null ? -1 : a.dias);
       var sa = a.situacao ? ORD_SIT[a.situacao] : 9, sb = b.situacao ? ORD_SIT[b.situacao] : 9;
       return sa - sb || (a.pontos - b.pontos) || (a.contrib - b.contrib) || a.name.localeCompare(b.name, "pt-BR");
     });
-    var h = '<div class="linha cab"><span>Membro</span><span>Pontos</span><span>Contribuição</span><span>Último acesso</span><span>Situação</span></div>';
+    var h = '<div class="linha cab"><span>Membro</span><span>Pontos</span><span>Contribuição</span><span>Situação</span></div>';
     if(!lista.length) h += '<div class="vazio">Ninguém aqui.</div>';
     lista.forEach(function(m){
       var pP = mt.pontos > 0 ? Math.min(100, m.pontos / mt.pontos * 100) : null;
@@ -729,7 +757,6 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
         '<div><span class="rot">Contribuição</span><span class="val num">' + din(m.contrib) + (mt.contrib > 0 ? " <small>de " + din(mt.contrib) + "</small>" : "") + "</span>" +
           (pC !== null ? '<div class="mini"><i style="width:' + pC + '%"></i></div>' : "") +
           (m.dContrib ? '<span class="delta">+' + din(m.dContrib) + " desde " + dmh(semana.anterior) + "</span>" : "") + "</div>" +
-        '<div><span class="rot">Último acesso</span>' + textoAcesso(m) + "</div>" +
         '<div class="sit">' + (sit ? '<span class="chip ' + sit[0] + '">' + sit[1] + "</span>" : '<span class="chip neutro">Sem meta</span>') +
           (m.situacao === "abaixo" || m.situacao === "caminho" ? '<span class="falta">' + esc(textoFalta(m)) + "</span>" : "") + "</div>" +
       "</div>";
@@ -835,9 +862,37 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
       .catch(function(){ $("cobTexto").select(); st.className = "status"; st.textContent = "Selecionei o texto: use Ctrl+C."; });
   });
 
+  // ---------- alerta automático ----------
+  // Na primeira importação do dia (a mais nova da guild), manda sozinho a lista de quem está abaixo do ritmo.
+  // O servidor garante que só sai um por dia, mesmo com vários admins importando.
+  function alertaAutomatico(){
+    if(!dados.cfg.alertaAuto || !hookInfo.configurado || !temMeta() || !semana) return;
+    var lista = listaCob("abaixo");
+    if(!lista.length) return;
+    var antes = tipoCob, desm = desmarcados;
+    tipoCob = "abaixo"; desmarcados = {};
+    var g = gerarTexto();
+    tipoCob = antes; desmarcados = desm;
+    var ids = g.membros.map(function(m){ return (dados.cfg.discord[m.name] || "").trim(); }).filter(G.idDiscordValido);
+    var st = $("impStatus");
+    api("enviar", { texto: g.texto, ids: ids, nome: dados.cfg.hookNome || "", auto: true }).then(function(j){
+      if(!j.pulado){ ultimoAlertaAuto = diaHoje(); st.textContent += ". Alerta de cobrança enviado no Discord (" + plural(lista.length, "membro", "membros") + ")."; }
+      else st.textContent += ". O alerta de hoje já tinha saído.";
+      pintarAuto();
+    }).catch(function(e){ st.className = "status erro"; st.textContent += ". O alerta automático não foi: " + e.message; });
+  }
+  function diaHoje(){ return new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10); }
+  function pintarAuto(){
+    $("alertaAuto").checked = dados.cfg.alertaAuto !== false;
+    var t = "";
+    if(ultimoAlertaAuto){ var p = ultimoAlertaAuto.split("-"); t = "Último alerta automático: " + p[2] + "/" + p[1] + (ultimoAlertaAuto === diaHoje() ? " (hoje; o próximo sai na primeira importação de amanhã)" : "") + "."; }
+    $("alertaUlt").textContent = t;
+  }
+  $("alertaAuto").addEventListener("change", function(){ dados.cfg.alertaAuto = this.checked; salvar(); });
+
   // ---------- Discord ----------
   function enviarDiscord(texto, ids, st){
-    if(modo === "nuvem"){
+    {
       if(!hookInfo.configurado){ st.className = "status erro"; st.innerHTML = 'Cole o endereço do webhook na aba <a href="#" data-ir="ajustes">Ajustes</a>.'; ligarIr(); return Promise.resolve(false); }
       if(!texto.trim()){ st.className = "status erro"; st.textContent = "A mensagem está vazia."; return Promise.resolve(false); }
       st.className = "status"; st.textContent = "Enviando…";
@@ -845,33 +900,6 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
         st.className = "status"; st.textContent = j.partes > 1 ? "Enviado em " + j.partes + " mensagens." : "Enviado."; return true;
       }).catch(function(e){ st.className = "status erro"; st.textContent = "Não foi: " + e.message; return false; });
     }
-    var url = lerHook().trim();
-    if(!G.webhookValido(url)){ st.className = "status erro"; st.innerHTML = 'Cole o endereço do webhook na aba <a href="#" data-ir="ajustes">Ajustes</a>.'; ligarIr(); return Promise.resolve(false); }
-    var partes = G.dividirMensagem(texto, 2000);
-    if(!partes.length){ st.className = "status erro"; st.textContent = "A mensagem está vazia."; return Promise.resolve(false); }
-    var nome = (dados.cfg.hookNome || "").trim();
-    st.className = "status"; st.textContent = "Enviando…";
-    var i = 0;
-    function uma(tent){
-      var corpo = { content: partes[i], allowed_mentions: { parse: [], users: ids.slice(0, 100) } };
-      if(nome) corpo.username = nome.slice(0, 80);
-      return fetch(url + (url.indexOf("?") < 0 ? "?" : "&") + "wait=true", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) })
-        .then(function(r){
-          if(r.status === 429 && tent < 2) return r.json().catch(function(){ return {}; }).then(function(j){
-            return new Promise(function(ok){ setTimeout(ok, Math.min(10, (j.retry_after || 1)) * 1000); }).then(function(){ return uma(tent + 1); });
-          });
-          if(!r.ok) throw new Error(r.status === 401 || r.status === 404 ? "o Discord não achou esse webhook (foi apagado?)" : "o Discord respondeu " + r.status);
-          i++;
-          if(i < partes.length) return uma(0);
-        });
-    }
-    return uma(0).then(function(){
-      st.className = "status"; st.textContent = partes.length > 1 ? "Enviado em " + partes.length + " mensagens." : "Enviado.";
-      return true;
-    }).catch(function(e){
-      st.className = "status erro"; st.textContent = "Não foi: " + (e && e.message && e.message.indexOf("Discord") >= 0 ? e.message : "sem conexão com o Discord.");
-      return false;
-    });
   }
   $("cobDiscord").addEventListener("click", function(){
     var b = this, g = gerarTexto();
@@ -881,44 +909,35 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
   });
   function pintarHook(){
     var i = $("webhook");
-    if(modo === "nuvem"){
+    {
       i.value = "";
       i.placeholder = hookInfo.configurado ? "Salvo no servidor (termina em …" + hookInfo.final + "). Cole outro para trocar." : "https://discord.com/api/webhooks/...";
       $("hookOnde").innerHTML = "Ele fica guardado no servidor, só para esta guild. Nenhum admin consegue ver o endereço inteiro de volta.";
-      $("hookVer").hidden = true;
-    } else {
-      i.value = lerHook(); i.placeholder = "https://discord.com/api/webhooks/...";
-      $("hookOnde").innerHTML = "Ele fica salvo <b>só neste navegador</b>: não vai para o site nem para outros admins.";
-      $("hookVer").hidden = false;
     }
   }
   $("webhook").addEventListener("change", function(){
     var v = this.value.trim(), st = $("hookStatus");
     if(v && !G.webhookValido(v)){ st.className = "status erro"; st.textContent = "Esse endereço não parece um webhook do Discord."; return; }
-    if(modo === "nuvem"){
+    {
       if(!v) return;
       st.className = "status"; st.textContent = "Salvando…";
       api("hook", { url: v }).then(function(j){ hookInfo = j.hook; pintarHook(); st.textContent = "Salvo para a guild."; })
         .catch(function(e){ st.className = "status erro"; st.textContent = e.message; });
       return;
     }
-    gravarHook(v); st.className = "status"; st.textContent = v ? "Salvo neste navegador." : "";
   });
-  $("hookVer").addEventListener("click", function(){ var i = $("webhook"), ver = i.type === "password"; i.type = ver ? "text" : "password"; this.textContent = ver ? "Esconder" : "Mostrar"; });
   $("hookApagar").addEventListener("click", function(){
     var st = $("hookStatus");
-    if(modo === "nuvem"){
+    {
       api("hook", { url: "" }).then(function(j){ hookInfo = j.hook; pintarHook(); st.className = "status"; st.textContent = "Endereço apagado do servidor."; })
         .catch(function(e){ st.className = "status erro"; st.textContent = e.message; });
       return;
     }
-    gravarHook(""); $("webhook").value = ""; st.className = "status"; st.textContent = "Endereço apagado deste navegador.";
   });
   $("hookNome").value = dados.cfg.hookNome || "";
   $("hookNome").addEventListener("change", function(){ dados.cfg.hookNome = this.value.trim(); salvar(); });
   $("hookTeste").addEventListener("click", function(){
     var v = $("webhook").value.trim(), st = $("hookStatus"), b = this;
-    if(v && G.webhookValido(v) && modo !== "nuvem") gravarHook(v);
     b.disabled = true;
     enviarDiscord("Teste do PKA-HUB: os alertas da guild **" + guildAtual() + "** vão chegar neste canal.", [], st).then(function(){ b.disabled = false; });
   });
@@ -989,9 +1008,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     [].forEach.call($("imports").querySelectorAll("button"), function(b){
       b.addEventListener("click", function(){
         var k = b.dataset.k, i = k.lastIndexOf("|");
-        mudarImports("apagarImport", { guild: k.slice(0, i), exportedAt: k.slice(i + 1) }, function(){
-          dados.imports = dados.imports.filter(function(x){ return x.guild + "|" + x.exportedAt !== k; });
-        });
+        mudarImports("apagarImport", { guild: k.slice(0, i), exportedAt: k.slice(i + 1) });
       });
     });
   }
@@ -1008,7 +1025,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     if(b.dataset.certeza !== "1"){ b.dataset.certeza = "1"; b.textContent = "Clique de novo para apagar"; setTimeout(function(){ b.dataset.certeza = ""; b.textContent = "Apagar todas"; }, 4000); return; }
     var g = guildAtual();
     b.dataset.certeza = ""; b.textContent = "Apagar todas";
-    mudarImports("apagarTudo", { guild: g }, function(){ dados.imports = dados.imports.filter(function(x){ return x.guild !== g; }); });
+    mudarImports("apagarTudo", { guild: g });
   });
 
   // ---------- abas ----------
@@ -1031,20 +1048,35 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
   }
 
   // ---------- entrar ----------
-  function entrar(acao){
-    var st = $("eStatus"), cod = $("eCodigo").value.trim(), senha = $("eSenha").value;
+  function entrar(acao, cod, senha, st){
     st.className = "status"; st.textContent = acao === "criar" ? "Criando…" : "Entrando…";
     api(acao, { codigo: cod, senha: senha }).then(function(j){
       sessao = { token: j.token, codigo: j.codigo }; lsGravar(CHAVE_SESSAO, JSON.stringify(sessao));
-      modo = "nuvem"; lsGravar(CHAVE_MODO, null); $("eSenha").value = ""; st.textContent = "";
+      modo = "nuvem"; $("eSenha").value = ""; $("pSenha").value = ""; $("pSenha2").value = ""; st.textContent = "";
       return carregarNuvem();
-    }).catch(function(e){ st.className = "status erro"; st.textContent = e.message; });
+    }).catch(function(e){
+      st.className = "status erro";
+      if(e.naoAchou){
+        st.innerHTML = esc(e.message) + ' <button class="link" type="button" id="irPrimeiro">Fazer o primeiro acesso</button>';
+        $("irPrimeiro").addEventListener("click", function(){ abaEntrar("primeiro"); $("pCodigo").value = $("eCodigo").value; $("pSenha").focus(); });
+      } else st.textContent = e.message;
+    });
   }
-  $("formEntrar").addEventListener("submit", function(e){ e.preventDefault(); entrar("entrar"); });
-  $("eCriar").addEventListener("click", function(){ if($("formEntrar").reportValidity()) entrar("criar"); });
-  $("eLocal").addEventListener("click", function(){ modo = "local"; lsGravar(CHAVE_MODO, "local"); dados = dadosLocais; tudo(); });
-  $("aEntrar").addEventListener("click", function(){ modo = null; lsGravar(CHAVE_MODO, null); dados = { imports: [], cfg: padraoCfg() }; tudo(); });
-  $("aSair").addEventListener("click", function(){ sairNuvem(); });
+  function abaEntrar(qual){
+    $("tabEntrar").setAttribute("aria-pressed", String(qual === "entrar"));
+    $("tabPrimeiro").setAttribute("aria-pressed", String(qual === "primeiro"));
+    $("formEntrar").hidden = qual !== "entrar"; $("formPrimeiro").hidden = qual !== "primeiro";
+  }
+  $("tabEntrar").addEventListener("click", function(){ abaEntrar("entrar"); });
+  $("tabPrimeiro").addEventListener("click", function(){ abaEntrar("primeiro"); });
+  $("formEntrar").addEventListener("submit", function(e){ e.preventDefault(); entrar("entrar", $("eCodigo").value.trim(), $("eSenha").value, $("eStatus")); });
+  $("formPrimeiro").addEventListener("submit", function(e){
+    e.preventDefault();
+    var st = $("pStatus");
+    if($("pSenha").value !== $("pSenha2").value){ st.className = "status erro"; st.textContent = "As duas senhas não são iguais."; return; }
+    entrar("criar", $("pCodigo").value.trim(), $("pSenha").value, st);
+  });
+  $("btnSair").addEventListener("click", function(){ sairNuvem(); abaEntrar("entrar"); });
   $("aTrocar").addEventListener("click", function(){
     var st = $("aStatus"), v = $("aSenha").value;
     api("senha", { nova: v }).then(function(){ $("aSenha").value = ""; st.className = "status"; st.textContent = "Senha trocada. Passe a nova para os outros admins."; })
@@ -1073,13 +1105,14 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     $("telaEntrar").hidden = modo !== null;
     $("telaCarregando").hidden = !(modo === "nuvem" && carregando);
     $("btnImport").hidden = modo === null || carregando;
-    $("conta").innerHTML = modo === "nuvem" ? "Guild <b>" + esc(sessao.codigo) + "</b>" : (modo === "local" ? "Só neste navegador" : "");
-    $("acessoNuvem").hidden = modo !== "nuvem"; $("acessoLocal").hidden = modo !== "local";
+    $("conta").hidden = modo !== "nuvem";
+    if(sessao) $("contaCodigo").textContent = sessao.codigo;
     if(sessao) $("aCodigo").textContent = sessao.codigo;
-    pintarHook();
-    $("ondeFica").textContent = modo === "nuvem" ? "As importações ficam no servidor do PKA-HUB, só para os admins desta guild." : "Tudo fica salvo só neste navegador. Nada é enviado para o site.";
+    pintarHook(); pintarAuto();
+    $("ondeFica").textContent = "As importações ficam no servidor do PKA-HUB, só para os admins desta guild.";
     var ws = modo && !carregando ? semanas() : [];
     var tem = ws.length > 0;
+    if(tem) $("btnImport").hidden = true; // com dados, o botão fica no destaque da última importação
     $("semDados").hidden = tem || !modo || carregando; $("comDados").hidden = !tem;
     if(!tem) return;
     if(ws.indexOf(semanaSel) < 0) semanaSel = ws[0];

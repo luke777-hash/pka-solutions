@@ -77,3 +77,22 @@ test("guarda só as últimas 12 semanas", async () => {
 test("divide mensagens em até 2000 caracteres", () => {
   assert.ok(dividirMensagem("a\n".repeat(3000)).every((p) => p.length <= 2000));
 });
+
+test("guild que não existe responde 404 com orientação", async () => {
+  const r = await chamar({ acao: "entrar", codigo: "nao-existe", senha: "qualquer1" });
+  assert.equal(r.st, 404); assert.match(r.j.erro, /primeiro acesso/);
+});
+
+test("alerta automático sai só uma vez por dia", async () => {
+  const { j: { token } } = await chamar({ acao: "entrar", codigo: "intocaveis", senha: "segredo1" });
+  const antes = enviados.length;
+  let r = await chamar({ acao: "enviar", token, texto: "alerta", auto: true });
+  assert.equal(r.j.ok, true); assert.equal(r.j.pulado, undefined);
+  r = await chamar({ acao: "enviar", token, texto: "alerta", auto: true });
+  assert.equal(r.j.pulado, true);
+  assert.equal(enviados.length, antes + 1);
+  r = await chamar({ acao: "enviar", token, texto: "manual" });
+  assert.equal(r.j.partes, 1);
+  r = await chamar({ acao: "ler", token });
+  assert.ok(r.j.ultimoAlertaAuto);
+});

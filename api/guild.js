@@ -43,6 +43,7 @@ export function dividirMensagem(texto, max = 2000) {
   if (atual.trim()) partes.push(atual);
   return partes;
 }
+export function diaBrasilia(agora = Date.now()) { return new Date(agora - 3 * 3600000).toISOString().slice(0, 10); }
 // segunda-feira da semana de "2026-11-16 01:00:07"
 function chaveSemana(exportedAt) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(exportedAt || ""));
@@ -72,6 +73,7 @@ function cfgLimpo(c) {
     diasInativo: pos(c.diasInativo) || 3, saldo: c.saldo == null || c.saldo === "" ? null : numero(c.saldo),
     isentos: mapa(c.isentos, () => true), discord: mapa(c.discord, (v) => (/^\d{17,20}$/.test(String(v)) ? String(v) : "")),
     hookNome: texto(c.hookNome, 80),
+    alertaAuto: c.alertaAuto !== false,
   };
 }
 
@@ -105,7 +107,8 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch) {
           const n = numero(await db("GET", tent));
           if (n >= MAX_TENTATIVAS) return responder(429, { erro: "Muitas senhas erradas. Espere 15 minutos." });
           const ac = JSON.parse((await db("GET", K(cod, "acesso"))) || "null");
-          if (!ac || !confere(senha, ac.sal, ac.hash)) {
+          if (!ac) return responder(404, { erro: "Não achamos nenhuma guild com o código \"" + cod + "\". Se é o primeiro acesso da sua guild, crie o código e a senha." });
+          if (!confere(senha, ac.sal, ac.hash)) {
             await db("INCR", tent); await db("EXPIRE", tent, 900);
             return responder(401, { erro: "Código ou senha errados." });
           }
@@ -125,7 +128,8 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch) {
       const gravar = (d) => db("SET", K(cod, "dados"), JSON.stringify(d));
       const resposta = async (d) => {
         const hook = (await db("GET", K(cod, "hook"))) || "";
-        return responder(200, { codigo: cod, dados: d, hook: hook ? { configurado: true, final: hook.slice(-4) } : { configurado: false } });
+        const alerta = (await db("GET", K(cod, "alerta-dia"))) || null;
+        return responder(200, { codigo: cod, dados: d, hook: hook ? { configurado: true, final: hook.slice(-4) } : { configurado: false }, ultimoAlertaAuto: alerta });
       };
 
       if (acao === "ler") return resposta(await lerDados());
@@ -173,6 +177,14 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch) {
       }
       if (acao === "enviar") {
         const url = await db("GET", K(cod, "hook"));
+        // alerta automático: só o primeiro do dia (dia do horário de Brasília, que é o do server save)
+        const hoje = diaBrasilia();
+        if (b.auto) {
+          const ok = await db("SET", K(cod, "alerta-dia"), hoje, "NX", "EX", 36 * 3600);
+          const ja = ok !== "OK" && (await db("GET", K(cod, "alerta-dia"))) === hoje;
+          if (ja) return responder(200, { ok: true, pulado: true });
+          if (ok !== "OK") await db("SET", K(cod, "alerta-dia"), hoje, "EX", 36 * 3600);
+        }
         if (!url) return responder(400, { erro: "Nenhum webhook do Discord salvo para esta guild." });
         const partes = dividirMensagem(String(b.texto || "").slice(0, 20000));
         if (!partes.length) return responder(400, { erro: "A mensagem está vazia." });
@@ -187,6 +199,7 @@ export function criarHandler(obterRedis = () => redisDoAmbiente(), f = fetch) {
             await new Promise((ok) => setTimeout(ok, Math.min(5, j.retry_after || 1) * 1000));
             r = await f(url + "?wait=true", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(corpo) });
           }
+          if (!r.ok && b.auto) await db("DEL", K(cod, "alerta-dia"));
           if (!r.ok) return responder(502, { erro: r.status === 401 || r.status === 404 ? "O Discord não achou esse webhook (foi apagado?)." : "O Discord respondeu " + r.status + "." });
         }
         return responder(200, { ok: true, partes: partes.length });
