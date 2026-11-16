@@ -279,7 +279,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
         <li>Use o botão de exportar, no canto de cima da lista, e salve o JSON ou o CSV.</li>
         <li>Importe aqui. Repita durante a semana para ver quem evoluiu entre uma importação e outra.</li>
       </ol>
-      <p class="nota" style="margin-top:8px">Tudo fica salvo só neste navegador. Nada é enviado para o site.</p>
+      <p class="nota" style="margin-top:8px" id="ondeFica"></p>
     </div>
   </section>
 
@@ -1077,6 +1077,7 @@ table.ref thead th{border-top:0;font-size:12px;letter-spacing:.04em;text-transfo
     $("acessoNuvem").hidden = modo !== "nuvem"; $("acessoLocal").hidden = modo !== "local";
     if(sessao) $("aCodigo").textContent = sessao.codigo;
     pintarHook();
+    $("ondeFica").textContent = modo === "nuvem" ? "As importações ficam no servidor do PKA-HUB, só para os admins desta guild." : "Tudo fica salvo só neste navegador. Nada é enviado para o site.";
     var ws = modo && !carregando ? semanas() : [];
     var tem = ws.length > 0;
     $("semDados").hidden = tem || !modo || carregando; $("comDados").hidden = !tem;
