@@ -190,6 +190,7 @@ main.wrap,.topo.wrap{max-width:1440px}
 .pr-cab h2{margin:0;flex:1;font:800 19px/1.2 var(--f-display)}
 .pr-cab .res{font-size:13.5px;color:var(--muted)}
 .pr-cab .res b{color:var(--fg)}
+.pr-cab .res .falta{display:block;margin-top:2px}
 .pr-gaveta{display:none;border:0;background:none;padding:4px;cursor:pointer;color:var(--muted)}
 .pr-gaveta svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
 .rp-link{border:0;background:none;padding:2px 4px;font:600 13px var(--f-body);color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
@@ -671,11 +672,12 @@ main.wrap,.topo.wrap{max-width:1440px}
   var ICON_PEGA = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
   function pintarRota(){
     trilha.innerHTML = "";
-    var feitos = 0, falta = 0;
+    // faltaLog: só os pokelogs do pokémon normal; falta: normal + primeiro pokelog do shiny
+    var feitos = 0, falta = 0, faltaLog = 0;
     rota.forEach(function(it, i){
       var sp = especies[it.k], s = estado[it.k] || {}, r = sp.rota;
       if(s.log) feitos++;
-      if(!s.log) falta += P.pontosLog; if(!s.sh) falta += P.pontosShiny;
+      if(!s.log){ falta += P.pontosLog; faltaLog += P.pontosLog; } if(!s.sh) falta += P.pontosShiny;
       var li = el("li","parada"); li.dataset.i = i; li.draggable = true;
       li.classList.toggle("feita", !!s.log); li.classList.toggle("aberta", aberta === it.k);
       if(it.k === novaParada) li.classList.add("nova");
@@ -704,7 +706,7 @@ main.wrap,.topo.wrap{max-width:1440px}
     var n = rota.length;
     document.getElementById("rpVazio").hidden = n > 0;
     document.getElementById("limparPlano").hidden = !n;
-    document.getElementById("rpResumo").innerHTML = n ? "<b>" + n + "</b> " + (n > 1 ? "paradas" : "parada") + " · <b>" + feitos + "</b> feitas · faltam <b>" + nf.format(falta) + "</b> pts" : "Nenhuma parada ainda";
+    document.getElementById("rpResumo").innerHTML = n ? "<b>" + n + "</b> " + (n > 1 ? "paradas" : "parada") + " · <b>" + feitos + "</b> feitas" + '<span class="falta">Faltam <b>' + nf.format(faltaLog) + "</b> pts só no normal · <b>" + nf.format(falta) + "</b> pts com o shiny</span>" : "Nenhuma parada ainda";
     var trilho = document.getElementById("prTrilho"); trilho.innerHTML = "";
     var ab = el("button","pr-recolher"); ab.type = "button"; ab.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>'; ab.setAttribute("aria-label","Abrir a rota"); ab.title = "Abrir a rota";
     ab.onclick = function(){ recolher(false, true); };
